@@ -2,7 +2,7 @@
 Create table
 ================================================================================
 
-CREATE TABLE IF NOT EXISTS main.t (id INTEGER PRIMARY KEY DESC ON CONFLICT FAIL AUTOINCREMENT, name VARCHAR (10, 2) NOT NULL ON CONFLICT ABORT UNIQUE COLLATE nocase, flag DEFAULT -1, CONSTRAINT c);
+CREATE TABLE IF NOT EXISTS main.t (id INTEGER PRIMARY KEY ASC ON CONFLICT FAIL AUTOINCREMENT, name VARCHAR (10, 2) NOT NULL ON CONFLICT ABORT UNIQUE COLLATE nocase, flag DEFAULT -1, CONSTRAINT c);
 
 --------------------------------------------------------------------------------
 
@@ -32,7 +32,6 @@ CREATE TABLE IF NOT EXISTS main.t (id INTEGER PRIMARY KEY DESC ON CONFLICT FAIL 
     (column_definition
       (identifier)
       (default_constraint
-        (unary_expression)
         (unary_expression
           (numeric_literal))))
     (constraint_name
@@ -63,7 +62,6 @@ CREATE TABLE t (a DEFAULT 'x', b DEFAULT (1 + 2), c DEFAULT +1.5, d DEFAULT true
     (column_definition
       (identifier)
       (default_constraint
-        (unary_expression)
         (unary_expression
           (numeric_literal))))
     (column_definition
@@ -105,6 +103,9 @@ CREATE TABLE t (a DEFAULT 'x', b DEFAULT (1 + 2), c DEFAULT +1.5, d DEFAULT true
             (identifier)))))
     (column_definition
       (identifier)
+      (type_name
+        (identifier)
+        (identifier))
       (generated_column_constraint
         (numeric_literal)))))
 
@@ -211,10 +212,8 @@ CREATE TABLE t (a UNSIGNED BIG INT, b DOUBLE PRECISION, c 'text', d NUMERIC(-1, 
       (identifier)
       (type_name
         (identifier)
-        (unary_expression)
         (unary_expression
           (numeric_literal))
-        (unary_expression)
         (unary_expression
           (numeric_literal))))))
 
@@ -445,9 +444,8 @@ CREATE TEMP TRIGGER a INSERT ON t BEGIN DELETE FROM main.u; END; CREATE TRIGGER 
           (identifier)
           (identifier)))))
   (create_trigger_statement
-    (identifier)
-    (qualified_name)
     (qualified_name
+      (identifier)
       (identifier))
     (qualified_name
       (identifier))
@@ -459,9 +457,8 @@ CREATE TEMP TRIGGER a INSERT ON t BEGIN DELETE FROM main.u; END; CREATE TRIGGER 
   (create_trigger_statement
     (qualified_name
       (identifier))
-    (identifier)
-    (qualified_name)
     (qualified_name
+      (identifier)
       (identifier))
     (delete_statement
       (table_target
@@ -612,3 +609,73 @@ CREATE VIRTUAL TABLE t USING m(1__000, 1_, $foo(a'b), $a::b, @9, a->>b, $foo(())
     (module_argument)
     (module_argument)
     (module_argument)))
+
+================================================================================
+Key columns
+================================================================================
+
+CREATE TABLE t (a, b, c, PRIMARY KEY ((a) COLLATE nocase DESC, 'b'), UNIQUE ("c"));
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (primary_key_constraint
+      (indexed_column
+        (collate_expression
+          (parenthesized_expression
+            (column_reference
+              (identifier)))
+          (identifier)))
+      (indexed_column
+        (column_reference
+          (string_literal))))
+    (unique_constraint
+      (indexed_column
+        (column_reference
+          (quoted_identifier))))))
+
+================================================================================
+GENERATED as a word of a type name
+================================================================================
+
+CREATE TABLE t (a GENERATED, b INT GENERATED ALWAYS AS (1), c INT(5) GENERATED ALWAYS AS (2), d NOT NULL GENERATED ALWAYS AS (3));
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (identifier)
+        (identifier))
+      (generated_column_constraint
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (numeric_literal))
+      (generated_column_constraint
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (not_null_constraint)
+      (generated_column_constraint
+        (numeric_literal)))))

@@ -172,7 +172,7 @@ export default grammar({
   // A byte order mark is white space anywhere.
   extras: ($) => [/[\t\n\f\r ][\t\n\v\f\r ]*/, new RegExp(String.raw`\uFEFF`), $.comment],
 
-  externals: ($) => [$._module_argument_token, $._illegal_token, $._unreachable, $.comment],
+  externals: ($) => [$._module_argument_token, $._illegal_token, $._unreachable, $.comment, $.blob_literal],
 
   word: ($) => $.identifier,
 
@@ -284,10 +284,41 @@ export default grammar({
 
     table_option: () => choice(keywords('WITHOUT ROWID'), keyword('STRICT')),
 
-    column_definition: ($) => seq(field('name', $._name), optional($.type_name), repeat($._column_constraint)),
+    // GENERATED after a column name or a type name without a size is a word of the type name, since SQLite's parser
+    // lets the keyword fall back to an identifier where it has no action of its own (`%fallback ID` in src/parse.y);
+    // a GENERATED ALWAYS constraint may follow a sized type or another constraint only.
+    column_definition: ($) =>
+      seq(
+        field('name', $._name),
+        choice(
+          seq(
+            optional(alias($._type_words, $.type_name)),
+            optional(seq($._leading_column_constraint, repeat($._column_constraint)))
+          ),
+          seq(alias($._sized_type_name, $.type_name), repeat($._column_constraint))
+        )
+      ),
 
-    type_name: ($) =>
-      seq(repeat1($._narrow_name), optional(seq('(', $._signed_number, optional(seq(',', $._signed_number)), ')'))),
+    type_name: ($) => choice($._type_words, $._sized_type_name),
+
+    _type_words: ($) => repeat1(choice($._narrow_name, alias(keyword('GENERATED'), $.identifier))),
+
+    _sized_type_name: ($) => seq($._type_words, '(', $._signed_number, optional(seq(',', $._signed_number)), ')'),
+
+    _leading_column_constraint: ($) =>
+      choice(
+        $.constraint_name,
+        $.default_constraint,
+        $.null_constraint,
+        $.not_null_constraint,
+        $.primary_key_constraint,
+        $.unique_constraint,
+        $.check_constraint,
+        $.foreign_key_clause,
+        $.deferrable_clause,
+        $.collate_clause,
+        alias($._generated_column_expression, $.generated_column_constraint)
+      ),
 
     _column_constraint: ($) =>
       choice(
@@ -314,23 +345,28 @@ export default grammar({
           choice(
             $._term,
             seq('(', $._expression, ')'),
-            alias(seq(choice('+', '-'), $._term), $.unary_expression),
+            alias($._signed_term, $.unary_expression),
             reserved('id', $.identifier),
             $.quoted_identifier
           )
         )
       ),
 
+    _signed_term: ($) => seq(field('operator', choice('+', '-')), field('operand', $._term)),
+
     null_constraint: ($) => seq(keyword('NULL'), optional($.conflict_clause)),
 
     not_null_constraint: ($) => seq(keywords('NOT NULL'), optional($.conflict_clause)),
 
+    // A descending primary key is no alias of the rowid, so it may not autoincrement (`sqlite3AddPrimaryKey` in
+    // src/build.c).
     primary_key_constraint: ($) =>
       seq(
         keywords('PRIMARY KEY'),
-        optional(choice(keyword('ASC'), keyword('DESC'))),
-        optional($.conflict_clause),
-        optional(keyword('AUTOINCREMENT'))
+        choice(
+          seq(optional(keyword('ASC')), optional($.conflict_clause), optional(keyword('AUTOINCREMENT'))),
+          seq(keyword('DESC'), optional($.conflict_clause))
+        )
       ),
 
     unique_constraint: ($) => seq(keyword('UNIQUE'), optional($.conflict_clause)),
@@ -340,14 +376,10 @@ export default grammar({
     collate_clause: ($) => seq(keyword('COLLATE'), field('collation', $._narrow_name)),
 
     generated_column_constraint: ($) =>
-      seq(
-        optional(keywords('GENERATED ALWAYS')),
-        keyword('AS'),
-        '(',
-        $._expression,
-        ')',
-        optional(choice(keyword('STORED'), keyword('VIRTUAL')))
-      ),
+      choice(seq(keywords('GENERATED ALWAYS'), $._generated_column_expression), $._generated_column_expression),
+
+    _generated_column_expression: ($) =>
+      seq(keyword('AS'), '(', $._expression, ')', optional(choice(keyword('STORED'), keyword('VIRTUAL')))),
 
     conflict_clause: ($) => seq(keywords('ON CONFLICT'), $._conflict_resolution),
 
@@ -397,14 +429,32 @@ export default grammar({
       seq(
         keywords('PRIMARY KEY'),
         '(',
-        commaSep1($.indexed_column),
+        commaSep1(alias($._key_column, $.indexed_column)),
         optional(keyword('AUTOINCREMENT')),
         ')',
         optional($.conflict_clause)
       ),
 
     _table_unique_constraint: ($) =>
-      seq(keyword('UNIQUE'), '(', commaSep1($.indexed_column), ')', optional($.conflict_clause)),
+      seq(keyword('UNIQUE'), '(', commaSep1(alias($._key_column, $.indexed_column)), ')', optional($.conflict_clause)),
+
+    // A PRIMARY KEY or UNIQUE constraint lists columns, not expressions (`sqlite3CreateIndex` in src/build.c).
+    _key_column: ($) => seq(field('value', $._key_value), optional(choice(keyword('ASC'), keyword('DESC')))),
+
+    _key_value: ($) =>
+      choice(
+        alias($._name_only, $.column_reference),
+        alias($._parenthesized_key_value, $.parenthesized_expression),
+        alias($._collated_key_value, $.collate_expression)
+      ),
+
+    _parenthesized_key_value: ($) => seq('(', $._key_value, ')'),
+
+    _collated_key_value: ($) =>
+      prec.left(
+        PREC.COLLATE,
+        seq(field('value', $._key_value), keyword('COLLATE'), field('collation', $._narrow_name))
+      ),
 
     _table_check_constraint: ($) => seq(keyword('CHECK'), '(', $._expression, ')', optional($.conflict_clause)),
 
@@ -507,24 +557,25 @@ export default grammar({
     _unqualified_name: ($) => alias($._name_only, $.qualified_name),
 
     // Where `temp.` may start a qualified name, `temp` is a keyword, which may still be a name on its own.
-    _unqualified_trigger_name: ($) =>
-      choice($._unqualified_name, alias(field('name', alias(keyword('TEMP'), $.identifier)), $.qualified_name)),
+    _unqualified_trigger_name: ($) => choice($._unqualified_name, alias($._temp_name_only, $.qualified_name)),
 
     _name_only: ($) => field('name', $._name),
 
+    _temp_name_only: ($) => field('name', alias(keyword('TEMP'), $.identifier)),
+
     // A name in the temp schema, or in a schema whose quoted name may be `temp`.
-    _possibly_temporary_qualified_name: ($) =>
-      alias(
-        seq(
-          field('schema', choice(alias(keyword('TEMP'), $.identifier), $.quoted_identifier, $.string_literal)),
-          '.',
-          field('name', $._name)
-        ),
-        $.qualified_name
+    _possibly_temporary_qualified_name: ($) => alias($._possibly_temporary_qualified_name_parts, $.qualified_name),
+
+    _possibly_temporary_qualified_name_parts: ($) =>
+      seq(
+        field('schema', choice(alias(keyword('TEMP'), $.identifier), $.quoted_identifier, $.string_literal)),
+        '.',
+        field('name', $._name)
       ),
 
-    _other_qualified_name: ($) =>
-      alias(seq(field('schema', $.identifier), '.', field('name', $._name)), $.qualified_name),
+    _other_qualified_name: ($) => alias($._other_qualified_name_parts, $.qualified_name),
+
+    _other_qualified_name_parts: ($) => seq(field('schema', $.identifier), '.', field('name', $._name)),
 
     _trigger_event: ($) =>
       seq(
@@ -578,11 +629,10 @@ export default grammar({
 
     _restricted_trigger_delete_statement: ($) => triggerDelete($, $._unqualified_table_target),
 
-    _unqualified_table_target: ($) =>
-      alias(
-        seq(field('name', $._unqualified_name), optional(seq(keyword('AS'), field('alias', $._name)))),
-        $.table_target
-      ),
+    _unqualified_table_target: ($) => alias($._unqualified_table_target_parts, $.table_target),
+
+    _unqualified_table_target_parts: ($) =>
+      seq(field('name', $._unqualified_name), optional(seq(keyword('AS'), field('alias', $._name)))),
 
     _restricted_insert_head: ($) => insertHead($, $._unqualified_table_target),
 
@@ -842,7 +892,8 @@ export default grammar({
     _first_named_window: ($) =>
       seq(field('name', $._window_name), keyword('AS'), '(', optional($.window_definition), ')'),
 
-    _window_name: ($) => choice(reserved('window_name', $.identifier), $.quoted_identifier, $.string_literal),
+    _window_name: ($) =>
+      choice(reserved('window_name', $.identifier), $.quoted_identifier, $.string_literal, $._illegal),
 
     named_window: ($) => seq(field('name', $._name), keyword('AS'), '(', optional($.window_definition), ')'),
 
@@ -882,12 +933,18 @@ export default grammar({
         optional($.frame_exclusion)
       ),
 
-    _frame_start_before_current_row: ($) => alias(choice(keywords('UNBOUNDED PRECEDING'), $._preceding), $.frame_bound),
+    _frame_start_before_current_row: ($) =>
+      choice(alias($._unbounded_preceding, $.frame_bound), alias($._preceding, $.frame_bound)),
 
     _frame_end: ($) =>
       choice(alias($._preceding, $.frame_bound), alias($._current_row, $.frame_bound), $._frame_end_after_current_row),
 
-    _frame_end_after_current_row: ($) => alias(choice($._following, keywords('UNBOUNDED FOLLOWING')), $.frame_bound),
+    _frame_end_after_current_row: ($) =>
+      choice(alias($._following, $.frame_bound), alias($._unbounded_following, $.frame_bound)),
+
+    _unbounded_preceding: () => keywords('UNBOUNDED PRECEDING'),
+
+    _unbounded_following: () => keywords('UNBOUNDED FOLLOWING'),
 
     _preceding: ($) => seq($._expression, keyword('PRECEDING')),
 
@@ -946,15 +1003,11 @@ export default grammar({
         $.null_test_expression
       ),
 
-    _term: ($) =>
-      choice(
-        $.null,
-        $.numeric_literal,
-        $.string_literal,
-        $.blob_literal,
-        $.current_time,
-        seq($._illegal_token, $._unreachable)
-      ),
+    _term: ($) => choice($.null, $.numeric_literal, $.string_literal, $.blob_literal, $.current_time, $._illegal),
+
+    // A token that SQLite's tokenizer rejects, which the scanner reports where a literal or a name may appear. It never
+    // completes a rule, so it always leaves an error.
+    _illegal: ($) => seq($._illegal_token, $._unreachable),
 
     null: () => keyword('NULL'),
 
@@ -1121,10 +1174,10 @@ export default grammar({
     qualified_name: ($) => seq(optional(seq(field('schema', $._name), '.')), field('name', $._name)),
 
     // `nm` in parse.y: a name, which may also be a string literal.
-    _name: ($) => choice($._identifier, $.string_literal),
+    _name: ($) => choice($._identifier, $.string_literal, $._illegal),
 
     // `ids` in parse.y.
-    _narrow_name: ($) => choice(reserved('ids', $.identifier), $.quoted_identifier, $.string_literal),
+    _narrow_name: ($) => choice(reserved('ids', $.identifier), $.quoted_identifier, $.string_literal, $._illegal),
 
     _identifier: ($) => choice($.identifier, $.quoted_identifier),
 
@@ -1145,22 +1198,21 @@ export default grammar({
       ),
 
     // A number without digit separators (`number` in parse.y).
-    _signed_number: ($) =>
-      choice(
-        $._unseparated_number,
-        alias(seq(choice('+', '-'), $._unseparated_number), $.unary_expression),
-        seq($._illegal_token, $._unreachable)
-      ),
+    _signed_number: ($) => choice($._unseparated_number, alias($._signed_unseparated_number, $.unary_expression)),
+
+    _signed_unseparated_number: ($) =>
+      seq(field('operator', choice('+', '-')), field('operand', $._unseparated_number)),
 
     _unseparated_number: ($) =>
       alias(token(choice(/0[xX][0-9a-fA-F]+/, /([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?/)), $.numeric_literal),
 
     blob_literal: () => /[xX]'([0-9a-fA-F][0-9a-fA-F])*'/,
 
-    // A `#` followed by a digit names a register, which only SQLite's own nested statements may use.
+    // A `#` followed by a digit names a register, which only SQLite's own nested statements may use, and a numbered
+    // parameter counts from 1 (`sqlite3ExprAssignVarNumber` in src/expr.c).
     bind_parameter: () =>
       new RegExp(
-        `\\?[0-9]*|([:@$](::)*[${IDENTIFIER_PART}]|#((::)+[${IDENTIFIER_PART}]|[${IDENTIFIER_START}$]))([${IDENTIFIER_PART}]|::)*(\\([^\\t\\n\\v\\f\\r )\\x00]*\\))?`,
+        `\\?([0-9]*[1-9][0-9]*)?|([:@$](::)*[${IDENTIFIER_PART}]|#((::)+[${IDENTIFIER_PART}]|[${IDENTIFIER_START}$]))([${IDENTIFIER_PART}]|::)*(\\([^\\t\\n\\v\\f\\r )\\x00]*\\))?`,
         'u'
       ),
 

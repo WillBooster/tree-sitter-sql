@@ -8,6 +8,7 @@ enum TokenType {
   ILLEGAL_TOKEN,
   UNREACHABLE,
   COMMENT,
+  BLOB_LITERAL,
 };
 
 // The character classes of SQLite's tokenizer (`aiClass` and `IdChar` in src/tokenize.c), for code points rather than
@@ -127,8 +128,10 @@ static bool scan_blob(TSLexer *lexer) {
   return valid;
 }
 
-// Recognizes a number or a blob literal that SQLite's tokenizer rejects (`TK_ILLEGAL`).
-static bool scan_illegal_token(TSLexer *lexer) {
+// Recognizes a number or a blob literal that SQLite's tokenizer rejects (`TK_ILLEGAL`), and a blob literal where none
+// may appear: SQLite's tokenizer reads `x'...'` as a blob wherever it appears, where the lexer would read an
+// identifier and a string literal.
+static bool scan_illegal_token(TSLexer *lexer, bool blob_is_valid) {
   skip_spaces(lexer);
   bool valid;
   if (lexer->lookahead == '.') {
@@ -140,7 +143,7 @@ static bool scan_illegal_token(TSLexer *lexer) {
   } else if (lexer->lookahead == 'x' || lexer->lookahead == 'X') {
     advance(lexer);
     if (lexer->lookahead != '\'') return false;
-    valid = scan_blob(lexer);
+    valid = scan_blob(lexer) && blob_is_valid;
   } else {
     return false;
   }
@@ -338,6 +341,6 @@ bool tree_sitter_sqlite_external_scanner_scan(void *payload, TSLexer *lexer, con
   // During error recovery every token is valid; a module argument token is then never one, since it would swallow the
   // text that recovery has to resynchronize on.
   if (valid_symbols[MODULE_ARGUMENT_TOKEN] && !valid_symbols[ILLEGAL_TOKEN]) return scan_module_argument_token(lexer);
-  if (valid_symbols[ILLEGAL_TOKEN]) return scan_illegal_token(lexer);
+  if (valid_symbols[ILLEGAL_TOKEN]) return scan_illegal_token(lexer, valid_symbols[BLOB_LITERAL]);
   return false;
 }

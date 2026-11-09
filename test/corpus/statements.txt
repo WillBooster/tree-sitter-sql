@@ -57,7 +57,6 @@ PRAGMA foreign_keys; PRAGMA foreign_keys = ON; PRAGMA main.cache_size = -2000; P
     (qualified_name
       (identifier)
       (identifier))
-    (unary_expression)
     (unary_expression
       (numeric_literal)))
   (pragma_statement
@@ -77,7 +76,6 @@ PRAGMA foreign_keys; PRAGMA foreign_keys = ON; PRAGMA main.cache_size = -2000; P
   (pragma_statement
     (qualified_name
       (identifier))
-    (unary_expression)
     (unary_expression
       (numeric_literal))))
 

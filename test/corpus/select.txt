@@ -577,6 +577,7 @@ SELECT sum(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c ROWS BETWEEN 
                   (identifier))))
             (frame_clause
               (frame_bound)
+              (frame_bound)
               (frame_exclusion))))
         (named_window
           (identifier)
@@ -618,6 +619,7 @@ SELECT f() OVER (ROWS 2 PRECEDING), f() OVER (RANGE CURRENT ROW EXCLUDE TIES), f
               (frame_clause
                 (frame_bound
                   (numeric_literal))
+                (frame_bound)
                 (frame_exclusion))))))
       (result_column
         (function_call

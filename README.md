@@ -16,8 +16,9 @@ rules follow SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c
 Beyond them, it also rejects what SQLite rejects while parsing, such as an unknown join type, an ORDER BY clause before
 UNION, or a qualified table name in a trigger outside the temp schema. Its results differ from SQLite's only:
 
-- where SQLite decides by looking up the schema: it accepts a qualified table name in a trigger on a table that turns
-  out not to be in the temp schema;
+- where SQLite decides by looking up the schema, the declared type of a column, or a limit of the connection: it
+  accepts a qualified table name in a trigger on a table that turns out not to be in the temp schema, AUTOINCREMENT on
+  a column not declared `INTEGER`, and a parameter number above the connection's limit;
 - on a NUL character, which ends the input for SQLite but is an error here;
 - on input that is not valid UTF-8 or UTF-16, which SQLite reads byte by byte.
 

@@ -612,3 +612,36 @@ SELECT ?, ?1, :name, @name, $name, $a::b(c), #name;
         (bind_parameter))
       (result_column
         (bind_parameter)))))
+
+================================================================================
+Signed values and numbered parameters
+================================================================================
+
+CREATE TABLE t (a DEFAULT -1); PRAGMA x = +2; SELECT ?0001, x'ab', ax'ab';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (default_constraint
+        (unary_expression
+          (numeric_literal)))))
+  (pragma_statement
+    (qualified_name
+      (identifier))
+    (unary_expression
+      (numeric_literal)))
+  (select_statement
+    (select_core
+      (result_column
+        (bind_parameter))
+      (result_column
+        (blob_literal))
+      (result_column
+        (column_reference
+          (identifier))
+        (string_literal)))))
