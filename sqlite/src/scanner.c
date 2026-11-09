@@ -20,9 +20,25 @@ static bool is_identifier_char(int32_t c) {
   return c >= 0x80 || is_digit(c) || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$';
 }
 
-static bool is_space(int32_t c) { return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r'; }
+// A run of white space may contain a vertical tab, but may not start with one (`CC_SPACE` and `sqlite3Isspace` in
+// src/tokenize.c). A byte order mark is white space of its own.
+static bool starts_space(int32_t c) { return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r'; }
+
+static bool is_space(int32_t c) { return starts_space(c) || c == '\v'; }
 
 static void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
+
+static void skip_spaces(TSLexer *lexer) {
+  for (;;) {
+    if (lexer->lookahead == 0xFEFF) {
+      lexer->advance(lexer, true);
+    } else if (starts_space(lexer->lookahead)) {
+      while (is_space(lexer->lookahead)) lexer->advance(lexer, true);
+    } else {
+      return;
+    }
+  }
+}
 
 // Consumes a run of digits that may contain separators (`_`), after `after_digit` tells whether a digit was just
 // consumed, and returns whether each separator stands between two digits, as `sqlite3DequoteNumber` in src/util.c
@@ -112,7 +128,7 @@ static bool scan_blob(TSLexer *lexer) {
 
 // Recognizes a number or a blob literal that SQLite's tokenizer rejects (`TK_ILLEGAL`).
 static bool scan_illegal_token(TSLexer *lexer) {
-  while (is_space(lexer->lookahead) || lexer->lookahead == 0xFEFF) lexer->advance(lexer, true);
+  skip_spaces(lexer);
   bool valid;
   if (lexer->lookahead == '.') {
     advance(lexer);
@@ -222,7 +238,7 @@ static bool scan_comment(TSLexer *lexer, int32_t first) {
 // rejects illegal tokens in it. The internal lexer cannot read these tokens, so the scanner skips the white space before
 // them and reads the comments between them as well.
 static bool scan_module_argument_token(TSLexer *lexer) {
-  while (is_space(lexer->lookahead) || lexer->lookahead == 0xFEFF) lexer->advance(lexer, true);
+  skip_spaces(lexer);
   int32_t c = lexer->lookahead;
   if (lexer->eof(lexer) || c == '(' || c == ')' || c == ',') return false;
   if (c == '-' || c == '/') {
