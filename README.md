@@ -13,9 +13,12 @@ number and load with that fork's runtime, version 17.0.1 or later in the 17.x se
 
 The `sqlite` grammar parses the SQL dialect of [SQLite](https://sqlite.org/lang.html) 3.54 in its default build. Its
 rules follow SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c`), which are in the public domain.
-Beyond them, it also rejects what SQLite rejects while parsing, such as an unknown join type, an ORDER BY clause before
-UNION, or a qualified table name in a trigger outside the temp schema. Its results differ from SQLite's only:
+Beyond them, it also rejects what SQLite rejects while parsing by the kinds of the tokens and the structure of a
+statement, such as an unknown join type, an ORDER BY clause before UNION, or a qualified table name in a trigger outside
+the temp schema. Its results differ from SQLite's only:
 
+- where SQLite decides by comparing names or values, which a grammar cannot do: it accepts, for example, a trigger
+  whose table is in another schema than the trigger, or rows of VALUES with different numbers of terms;
 - where SQLite decides by looking up the schema, the declared type of a column, or a limit of the connection: it
   accepts a qualified table name in a trigger on a table that turns out not to be in the temp schema, AUTOINCREMENT on
   a column not declared `INTEGER`, and a parameter number above the connection's limit;
