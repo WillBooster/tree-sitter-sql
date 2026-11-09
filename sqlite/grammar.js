@@ -1145,16 +1145,26 @@ export default grammar({
         seq(field('value', $._expression), keyword('COLLATE'), field('collation', $._narrow_name))
       ),
 
+    // An ESCAPE belongs to the innermost LIKE whose pattern it follows, since it binds more tightly than LIKE (src/parse.y),
+    // while the whole expression with its escape operand binds as LIKE. The precedence of a region governs the positions
+    // between its steps, where ESCAPE is shifted, and that of the last step governs the reduction.
     like_expression: ($) =>
+      choice(
+        prec.left(PREC.EQUALITY, seq($._like_head, field('right', $._expression))),
+        seq(
+          $._like_head,
+          prec(PREC.ESCAPE, seq(field('right', $._expression), keyword('ESCAPE'))),
+          prec.left(PREC.EQUALITY, field('escape', $._expression))
+        )
+      ),
+
+    _like_head: ($) =>
       prec.left(
         PREC.EQUALITY,
         seq(
           field('left', $._expression),
           optional(keyword('NOT')),
-          field('operator', choice(keyword('LIKE'), keyword('GLOB'), keyword('REGEXP'), keyword('MATCH'))),
-          field('right', $._expression),
-          // ESCAPE binds more tightly than LIKE, but the escape operand ends where the LIKE does.
-          optional(seq(prec(PREC.ESCAPE, keyword('ESCAPE')), field('escape', $._expression)))
+          field('operator', choice(keyword('LIKE'), keyword('GLOB'), keyword('REGEXP'), keyword('MATCH')))
         )
       ),
 

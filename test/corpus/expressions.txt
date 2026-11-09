@@ -678,3 +678,32 @@ SELECT a LIKE b ESCAPE c > 1, a LIKE b ESCAPE c = d;
               (identifier)))
           (column_reference
             (identifier)))))))
+
+================================================================================
+ESCAPE of a LIKE under NOT
+================================================================================
+
+SELECT 1 LIKE NOT 'a' LIKE '%' ESCAPE '%', 1 LIKE NOT 0 LIKE 0 ESCAPE 1 ESCAPE 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (like_expression
+          (numeric_literal)
+          (unary_expression
+            (like_expression
+              (string_literal)
+              (string_literal)
+              (string_literal)))))
+      (result_column
+        (like_expression
+          (numeric_literal)
+          (unary_expression
+            (like_expression
+              (numeric_literal)
+              (numeric_literal)
+              (numeric_literal)))
+          (numeric_literal))))))
