@@ -355,27 +355,37 @@ static bool scan_over_before_window(TSLexer *lexer) {
   return true;
 }
 
+// Consumes a word and writes it in upper case to `word`, returning whether it may be a keyword: a word with a non-ASCII
+// character or longer than `size` allows is none.
+static bool scan_keyword_spelling(TSLexer *lexer, char *word, unsigned size) {
+  unsigned length = 0;
+  bool spelling = true;
+  for (; is_identifier_char(lexer->lookahead); advance(lexer), length++) {
+    int32_t c = lexer->lookahead;
+    if (c >= 0x80 || length + 1 >= size) spelling = false;
+    if (spelling) word[length] = c >= 'a' && c <= 'z' ? (char)(c - 'a' + 'A') : (char)c;
+  }
+  if (spelling) word[length] = 0;
+  return spelling;
+}
+
+static bool is_non_name_word(const char *word) {
+  for (unsigned i = 0; i < sizeof NON_NAME_WORDS / sizeof *NON_NAME_WORDS; i++) {
+    if (strcmp(word, NON_NAME_WORDS[i]) == 0) return true;
+  }
+  return false;
+}
+
 // Consumes a token and returns whether SQLite's tokenizer counts it as a name when it decides whether a word before
 // it is a keyword (`getToken` in src/tokenize.c): an identifier, a quoted identifier, a string, or a keyword other than
 // those in NON_NAME_WORDS.
 static bool scan_name_token(TSLexer *lexer) {
   int32_t c = lexer->lookahead;
-  if (c == '"' || c == '\'' || c == '`' || c == '[') return true;
+  if (c == '"' || c == '\'' || c == '`') return scan_quoted(lexer, c, true);
+  if (c == '[') return scan_quoted(lexer, ']', false);
   if (!is_identifier_char(c) || is_digit(c) || c == '$') return false;
   char word[16];
-  unsigned length = 0;
-  while (is_identifier_char(lexer->lookahead)) {
-    int32_t letter = lexer->lookahead;
-    if (length < sizeof word - 1) word[length] = letter >= 'a' && letter <= 'z' ? (char)(letter - 'a' + 'A') : (char)letter;
-    length++;
-    advance(lexer);
-  }
-  if (length >= sizeof word) return true;
-  word[length] = 0;
-  for (unsigned i = 0; i < sizeof NON_NAME_WORDS / sizeof *NON_NAME_WORDS; i++) {
-    if (strcmp(word, NON_NAME_WORDS[i]) == 0) return false;
-  }
-  return true;
+  return !scan_keyword_spelling(lexer, word, sizeof word) || !is_non_name_word(word);
 }
 
 // Recognizes WINDOW followed by a name and AS, with white space and comments between them.
