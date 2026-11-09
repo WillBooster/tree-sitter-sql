@@ -1,7 +1,10 @@
 #include "tree_sitter/parser.h"
 
+#include "reserved_words.h"
+
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 enum TokenType {
   MODULE_ARGUMENT_TOKEN,
@@ -10,6 +13,7 @@ enum TokenType {
   COMMENT,
   BLOB_LITERAL,
   OVER_BEFORE_WINDOW,
+  WINDOW_BEFORE_NAME,
 };
 
 // The character classes of SQLite's tokenizer (`aiClass` and `IdChar` in src/tokenize.c), for code points rather than
@@ -351,6 +355,37 @@ static bool scan_over_before_window(TSLexer *lexer) {
   return true;
 }
 
+// Consumes a token and returns whether SQLite's tokenizer counts it as a name when it decides whether a word before
+// it is a keyword (`getToken` in src/tokenize.c): an identifier, a quoted identifier, a string, or a keyword other than
+// those in NON_NAME_WORDS.
+static bool scan_name_token(TSLexer *lexer) {
+  int32_t c = lexer->lookahead;
+  if (c == '"' || c == '\'' || c == '`' || c == '[') return true;
+  if (!is_identifier_char(c) || is_digit(c) || c == '$') return false;
+  char word[16];
+  unsigned length = 0;
+  while (is_identifier_char(lexer->lookahead)) {
+    int32_t letter = lexer->lookahead;
+    if (length < sizeof word - 1) word[length] = letter >= 'a' && letter <= 'z' ? (char)(letter - 'a' + 'A') : (char)letter;
+    length++;
+    advance(lexer);
+  }
+  if (length >= sizeof word) return true;
+  word[length] = 0;
+  for (unsigned i = 0; i < sizeof NON_NAME_WORDS / sizeof *NON_NAME_WORDS; i++) {
+    if (strcmp(word, NON_NAME_WORDS[i]) == 0) return false;
+  }
+  return true;
+}
+
+// Recognizes WINDOW followed by a name and AS, with white space and comments between them.
+static bool scan_window_before_name(TSLexer *lexer) {
+  if (!scan_word(lexer, "window")) return false;
+  lexer->mark_end(lexer);
+  return skip_spaces_and_comments(lexer) && scan_name_token(lexer) && skip_spaces_and_comments(lexer) &&
+         scan_word(lexer, "as");
+}
+
 void *tree_sitter_sqlite_external_scanner_create(void) { return NULL; }
 
 void tree_sitter_sqlite_external_scanner_destroy(void *payload) { (void)payload; }
@@ -376,6 +411,12 @@ bool tree_sitter_sqlite_external_scanner_scan(void *payload, TSLexer *lexer, con
   if (valid_symbols[OVER_BEFORE_WINDOW] && !valid_symbols[MODULE_ARGUMENT_TOKEN] &&
       (lexer->lookahead == 'o' || lexer->lookahead == 'O')) {
     return scan_over_before_window(lexer);
+  }
+  bool window_is_valid = valid_symbols[WINDOW_BEFORE_NAME] && !valid_symbols[MODULE_ARGUMENT_TOKEN];
+  if ((window_is_valid || valid_symbols[ILLEGAL_TOKEN]) && (lexer->lookahead == 'w' || lexer->lookahead == 'W')) {
+    if (!scan_window_before_name(lexer)) return false;
+    lexer->result_symbol = window_is_valid ? WINDOW_BEFORE_NAME : ILLEGAL_TOKEN;
+    return true;
   }
   if (valid_symbols[ILLEGAL_TOKEN]) return scan_illegal_token(lexer, valid_symbols[BLOB_LITERAL]);
   return false;

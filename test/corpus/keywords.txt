@@ -191,3 +191,34 @@ SELECT a FROM t WHERE x LIKE y;
             (identifier))
           (column_reference
             (identifier)))))))
+
+================================================================================
+WINDOW before a name and AS
+================================================================================
+
+SELECT * FROM t window /* c */ w AS (); CREATE TABLE u (a WINDOW w, b);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (window_clause
+        (comment)
+        (named_window
+          (identifier)))))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (identifier)))
+    (column_definition
+      (identifier))))

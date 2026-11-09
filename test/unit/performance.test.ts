@@ -29,8 +29,11 @@ for (const [grammar, errorSource] of Object.entries(ErrorSources)) {
         `generation inputs changed after ${grammar}/src/parser.c was generated; run \`bun run build/ci\``
       ).toBe(false);
       expect(
-        Math.max(...['parser.c', 'scanner.c', 'tree_sitter/parser.h'].map((file) => mtime(`${grammar}/src/${file}`))) >
-          fs.statSync(wasmPath).mtimeMs,
+        Math.max(
+          ...['parser.c', 'scanner.c', 'reserved_words.h', 'tree_sitter/parser.h'].map((file) =>
+            mtime(`${grammar}/src/${file}`)
+          )
+        ) > fs.statSync(wasmPath).mtimeMs,
         `${grammar}/src/ changed after the Wasm build was built; run \`bun run build/ci\``
       ).toBe(false);
     });

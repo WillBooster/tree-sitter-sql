@@ -22,5 +22,11 @@ fn main() {
         println!("cargo:rerun-if-changed={}", path.to_str().unwrap());
     }
 
+    // The scanner includes the reserved words that script/generate writes beside it.
+    println!(
+        "cargo:rerun-if-changed={}",
+        src_dir.join("reserved_words.h").to_str().unwrap()
+    );
+
     c_config.compile("tree-sitter-sql");
 }

@@ -13827,13 +13827,27 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "PATTERN",
-            "value": "[Ww][Ii][Nn][Dd][Oo][Ww]"
-          },
-          "named": false,
-          "value": "WINDOW"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Ww][Ii][Nn][Dd][Oo][Ww]"
+              },
+              "named": false,
+              "value": "WINDOW"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_window_before_name"
+              },
+              "named": false,
+              "value": "WINDOW"
+            }
+          ]
         },
         {
           "type": "ALIAS",
@@ -17003,6 +17017,10 @@
     {
       "type": "SYMBOL",
       "name": "_over_before_window"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_window_before_name"
     }
   ],
   "inline": [],

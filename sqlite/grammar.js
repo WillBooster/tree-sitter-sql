@@ -179,6 +179,9 @@ export default grammar({
     $.comment,
     $.blob_literal,
     $._over_before_window,
+    // WINDOW before a name and AS is the keyword wherever it appears (`analyzeWindowKeyword` in src/tokenize.c): the
+    // scanner reads it as this token where a WINDOW clause may start, and as an illegal token where a name may appear.
+    $._window_before_name,
   ],
 
   word: ($) => $.identifier,
@@ -902,7 +905,11 @@ export default grammar({
     having_clause: ($) => seq(keyword('HAVING'), field('condition', $._expression)),
 
     window_clause: ($) =>
-      seq(keyword('WINDOW'), alias($._first_named_window, $.named_window), repeat(seq(',', $.named_window))),
+      seq(
+        choice(keyword('WINDOW'), alias($._window_before_name, 'WINDOW')),
+        alias($._first_named_window, $.named_window),
+        repeat(seq(',', $.named_window))
+      ),
 
     // SQLite's tokenizer reads WINDOW and OVER as keywords only before a token that its `getToken` (src/tokenize.c)
     // counts as a name, which neither FILTER nor INDEXED is, though both are names elsewhere.

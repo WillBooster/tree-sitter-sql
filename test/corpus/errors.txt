@@ -474,3 +474,12 @@ Qualified table in a trigger in a quoted schema other than temp
 CREATE TRIGGER "main".tr INSERT ON t BEGIN DELETE FROM main.u; END;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+WINDOW before a name and AS in a type name
+:error
+================================================================================
+
+CREATE TABLE t (a INT WINDOW w AS (1), b);
+
+--------------------------------------------------------------------------------
