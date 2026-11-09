@@ -645,3 +645,36 @@ CREATE TABLE t (a DEFAULT -1); PRAGMA x = +2; SELECT ?0001, x'ab', ax'ab';
         (column_reference
           (identifier))
         (string_literal)))))
+
+================================================================================
+Comparison in an escape operand
+================================================================================
+
+SELECT a LIKE b ESCAPE c > 1, a LIKE b ESCAPE c = d;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))))
+      (result_column
+        (binary_expression
+          (like_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))
+          (column_reference
+            (identifier)))))))

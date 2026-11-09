@@ -150,6 +150,8 @@ fuzzes the parser with libFuzzer and sanitizers (`.github/workflows/robustness.y
 When changing the grammar, compare what it accepts with SQLite itself: a valid statement must parse without errors, and
 a statement that SQLite rejects with a syntax error must yield `ERROR` or `MISSING` nodes. SQL from SQLite's test suite
 (`test/*.test`), and that SQL with tokens deleted, inserted, replaced, or swapped, make good inputs for the comparison.
+To check the grouping of operators, evaluate random constant expressions in SQLite both as written and with every node of
+their tree enclosed in parentheses.
 
 ### References
 

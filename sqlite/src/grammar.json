@@ -16382,12 +16382,12 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "PREC",
-                "value": 6,
-                "content": {
-                  "type": "SEQ",
-                  "members": [
-                    {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "PREC",
+                    "value": 6,
+                    "content": {
                       "type": "ALIAS",
                       "content": {
                         "type": "PATTERN",
@@ -16395,17 +16395,17 @@
                       },
                       "named": false,
                       "value": "ESCAPE"
-                    },
-                    {
-                      "type": "FIELD",
-                      "name": "escape",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "_expression"
-                      }
                     }
-                  ]
-                }
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "escape",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_expression"
+                    }
+                  }
+                ]
               },
               {
                 "type": "BLANK"

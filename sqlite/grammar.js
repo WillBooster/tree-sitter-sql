@@ -1174,7 +1174,8 @@ export default grammar({
           optional(keyword('NOT')),
           field('operator', choice(keyword('LIKE'), keyword('GLOB'), keyword('REGEXP'), keyword('MATCH'))),
           field('right', $._expression),
-          optional(prec(PREC.ESCAPE, seq(keyword('ESCAPE'), field('escape', $._expression))))
+          // ESCAPE binds more tightly than LIKE, but the escape operand ends where the LIKE does.
+          optional(seq(prec(PREC.ESCAPE, keyword('ESCAPE')), field('escape', $._expression)))
         )
       ),
 
