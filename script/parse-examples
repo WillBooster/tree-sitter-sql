@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+# Parses real-world SQLite SQL files cloned into examples/ with the sqlite grammar, and rewrites
+# script/known-failures.txt, the list of files that fail to parse. With --check, fails instead when that list would
+# change.
+
+set -euo pipefail
+
+check=false
+if [[ ${1-} == --check ]]; then
+  check=true
+fi
+
+# Each example repository is pinned to a commit so that the list of failures changes only with the grammar.
+# Moving a pin requires running this script without --check to update the list. The checkouts under
+# examples/ belong to this script: local changes there are discarded so that the pinned files are parsed.
+# The hosts occasionally answer with a server error, so each fetch is retried in place.
+clone() {
+  local dir=examples/$1
+  if [[ $(git -C "$dir" rev-parse HEAD 2> /dev/null) != "$3" ]]; then
+    if [[ ! -d $dir/.git ]]; then
+      rm -rf "$dir"
+      git init -q "$dir"
+    fi
+    local attempt
+    for attempt in 1 2 3 4; do
+      if git -C "$dir" fetch -q --depth=1 "$2" "$3"; then
+        break
+      fi
+      if [[ $attempt == 4 ]]; then
+        return 1
+      fi
+      sleep $((attempt * 15))
+    done
+    git -C "$dir" checkout -q -f --detach "$3"
+  fi
+  git -C "$dir" reset -q --hard
+  git -C "$dir" clean -q -ffdx
+}
+
+cd "$(dirname "$0")/.."
+
+clone anki https://github.com/ankitects/anki 641aae52f59b9d9579817cfe80d3020059b5da46
+clone chinook https://github.com/lerocha/chinook-database 7f67772503d71ba90f19283c38e93923addb43fa
+clone northwind https://github.com/jpwhite3/northwind-SQLite3 4f56e7f5906dfd23b25244c5bfe8fb5da6402efd
+clone synapse https://github.com/element-hq/synapse 4a8532b2597ce1e41d69b550559bd6f53be835f9
+
+output=$(mktemp)
+failures=$(mktemp)
+files=$(mktemp)
+mkdir -p .tmp/parse-examples
+# Runs in the same checkout may overlap, so each builds the parser into a file of its own.
+parsers=$(mktemp -d .tmp/parse-examples/run.XXXXXX)
+trap 'rm -rf "$output" "$failures" "$files" "$parsers"' EXIT
+
+# Parses the files matching the given `find` expression with one grammar; `parse --grammar-path` would recompile the
+# parser for every file.
+parse() {
+  local grammar=$1
+  shift
+  find examples -type f \( "$@" \) -print | LC_ALL=C sort > "$files"
+  script/tree-sitter build -o "$parsers/$grammar" "$grammar"
+  # The CLI exits non-zero whenever a file fails, so the output decides success. `--time` makes it print
+  # a line for each file, including files that exceed `--timeout` (30 s), which bounds a runaway parse.
+  script/tree-sitter parse --lib-path "$parsers/$grammar" --lang-name "$grammar" -q -s --time --timeout 30000000 \
+    --paths "$files" > "$output" || true
+  if ! grep -q '^Total parses' "$output"; then
+    cat "$output" >&2
+    exit 1
+  fi
+  echo "$grammar: $(grep '^Total parses' "$output")"
+  # With an empty known-failures.txt, a run that parses no file would pass, so every file found must have been parsed.
+  local total expected
+  total=$(sed -n 's/^Total parses: \([0-9]*\);.*/\1/p' "$output")
+  expected=$(grep -c . "$files" || true)
+  if [[ $expected == 0 || $total != "$expected" ]]; then
+    echo "Parsed $total of $expected example files with $grammar" >&2
+    exit 1
+  fi
+  # A timeout depends on the machine, so it is no expected failure.
+  if grep -q 'timed out' "$output"; then
+    echo 'These files exceeded the parse timeout; known-failures.txt is left unchanged:' >&2
+    awk -F '\t' '/timed out/{sub(/ +$/, "", $1); print $1}' "$output" >&2
+    exit 1
+  fi
+  # Each line holds the path, padded with spaces, and the parse results, separated by tabs; some paths contain spaces.
+  awk -F '\t' '/ERROR|MISSING/{sub(/ +$/, "", $1); print $1}' "$output" >> "$failures"
+}
+
+# Synapse keeps the migrations that run on both SQLite and PostgreSQL in .sql files, and those for SQLite alone in
+# .sql.sqlite files. Chinook has a script for each database system, of which only those for SQLite are parsed.
+parse sqlite \( -name '*.sql' -o -name '*.sql.sqlite' \) \( ! -path 'examples/chinook/*' -o -name 'Chinook_Sqlite*' \)
+LC_ALL=C sort -o "$failures" "$failures"
+if [[ $check == true ]]; then
+  if ! diff -u script/known-failures.txt "$failures" >&2; then
+    echo 'The files failing to parse differ from script/known-failures.txt (- fixed, + broken).' >&2
+    echo 'Run script/parse-examples to update the list after checking the diff.' >&2
+    exit 1
+  fi
+else
+  cp "$failures" script/known-failures.txt
+fi

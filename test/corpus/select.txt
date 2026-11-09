@@ -1,0 +1,673 @@
+================================================================================
+Simple select
+================================================================================
+
+SELECT a, b AS c, d e, t.* FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (table_columns
+        (identifier))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Select without FROM
+================================================================================
+
+SELECT 1, 'x', NULL;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (null)))))
+
+================================================================================
+Distinct and all
+================================================================================
+
+SELECT DISTINCT a FROM t; SELECT ALL a FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))))
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Where, group by, having
+================================================================================
+
+SELECT a, count(*) FROM t WHERE b > 1 GROUP BY a HAVING count(*) > 2;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (function_call
+          (identifier)
+          (all_columns)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (group_by_clause
+        (column_reference
+          (identifier)))
+      (having_clause
+        (binary_expression
+          (function_call
+            (identifier)
+            (all_columns))
+          (numeric_literal))))))
+
+================================================================================
+Having without group by
+================================================================================
+
+SELECT count(*) FROM t HAVING count(*) > 0;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (all_columns)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (having_clause
+        (binary_expression
+          (function_call
+            (identifier)
+            (all_columns))
+          (numeric_literal))))))
+
+================================================================================
+Order by and limit
+================================================================================
+
+SELECT a FROM t ORDER BY a DESC NULLS LAST, b ASC LIMIT 10 OFFSET 5;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier)))
+      (ordering_term
+        (column_reference
+          (identifier))))
+    (limit_clause
+      (numeric_literal)
+      (numeric_literal))))
+
+================================================================================
+Limit with comma
+================================================================================
+
+SELECT a FROM t LIMIT 5, 10;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (limit_clause
+      (numeric_literal)
+      (numeric_literal))))
+
+================================================================================
+Compound select
+================================================================================
+
+SELECT a FROM t UNION SELECT b FROM u UNION ALL SELECT c FROM v INTERSECT SELECT d FROM w EXCEPT SELECT e FROM x ORDER BY 1 LIMIT 3;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (compound_operator)
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (compound_operator)
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (compound_operator)
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (compound_operator)
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (order_by_clause
+      (ordering_term
+        (numeric_literal)))
+    (limit_clause
+      (numeric_literal))))
+
+================================================================================
+Values
+================================================================================
+
+VALUES (1, 2), (3, 4);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (values_clause
+      (row
+        (numeric_literal)
+        (numeric_literal))
+      (row
+        (numeric_literal)
+        (numeric_literal)))))
+
+================================================================================
+Values in a compound select
+================================================================================
+
+VALUES (1) UNION SELECT 2 ORDER BY 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (values_clause
+      (row
+        (numeric_literal)))
+    (compound_operator)
+    (select_core
+      (result_column
+        (numeric_literal)))
+    (order_by_clause
+      (ordering_term
+        (numeric_literal)))))
+
+================================================================================
+Common table expressions
+================================================================================
+
+WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 5), d AS MATERIALIZED (SELECT 2), e AS NOT MATERIALIZED (SELECT 3) SELECT * FROM c, d, e;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (with_clause
+      (common_table_expression
+        (identifier)
+        (column_list
+          (identifier))
+        (select_statement
+          (select_core
+            (result_column
+              (numeric_literal)))
+          (compound_operator)
+          (select_core
+            (result_column
+              (binary_expression
+                (column_reference
+                  (identifier))
+                (numeric_literal)))
+            (from_clause
+              (table
+                (qualified_name
+                  (identifier))))
+            (where_clause
+              (binary_expression
+                (column_reference
+                  (identifier))
+                (numeric_literal))))))
+      (common_table_expression
+        (identifier)
+        (select_statement
+          (select_core
+            (result_column
+              (numeric_literal)))))
+      (common_table_expression
+        (identifier)
+        (select_statement
+          (select_core
+            (result_column
+              (numeric_literal))))))
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Joins
+================================================================================
+
+SELECT * FROM a JOIN b ON a.id = b.id LEFT JOIN c USING (id) LEFT OUTER JOIN d CROSS JOIN e INNER JOIN f RIGHT JOIN g FULL OUTER JOIN h NATURAL JOIN i NATURAL LEFT JOIN j, k ON k.x = 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (column_list
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (numeric_literal)))))))
+
+================================================================================
+Join keywords in any order
+================================================================================
+
+SELECT * FROM a OUTER LEFT JOIN b LEFT NATURAL JOIN c;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Table aliases and index hints
+================================================================================
+
+SELECT * FROM main.t AS x INDEXED BY i, u y NOT INDEXED, v 'z';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)
+            (identifier))
+          (identifier)
+          (indexed_clause
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier))
+          (identifier)
+          (indexed_clause))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier))
+          (string_literal))))))
+
+================================================================================
+Subqueries in FROM
+================================================================================
+
+SELECT * FROM (SELECT 1) AS s, (a JOIN b) j, ((SELECT 2)) w;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (subquery_table
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal))))
+          (identifier))
+        (join_operator)
+        (join_table
+          (table
+            (qualified_name
+              (identifier)))
+          (join_operator)
+          (table
+            (qualified_name
+              (identifier)))
+          (identifier))
+        (join_operator)
+        (join_table
+          (subquery_table
+            (select_statement
+              (select_core
+                (result_column
+                  (numeric_literal)))))
+          (identifier))))))
+
+================================================================================
+Table-valued functions
+================================================================================
+
+SELECT * FROM json_each('[1]') AS j, generate_series(1, 10);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table_function
+          (qualified_name
+            (identifier))
+          (string_literal)
+          (identifier))
+        (join_operator)
+        (table_function
+          (qualified_name
+            (identifier))
+          (numeric_literal)
+          (numeric_literal))))))
+
+================================================================================
+Window clause
+================================================================================
+
+SELECT sum(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS), v AS (w);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (over_clause
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (window_clause
+        (named_window
+          (identifier)
+          (window_definition
+            (partition_by_clause
+              (column_reference
+                (identifier)))
+            (order_by_clause
+              (ordering_term
+                (column_reference
+                  (identifier))))
+            (frame_clause
+              (frame_bound)
+              (frame_exclusion))))
+        (named_window
+          (identifier)
+          (window_definition
+            (identifier)))))))
+
+================================================================================
+Window frames
+================================================================================
+
+SELECT f() OVER (ROWS 2 PRECEDING), f() OVER (RANGE CURRENT ROW EXCLUDE TIES), f() OVER (GROUPS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING EXCLUDE GROUP), f() OVER (ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING EXCLUDE CURRENT ROW), f() OVER ();
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (over_clause
+            (window_definition
+              (frame_clause
+                (frame_bound
+                  (numeric_literal)))))))
+      (result_column
+        (function_call
+          (identifier)
+          (over_clause
+            (window_definition
+              (frame_clause
+                (frame_bound)
+                (frame_exclusion))))))
+      (result_column
+        (function_call
+          (identifier)
+          (over_clause
+            (window_definition
+              (frame_clause
+                (frame_bound
+                  (numeric_literal))
+                (frame_exclusion))))))
+      (result_column
+        (function_call
+          (identifier)
+          (over_clause
+            (window_definition
+              (frame_clause
+                (frame_bound)
+                (frame_bound
+                  (numeric_literal))
+                (frame_exclusion))))))
+      (result_column
+        (function_call
+          (identifier)
+          (over_clause))))))
+
+================================================================================
+Explain
+================================================================================
+
+EXPLAIN SELECT 1; EXPLAIN QUERY PLAN SELECT 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (explain_statement
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (explain_statement
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal))))))
+
+================================================================================
+Statements without semicolons and empty statements
+================================================================================
+
+;; SELECT 1 ;; SELECT 2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal))))
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal)))))

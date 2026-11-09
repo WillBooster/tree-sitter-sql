@@ -1,0 +1,36 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "sqlite",
+      "camelcase": "SQLite",
+      "scope": "source.sql.sqlite",
+      "path": "sqlite",
+      "file-types": ["sql"],
+      "injection-regex": "^sqlite$"
+    }
+  ],
+  "metadata": {
+    "version": "0.0.0",
+    "license": "MIT",
+    "description": "SQL grammars (SQLite) for tree-sitter",
+    "authors": [
+      {
+        "name": "WillBooster Inc."
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/WillBooster/tree-sitter-sql"
+    }
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "java": false,
+    "node": false,
+    "python": false,
+    "rust": true,
+    "swift": false,
+    "zig": false
+  }
+}

@@ -1,0 +1,593 @@
+================================================================================
+Create table
+================================================================================
+
+CREATE TABLE IF NOT EXISTS main.t (id INTEGER PRIMARY KEY DESC ON CONFLICT FAIL AUTOINCREMENT, name VARCHAR (10, 2) NOT NULL ON CONFLICT ABORT UNIQUE COLLATE nocase, flag DEFAULT -1, CONSTRAINT c);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier)
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier))
+      (primary_key_constraint
+        (conflict_clause)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (numeric_literal)
+        (numeric_literal))
+      (not_null_constraint
+        (conflict_clause))
+      (unique_constraint)
+      (collate_clause
+        (identifier)))
+    (column_definition
+      (identifier)
+      (default_constraint
+        (unary_expression)
+        (unary_expression
+          (numeric_literal))))
+    (constraint_name
+      (identifier))))
+
+================================================================================
+Column constraints
+================================================================================
+
+CREATE TABLE t (a DEFAULT 'x', b DEFAULT (1 + 2), c DEFAULT +1.5, d DEFAULT true, e DEFAULT "q", f NULL, g CHECK (g > 0), h REFERENCES u (id) ON DELETE CASCADE ON UPDATE SET NULL MATCH simple NOT DEFERRABLE INITIALLY IMMEDIATE, i AS (a || b) STORED, j GENERATED ALWAYS AS (1) VIRTUAL);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (default_constraint
+        (string_literal)))
+    (column_definition
+      (identifier)
+      (default_constraint
+        (binary_expression
+          (numeric_literal)
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (default_constraint
+        (unary_expression)
+        (unary_expression
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (default_constraint
+        (identifier)))
+    (column_definition
+      (identifier)
+      (default_constraint
+        (quoted_identifier)))
+    (column_definition
+      (identifier)
+      (null_constraint))
+    (column_definition
+      (identifier)
+      (check_constraint
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (foreign_key_clause
+        (identifier)
+        (column_list
+          (identifier))
+        (foreign_key_action)
+        (foreign_key_action)
+        (foreign_key_match
+          (identifier)))
+      (deferrable_clause))
+    (column_definition
+      (identifier)
+      (generated_column_constraint
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)))))
+    (column_definition
+      (identifier)
+      (generated_column_constraint
+        (numeric_literal)))))
+
+================================================================================
+Table constraints
+================================================================================
+
+CREATE TABLE t (a, b, PRIMARY KEY (a, b AUTOINCREMENT) ON CONFLICT REPLACE, UNIQUE (b DESC) CONSTRAINT c CHECK (a > b) FOREIGN KEY (a) REFERENCES u (x) ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (primary_key_constraint
+      (ordering_term
+        (column_reference
+          (identifier)))
+      (ordering_term
+        (column_reference
+          (identifier)))
+      (conflict_clause))
+    (unique_constraint
+      (ordering_term
+        (column_reference
+          (identifier))))
+    (constraint_name
+      (identifier))
+    (check_constraint
+      (binary_expression
+        (column_reference
+          (identifier))
+        (column_reference
+          (identifier))))
+    (foreign_key_constraint
+      (column_list
+        (identifier))
+      (foreign_key_clause
+        (identifier)
+        (column_list
+          (identifier))
+        (foreign_key_action))
+      (deferrable_clause))))
+
+================================================================================
+Table options
+================================================================================
+
+CREATE TEMP TABLE t (a) WITHOUT ROWID, STRICT; CREATE TEMPORARY TABLE u AS SELECT 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier))
+    (table_option)
+    (table_option))
+  (create_table_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal))))))
+
+================================================================================
+Type names
+================================================================================
+
+CREATE TABLE t (a UNSIGNED BIG INT, b DOUBLE PRECISION, c 'text', d NUMERIC(-1, +2));
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (identifier)
+        (identifier)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (identifier)))
+    (column_definition
+      (identifier)
+      (type_name
+        (string_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (unary_expression)
+        (unary_expression
+          (numeric_literal))
+        (unary_expression)
+        (unary_expression
+          (numeric_literal))))))
+
+================================================================================
+Create virtual table
+================================================================================
+
+CREATE VIRTUAL TABLE IF NOT EXISTS ft USING fts5(title, body, tokenize = 'porter unicode61', prefix = '2 3', content = '', x (y, z), /* c */ w);
+CREATE VIRTUAL TABLE r USING rtree; CREATE VIRTUAL TABLE e USING m(, a,);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_virtual_table_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (module_argument)
+    (module_argument)
+    (module_argument)
+    (module_argument)
+    (module_argument)
+    (module_argument)
+    (comment)
+    (module_argument))
+  (create_virtual_table_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (create_virtual_table_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (module_argument)))
+
+================================================================================
+Create view
+================================================================================
+
+CREATE TEMP VIEW IF NOT EXISTS v (a, b) AS SELECT 1, 2;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_view_statement
+    (temporary)
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal))
+        (result_column
+          (numeric_literal))))))
+
+================================================================================
+Create index
+================================================================================
+
+CREATE UNIQUE INDEX IF NOT EXISTS main.i ON t (a COLLATE nocase DESC, b + 1) WHERE a IS NOT NULL;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_index_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier)
+      (identifier))
+    (identifier)
+    (ordering_term
+      (collate_expression
+        (column_reference
+          (identifier))
+        (identifier)))
+    (ordering_term
+      (binary_expression
+        (column_reference
+          (identifier))
+        (numeric_literal)))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier))
+        (null)))))
+
+================================================================================
+Create trigger
+================================================================================
+
+CREATE TRIGGER IF NOT EXISTS tr BEFORE UPDATE OF a, b ON t FOR EACH ROW WHEN new.a > 0 BEGIN UPDATE OR IGNORE u SET x = new.a, (y, z) = (1, 2) FROM v WHERE id = old.id; INSERT INTO u SELECT 1 ON CONFLICT (x) DO NOTHING; DELETE FROM u WHERE id = old.id; SELECT RAISE(ABORT, 'no'); END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_trigger_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (identifier)
+    (qualified_name
+      (identifier))
+    (binary_expression
+      (column_reference
+        (identifier)
+        (identifier))
+      (numeric_literal))
+    (update_statement
+      (table_target
+        (qualified_name
+          (identifier)))
+      (set_clause
+        (assignment
+          (identifier)
+          (column_reference
+            (identifier)
+            (identifier)))
+        (assignment
+          (column_list
+            (identifier)
+            (identifier))
+          (row_value
+            (numeric_literal)
+            (numeric_literal))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)
+            (identifier)))))
+    (insert_statement
+      (table_target
+        (qualified_name
+          (identifier)))
+      (select_statement
+        (select_core
+          (result_column
+            (numeric_literal))))
+      (upsert_clause
+        (conflict_target
+          (ordering_term
+            (column_reference
+              (identifier))))))
+    (delete_statement
+      (table_target
+        (qualified_name
+          (identifier)))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)
+            (identifier)))))
+    (select_statement
+      (select_core
+        (result_column
+          (raise_expression
+            (string_literal)))))))
+
+================================================================================
+Trigger timing and events
+================================================================================
+
+CREATE TEMP TRIGGER tr INSTEAD OF DELETE ON v BEGIN SELECT 1; END; CREATE TRIGGER tr AFTER INSERT ON t BEGIN SELECT 2; END; CREATE TRIGGER tr DELETE ON t BEGIN SELECT 3; END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_trigger_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (create_trigger_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (create_trigger_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal))))))
+
+================================================================================
+Qualified tables in triggers in the temp schema
+================================================================================
+
+CREATE TEMP TRIGGER a INSERT ON t BEGIN DELETE FROM main.u; END; CREATE TRIGGER temp.b INSERT ON t BEGIN DELETE FROM main.u; END; CREATE TRIGGER c INSERT ON temp.t BEGIN DELETE FROM main.u; END; CREATE TRIGGER d INSERT ON t BEGIN DELETE FROM main.u; END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_trigger_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (delete_statement
+      (table_target
+        (qualified_name
+          (identifier)
+          (identifier)))))
+  (create_trigger_statement
+    (identifier)
+    (qualified_name)
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (delete_statement
+      (table_target
+        (qualified_name
+          (identifier)
+          (identifier)))))
+  (create_trigger_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (qualified_name)
+    (qualified_name
+      (identifier))
+    (delete_statement
+      (table_target
+        (qualified_name
+          (identifier)
+          (identifier)))))
+  (create_trigger_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (delete_statement
+      (table_target
+        (qualified_name
+          (identifier)
+          (identifier))))))
+
+================================================================================
+Drop
+================================================================================
+
+DROP TABLE IF EXISTS main.t; DROP VIEW v; DROP INDEX i; DROP TRIGGER IF EXISTS tr;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (drop_statement
+    (if_exists)
+    (qualified_name
+      (identifier)
+      (identifier)))
+  (drop_statement
+    (qualified_name
+      (identifier)))
+  (drop_statement
+    (qualified_name
+      (identifier)))
+  (drop_statement
+    (if_exists)
+    (qualified_name
+      (identifier))))
+
+================================================================================
+Alter table
+================================================================================
+
+ALTER TABLE main.t RENAME TO u; ALTER TABLE t RENAME COLUMN a TO b; ALTER TABLE t RENAME a TO b; ALTER TABLE t ADD COLUMN c INT NOT NULL DEFAULT 0; ALTER TABLE t ADD d; ALTER TABLE t DROP COLUMN c; ALTER TABLE t DROP d;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_table_statement
+    (qualified_name
+      (identifier)
+      (identifier))
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier))
+      (not_null_constraint)
+      (default_constraint
+        (numeric_literal))))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier)))
+
+================================================================================
+Alter table constraints
+================================================================================
+
+ALTER TABLE t DROP CONSTRAINT c; ALTER TABLE t ALTER COLUMN a DROP NOT NULL; ALTER TABLE t ALTER a SET NOT NULL ON CONFLICT ABORT; ALTER TABLE t ADD CONSTRAINT c CHECK (a > 0) ON CONFLICT FAIL; ALTER TABLE t ADD CHECK (b);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (conflict_clause))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (constraint_name
+      (identifier))
+    (check_constraint
+      (binary_expression
+        (column_reference
+          (identifier))
+        (numeric_literal))
+      (conflict_clause)))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (check_constraint
+      (column_reference
+        (identifier)))))

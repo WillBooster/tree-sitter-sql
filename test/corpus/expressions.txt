@@ -1,0 +1,614 @@
+================================================================================
+Operator precedence
+================================================================================
+
+SELECT 1 + 2 * 3 - 4 / 5 % 6, a OR b AND NOT c, 1 << 2 & 3 | 4, -a || b -> '$' ->> 'k', ~1 + 2;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (binary_expression
+            (numeric_literal)
+            (binary_expression
+              (numeric_literal)
+              (numeric_literal)))
+          (binary_expression
+            (binary_expression
+              (numeric_literal)
+              (numeric_literal))
+            (numeric_literal))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (binary_expression
+            (column_reference
+              (identifier))
+            (unary_expression
+              (column_reference
+                (identifier))))))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (binary_expression
+              (numeric_literal)
+              (numeric_literal))
+            (numeric_literal))
+          (numeric_literal)))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (binary_expression
+              (unary_expression
+                (column_reference
+                  (identifier)))
+              (column_reference
+                (identifier)))
+            (string_literal))
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (unary_expression
+            (numeric_literal))
+          (numeric_literal))))))
+
+================================================================================
+Comparison operators
+================================================================================
+
+SELECT a = b, a == b, a != b, a <> b, a < b, a <= b, a > b, a >= b, a IS b, a IS NOT b, a IS DISTINCT FROM b, a IS NOT DISTINCT FROM b;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+Equality is weaker than comparison
+================================================================================
+
+SELECT a = b < c, a < b = c;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (binary_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+Pattern matching
+================================================================================
+
+SELECT a LIKE 'x%' ESCAPE '\', a NOT GLOB '*', a REGEXP 'r', a NOT MATCH 'm';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (string_literal)))
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (string_literal))))))
+
+================================================================================
+Between
+================================================================================
+
+SELECT a BETWEEN 1 AND 2 AND b, a NOT BETWEEN b + 1 AND c;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (between_expression
+            (column_reference
+              (identifier))
+            (numeric_literal)
+            (numeric_literal))
+          (column_reference
+            (identifier))))
+      (result_column
+        (between_expression
+          (column_reference
+            (identifier))
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+In
+================================================================================
+
+SELECT a IN (1, 2), a NOT IN (SELECT b FROM t), a IN t, a IN main.t, a IN f(1, 2), a IN ();
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))))))
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (qualified_name
+            (identifier))))
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (qualified_name
+            (identifier)
+            (identifier))))
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (qualified_name
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+Null tests
+================================================================================
+
+SELECT a ISNULL, a NOTNULL, a NOT NULL, a IS NULL, a IS NOT NULL;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (null_test_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (null_test_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (null_test_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (null)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (null))))))
+
+================================================================================
+Collate
+================================================================================
+
+SELECT a COLLATE nocase, a || b COLLATE "binary";
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (collate_expression
+          (column_reference
+            (identifier))
+          (identifier)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (collate_expression
+            (column_reference
+              (identifier))
+            (quoted_identifier)))))))
+
+================================================================================
+Function calls
+================================================================================
+
+SELECT count(*), count(DISTINCT a), max(a, b), f(), group_concat(a ORDER BY b), sum(a) FILTER (WHERE a > 0), sum(a) FILTER (WHERE a > 0) OVER (PARTITION BY b), replace(a, 'x', 'y'), "f"(1);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (all_columns)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (order_by_clause
+            (ordering_term
+              (column_reference
+                (identifier))))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (filter_clause
+            (where_clause
+              (binary_expression
+                (column_reference
+                  (identifier))
+                (numeric_literal))))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (filter_clause
+            (where_clause
+              (binary_expression
+                (column_reference
+                  (identifier))
+                (numeric_literal))))
+          (over_clause
+            (window_definition
+              (partition_by_clause
+                (column_reference
+                  (identifier)))))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (string_literal)
+          (string_literal)))
+      (result_column
+        (function_call
+          (quoted_identifier)
+          (numeric_literal))))))
+
+================================================================================
+Cast and case
+================================================================================
+
+SELECT CAST(a AS INTEGER), CAST(a AS VARCHAR(10)), CAST(a AS), CASE a WHEN 1 THEN 'one' ELSE 'other' END, CASE WHEN a THEN b END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (type_name
+            (identifier))))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (type_name
+            (identifier)
+            (numeric_literal))))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (case_expression
+          (column_reference
+            (identifier))
+          (when_clause
+            (numeric_literal)
+            (string_literal))
+          (string_literal)))
+      (result_column
+        (case_expression
+          (when_clause
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier))))))))
+
+================================================================================
+Subqueries and exists
+================================================================================
+
+SELECT (SELECT 1), EXISTS (SELECT 1), NOT EXISTS (SELECT 2);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (subquery
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal))))))
+      (result_column
+        (exists_expression
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal))))))
+      (result_column
+        (unary_expression
+          (exists_expression
+            (select_statement
+              (select_core
+                (result_column
+                  (numeric_literal))))))))))
+
+================================================================================
+Row values
+================================================================================
+
+SELECT (1, 2) = (3, 4), (a);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (row_value
+            (numeric_literal)
+            (numeric_literal))
+          (row_value
+            (numeric_literal)
+            (numeric_literal))))
+      (result_column
+        (parenthesized_expression
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+Column references
+================================================================================
+
+SELECT a, t.a, main.t.a, 't'.a, "t"."a", [t].[a], `a`;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (string_literal)
+          (identifier)))
+      (result_column
+        (column_reference
+          (quoted_identifier)
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (quoted_identifier)
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (quoted_identifier))))))
+
+================================================================================
+Raise
+================================================================================
+
+SELECT RAISE(IGNORE), RAISE(ABORT, 'message'), RAISE(FAIL, 'x' || 'y');
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (raise_expression))
+      (result_column
+        (raise_expression
+          (string_literal)))
+      (result_column
+        (raise_expression
+          (binary_expression
+            (string_literal)
+            (string_literal)))))))
+
+================================================================================
+Bind parameters
+================================================================================
+
+SELECT ?, ?1, :name, @name, $name, $a::b(c), #name;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (bind_parameter))
+      (result_column
+        (bind_parameter))
+      (result_column
+        (bind_parameter))
+      (result_column
+        (bind_parameter))
+      (result_column
+        (bind_parameter))
+      (result_column
+        (bind_parameter))
+      (result_column
+        (bind_parameter)))))

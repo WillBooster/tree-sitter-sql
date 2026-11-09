@@ -1,0 +1,245 @@
+================================================================================
+Insert values
+================================================================================
+
+INSERT INTO main.t (a, b) VALUES (1, 2), (3, 4);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (table_target
+      (qualified_name
+        (identifier)
+        (identifier)))
+    (column_list
+      (identifier)
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (numeric_literal)
+          (numeric_literal))
+        (row
+          (numeric_literal)
+          (numeric_literal))))))
+
+================================================================================
+Insert variants
+================================================================================
+
+INSERT OR REPLACE INTO t SELECT * FROM u; REPLACE INTO t VALUES (1); INSERT INTO t DEFAULT VALUES RETURNING *; WITH c AS (SELECT 1) INSERT INTO t AS x SELECT * FROM c;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (table_target
+      (qualified_name
+        (identifier)))
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (insert_statement
+    (table_target
+      (qualified_name
+        (identifier)))
+    (select_statement
+      (values_clause
+        (row
+          (numeric_literal)))))
+  (insert_statement
+    (table_target
+      (qualified_name
+        (identifier)))
+    (returning_clause
+      (all_columns)))
+  (insert_statement
+    (with_clause
+      (common_table_expression
+        (identifier)
+        (select_statement
+          (select_core
+            (result_column
+              (numeric_literal))))))
+    (table_target
+      (qualified_name
+        (identifier))
+      (identifier))
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))))))
+
+================================================================================
+Upsert
+================================================================================
+
+INSERT INTO t VALUES (1) ON CONFLICT (a) WHERE a > 0 DO UPDATE SET b = excluded.b WHERE b IS NULL ON CONFLICT (c) DO NOTHING ON CONFLICT DO UPDATE SET d = 1 RETURNING a, b AS c;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (table_target
+      (qualified_name
+        (identifier)))
+    (select_statement
+      (values_clause
+        (row
+          (numeric_literal))))
+    (upsert_clause
+      (conflict_target
+        (ordering_term
+          (column_reference
+            (identifier)))
+        (where_clause
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))))
+      (set_clause
+        (assignment
+          (identifier)
+          (column_reference
+            (identifier)
+            (identifier))))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (null))))
+    (upsert_clause
+      (conflict_target
+        (ordering_term
+          (column_reference
+            (identifier)))))
+    (upsert_clause
+      (set_clause
+        (assignment
+          (identifier)
+          (numeric_literal))))
+    (returning_clause
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier)))))
+
+================================================================================
+Upsert after a select with a WHERE clause
+================================================================================
+
+INSERT INTO t SELECT * FROM u WHERE true ON CONFLICT DO NOTHING;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (table_target
+      (qualified_name
+        (identifier)))
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))
+        (where_clause
+          (column_reference
+            (identifier)))))
+    (upsert_clause)))
+
+================================================================================
+Update
+================================================================================
+
+WITH c AS (SELECT 1) UPDATE OR ROLLBACK main.t AS x INDEXED BY i SET a = 1, (b, c) = (SELECT 2, 3) FROM u WHERE x.id = u.id RETURNING *;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (with_clause
+      (common_table_expression
+        (identifier)
+        (select_statement
+          (select_core
+            (result_column
+              (numeric_literal))))))
+    (table_target
+      (qualified_name
+        (identifier)
+        (identifier))
+      (identifier))
+    (indexed_clause
+      (identifier))
+    (set_clause
+      (assignment
+        (identifier)
+        (numeric_literal))
+      (assignment
+        (column_list
+          (identifier)
+          (identifier))
+        (subquery
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal))
+              (result_column
+                (numeric_literal)))))))
+    (from_clause
+      (table
+        (qualified_name
+          (identifier))))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier))))
+    (returning_clause
+      (all_columns))))
+
+================================================================================
+Delete
+================================================================================
+
+DELETE FROM t NOT INDEXED WHERE a = 1 RETURNING a; DELETE FROM main.t AS x;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (delete_statement
+    (table_target
+      (qualified_name
+        (identifier)))
+    (indexed_clause)
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier))
+        (numeric_literal)))
+    (returning_clause
+      (result_column
+        (column_reference
+          (identifier)))))
+  (delete_statement
+    (table_target
+      (qualified_name
+        (identifier)
+        (identifier))
+      (identifier))))

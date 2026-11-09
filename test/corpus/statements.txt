@@ -1,0 +1,138 @@
+================================================================================
+Transactions
+================================================================================
+
+BEGIN; BEGIN DEFERRED TRANSACTION; BEGIN IMMEDIATE TRANSACTION t; BEGIN EXCLUSIVE; COMMIT; COMMIT TRANSACTION; END TRANSACTION t; ROLLBACK; ROLLBACK TO s; ROLLBACK TRANSACTION TO SAVEPOINT s;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (begin_statement)
+  (begin_statement)
+  (begin_statement
+    (identifier))
+  (begin_statement)
+  (commit_statement)
+  (commit_statement)
+  (commit_statement
+    (identifier))
+  (rollback_statement)
+  (rollback_statement
+    (identifier))
+  (rollback_statement
+    (identifier)))
+
+================================================================================
+Savepoints
+================================================================================
+
+SAVEPOINT s; RELEASE s; RELEASE SAVEPOINT s;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (savepoint_statement
+    (identifier))
+  (release_statement
+    (identifier))
+  (release_statement
+    (identifier)))
+
+================================================================================
+Pragma
+================================================================================
+
+PRAGMA foreign_keys; PRAGMA foreign_keys = ON; PRAGMA main.cache_size = -2000; PRAGMA journal_mode = 'WAL'; PRAGMA table_info(t); PRAGMA secure_delete = DELETE; PRAGMA x = DEFAULT; PRAGMA y = +1.5;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (pragma_statement
+    (qualified_name
+      (identifier)))
+  (pragma_statement
+    (qualified_name
+      (identifier)))
+  (pragma_statement
+    (qualified_name
+      (identifier)
+      (identifier))
+    (unary_expression)
+    (unary_expression
+      (numeric_literal)))
+  (pragma_statement
+    (qualified_name
+      (identifier))
+    (string_literal))
+  (pragma_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (pragma_statement
+    (qualified_name
+      (identifier)))
+  (pragma_statement
+    (qualified_name
+      (identifier)))
+  (pragma_statement
+    (qualified_name
+      (identifier))
+    (unary_expression)
+    (unary_expression
+      (numeric_literal))))
+
+================================================================================
+Vacuum, attach, and detach
+================================================================================
+
+VACUUM; VACUUM main; VACUUM INTO 'backup.db'; ATTACH DATABASE 'file.db' AS aux KEY 'secret'; ATTACH 'x.db' AS y; DETACH DATABASE aux; DETACH y;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (vacuum_statement)
+  (vacuum_statement
+    (identifier))
+  (vacuum_statement
+    (string_literal))
+  (attach_statement
+    (string_literal)
+    (column_reference
+      (identifier))
+    (string_literal))
+  (attach_statement
+    (string_literal)
+    (column_reference
+      (identifier)))
+  (detach_statement
+    (column_reference
+      (identifier)))
+  (detach_statement
+    (column_reference
+      (identifier))))
+
+================================================================================
+Reindex and analyze
+================================================================================
+
+REINDEX; REINDEX nocase; REINDEX main.i; ANALYZE; ANALYZE main; ANALYZE main.t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (reindex_statement)
+  (reindex_statement
+    (qualified_name
+      (identifier)))
+  (reindex_statement
+    (qualified_name
+      (identifier)
+      (identifier)))
+  (analyze_statement)
+  (analyze_statement
+    (qualified_name
+      (identifier)))
+  (analyze_statement
+    (qualified_name
+      (identifier)
+      (identifier))))
