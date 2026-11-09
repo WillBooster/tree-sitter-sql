@@ -1,9 +1,9 @@
 {
   "name": "@willbooster/tree-sitter-sql",
   "version": "0.0.0-semantically-released",
-  "private": true,
   "description": "SQL grammars (SQLite) for tree-sitter",
   "keywords": [
+    "incremental",
     "parsing",
     "sql",
     "sqlite",
@@ -15,22 +15,59 @@
     "type": "git",
     "url": "git+https://github.com/WillBooster/tree-sitter-sql.git"
   },
+  "files": [
+    "common/common.mjs",
+    "sqlite/grammar.js",
+    "sqlite/package.json",
+    "sqlite/src/node-types.json",
+    "tree-sitter.json",
+    "*.wasm"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
+    "build-wasm": "script/generate --build-wasm",
+    "build/ci": "bun run build-wasm",
     "cleanup": "bun wb lint --fix --format",
     "format": "bun wb lint --format",
+    "generate": "script/generate",
     "lint": "bun wb lint",
     "lint-fix": "bun wb lint --fix",
     "prepare": "(bun lefthook install || true) && (test ! -f .lefthook/normalize-bun-lockfile.sh || bash .lefthook/normalize-bun-lockfile.sh)",
+    "release": "wb release",
+    "prestart": "bun run build-wasm",
+    "start": "script/tree-sitter playground",
+    "test": "bun wb test",
+    "test/ci": "bun wb test-on-ci",
+    "test/ci-setup": "playwright install --with-deps chromium",
     "typecheck": "bun wb typecheck",
-    "verify": "bun wb verify"
+    "verify": "bun wb verify",
+    "verify-full": "bun wb verify --full"
   },
   "devDependencies": {
     "@tsconfig/bun": "1.0.11",
     "@types/bun": "1.4.4",
+    "@vitest/browser-playwright": "5.0.5",
     "@willbooster/oxlint-config": "1.4.9",
     "@willbooster/wb": "23.3.0",
+    "@willbooster/web-tree-sitter": "17.0.1",
+    "conventional-changelog-conventionalcommits": "10.4.1",
     "lefthook": "2.2.2",
     "oxlint": "1.90.0",
-    "oxlint-tsgolint": "7.0.2005"
+    "oxlint-tsgolint": "7.0.2005",
+    "playwright": "1.64.1",
+    "semantic-release": "25.0.9",
+    "vitest": "5.0.5",
+    "wrangler": "4.156.0"
+  },
+  "peerDependencies": {
+    "@willbooster/web-tree-sitter": "^17.0.1"
+  },
+  "peerDependenciesMeta": {
+    "@willbooster/web-tree-sitter": {
+      "optional": true
+    }
   }
 }

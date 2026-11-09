@@ -1,0 +1,224 @@
+================================================================================
+Non-reserved keywords as names
+================================================================================
+
+CREATE TABLE key(action, after, plan, query, row, replace, temp, view, virtual, do, first, last, nulls);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))))
+
+================================================================================
+Join keywords as names
+================================================================================
+
+SELECT left, right FROM natural AS cross;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Window keywords as aliases
+================================================================================
+
+SELECT sum(a) over, count(*) filter, b window FROM t window;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier)))
+        (identifier))
+      (result_column
+        (function_call
+          (identifier)
+          (all_columns))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Window keywords as names
+================================================================================
+
+SELECT over, filter, window FROM window AS over;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Keywords as function names
+================================================================================
+
+SELECT replace(a, b, c), glob(a, b), like(a, b), if(a, b, c), left(a);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+A keyword that is valid where it appears is no name
+================================================================================
+
+SELECT a FROM t WHERE x LIKE y;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (where_clause
+        (like_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+WINDOW before a name and AS
+================================================================================
+
+SELECT * FROM t window /* c */ w AS (); CREATE TABLE u (a WINDOW w, b);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (window_clause
+        (comment)
+        (named_window
+          (identifier)))))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (identifier)))
+    (column_definition
+      (identifier))))

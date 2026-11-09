@@ -1,0 +1,4 @@
+# The NUL characters that corpus/null-characters.txt tests make git treat it as binary, which would hide its diffs. Kept
+# here because the root .gitattributes is generated, and outside test/corpus so that the directory holds corpus cases
+# only.
+corpus/null-characters.txt diff
