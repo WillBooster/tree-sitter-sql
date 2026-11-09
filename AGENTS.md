@@ -1,0 +1,68 @@
+## Project Information
+
+- Name: `@willbooster/tree-sitter-sql`
+- Description: SQL grammars (SQLite) for tree-sitter
+- Package Manager: bun
+
+## General Instructions
+
+- If on `main`, create a new branch; otherwise work on the current branch.
+- Run `git` commands one at a time to avoid `index.lock` conflicts.
+- Write every artifact in English, except text whose language is part of what the code handles (e.g., UI strings, test inputs).
+- Write a test only when explicitly requested, or when a behavior is likely to regress and no existing automatic check (type checking, linting, an existing test or CI check) would catch the breakage. Never add a test that merely restates a mapping from conditions to constant outputs (it fails only on intentional edits) or that only confirms an external fact (a library's behavior, whether a version fixes an issue); verify those once manually.
+- Test externally observable behavior (e.g., emitted files, CLI output, rendered results) at the system boundary, not implementation details: do not mirror production logic, assert that a branch is taken, or feed hand-assembled internal objects to internal functions.
+- Prefer actual API calls over mocks, unless actual calls are impractical, have unintended side effects, or mocks are explicitly requested.
+- Ensure tests are idempotent and independent (e.g., reset persistent data) so they can run repeatedly or in parallel.
+- Avoid fixed waits in E2E tests; wait for conditions instead.
+- When fixing issues (including test failures), investigate the root cause first (e.g., via debug logs or screenshots) and fix it instead of applying workarounds.
+- Before raising a concern, a conditional ("if X, ..."), or a question to the user, settle its premise yourself from the code, documentation, issues, and primary sources, and cite that evidence. Ask the user only about what those cannot settle (e.g., the requester's intent or business facts), stating what you checked; never present a premise you could have checked as a possibility.
+- After making changes, run locally only `bun run verify` (type checking and linting; up to 10 minutes) and the relevant tests; leave the full suite (`bun run verify-full`; up to 1 hour) to the PR's CI, or run it locally if PR CI does not. Fix errors, including CI failures, and re-run until they pass.
+  - Run relevant tests with `bun wb test test/unit/example.test.ts --grep 'case name'` (omit `--grep` for the whole file). `bun wb verify --full <test-path> --grep 'case name'` combines verification with selected tests.
+  - Wait for it to finish without restarting it: prefer completion notifications, otherwise the longest permitted wait; no output does not mean it has stopped. If the displayed excerpt is insufficient, read the indicated log file before rerunning. If the environment kills long-running commands, run them detached with a saved log and exit status.
+  - `verify` also prints `code-gauge` errors and warnings without failing. In code your change touches, fix every error, and each warning whose fix makes the code easier to read, with behavior-preserving changes (e.g., extract a helper, flatten branching, reuse the code it duplicates). Leave a violation whose only fix moves complexity elsewhere (e.g., splitting a function mechanically), restructures far more code than your change touches, or removes an intentional duplicate (e.g., a file mirroring another by design); allow each warning left with a `code-gauge-allow <metric> <max> -- <reason>` comment on its own line right above the function's reported start line; for a duplicated block, above the start line of its enclosing function, separately for each copy (`code-gauge-allow-file` for the whole file or a block outside a function), where `<metric>` is the camelCase metric name (e.g., `functionParameterCount`) and `<max>` the reported value, and list each error left, which no comment can allow, with the reason, in the PR body's Notes, proposing a `code-gauge.config.json` exclusion there for an intentional duplicate. Never edit `code-gauge.config.json` to silence a violation unless asked. When a violation measures the code incorrectly (e.g., misparsed syntax, unrelated code reported as duplicated), search the issues of `WillBooster/code-gauge` and, if none covers it, create one with a freshly written minimal reproduction, the command, and its output.
+- Once verified, commit and push to the current branch, and create a PR via `gh` if none exists for the branch.
+  - Follow the Conventional Commits format (e.g., `feat:`, `fix:`).
+  - End your commit message with a blank line followed by `Co-authored-by: WillBooster (AGENT_NAME) <agent@willbooster.com>`, replacing only `AGENT_NAME` with your agent name (e.g., `Claude Code`), the only AI attribution to add.
+  - Always create new commits; avoid `--amend`.
+  - Base the PR body on `.github/pull_request_template.md` when creating or updating a PR, even when a skill or workflow supplies its own skeleton: keep the template's headings in order, fill each section with what its placeholder comment asks for at a length fitting the change (a sentence for a small change, numbered subsections for a large one), and delete the placeholder comments and an empty Notes section. Without a template, use no fixed headings: state the scope, the motivation, and the verification concisely.
+  - Start the body with `Close #<n>` only when the PR resolves an existing issue.
+  - Requirements section: the requirements in force now, one line per requirement, taken from the requester's instructions in the requester's terms (the issue, the conversation that asked for the change), each marked `required` (asked for, or an existing contract callers depend on) or `chosen` (your own decision with the reason that decided it, which a simpler design may replace). Never infer a requirement from the diff: when no issue, PR message, or conversation states the request, write `required: not recorded — ask the requester` as the only request-derived line (`required` lines for existing contracts may still be listed) and say so in Notes.
+  - When updating an existing section, keep each line until the requester overrides or withdraws the instruction behind it or the decision behind it changes, then rewrite or remove that line in place, never appending one beside it or marking when a line was added (e.g., "(added)"); with no instructions available, keep the requester-derived lines unchanged. When the current design cannot be understood without the change of direction, state it in one sentence in Notes. Write afresh by the rule above a section that merely describes the implementation or holds only the template's placeholder or a `required: not recorded` line.
+  - Place the section where the template puts it; when the template has no such heading, right after the issue-closing line, or at the top of the body when there is none.
+  - Never drop or weaken a `required` line to fit what was implemented: when one cannot hold in the diff, keep it and say so in Notes.
+- When creating an issue:
+  - Follow the closest template under `.github/ISSUE_TEMPLATE/`: `bug.md` for wrong behavior, `change.md` for anything to build or alter; a question or note fitting neither, or a repository without templates, needs no template.
+  - Title: a Conventional Commits prefix for the type that fits the change (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, ...).
+  - The YAML front matter between the `---` lines is metadata, not body text: submit only the content below the closing `---` as the body.
+- In any explanatory text (commit messages, PR descriptions, documentation, code comments, etc.) other than the PR body's Requirements section, describe only the current implementation: drop any statement naming an identifier, feature, or concept you cannot confirm exists in the final diff or the current codebase (e.g., one added and later removed or renamed along the way). Whenever documentation or comments no longer match the current implementation, delete or rewrite them, even in files you are not otherwise changing. Mention a past state only where it is needed to understand why the current design is as it is, or when explicitly asked; files that record history by design (e.g., a changelog) are exempt.
+- Use heredoc for multi-line command input (e.g., `git commit -F -`, `gh pr create --body-file -`, `gh issue create --body-file -`).
+- Put temporary files in `.tmp`; use `/tmp` only for files that must live outside the repo.
+- Before finishing, delete every temporary file, backup, and external resource (e.g., databases, deployed Workers, branches) you created during the task for experiments or verification, without asking, after recording any findings worth keeping in your final response or in a file you keep. Keep an item only when a next step the user requested needs it or it holds the only copy of pre-task data the task was not meant to discard (e.g., a backup a tool kept because restoring it conflicted), and then state in your final response why and the command that deletes it.
+- `AGENTS.md` and `.gemini/styleguide.md` are generated by `wbfy`; edit agent instructions only in `AGENTS_EXTRA.md`.
+- Tool versions (e.g., node) are pinned in `mise.toml`; run `mise install` after changing it and never install those tools globally instead.
+- `bunfig.toml` uses Bun's isolated linker, so only declared dependencies resolve. If an import fails to resolve, declare that package in the `package.json` that imports it; never switch `linker` to `hoisted` or add to `publicHoistPattern` to work around it.
+
+## Coding Style
+
+- Use camelCase file names for JavaScript/TypeScript (PascalCase for React components).
+- Simplify code as much as possible to eliminate redundancy.
+- Design modules and directories with high cohesion and low coupling; split large modules when needed.
+- Place calling functions above the functions they call (top-down order); place variable and type declarations above their usage.
+- Comments and JSDoc: every reader has the source, so write one only when a plausible edit would break something without that knowledge and no type check, lint rule, or test would catch it; first encode the knowledge in code (a name, a type, an `assert`, a test) and comment only what cannot be encoded: an odd-looking workaround, a dependency on a fact outside the repository, or a rejected alternative and why. Put a contract of the declared symbol in JSDoc and line-specific knowledge in an inline comment. Delete comments that fail this test in files you touch. Exception: the exported API of a package published to npm may carry JSDoc describing what it does and how to call it, because its users read it without the source.
+- Never explain how WillBooster's in-house tools (e.g., `wb`, `wbfy`) work in code comments or documents outside the tool's own package, except in instructions for AI agents (e.g., do not note that `PORT` is unset because `wb` picks a free port).
+- If lint errors or warnings cannot be fixed, use ignore comments with reasons (e.g., `// oxlint-disable-next-line <rule> -- <reason>`).
+- Prefer `undefined` over `null` unless required by APIs or libraries.
+- Validate JavaScript objects (e.g., parsed JSON, API responses) with `zod` whenever possible instead of hand-written checks or type assertions.
+- Build prompts as a single template literal instead of `join()` on a pre-computable array of strings.
+- Assume all environment variables are defined; if validation is needed, `assert` them at startup to fail fast.
+- Assume local tools such as `git`, `gh`, and `ghq` are installed and authenticated.
+- Ensure compatibility only with macOS and Linux; do not include Windows-specific code.
+
+## Maintenance Scope
+
+This repository maintains only full parsing:
+
+- A full parse of valid input yields a correct tree.
+- Invalid input yields `ERROR` or `MISSING` nodes, and parsing never crashes or hangs and takes time linear in the input size.
+
+The shape of the tree (node types, field names, and the trees that error recovery produces) may change whenever that serves the properties above; adapting to such changes is the responsibility of each user of this package, so do not weigh effects on any user, but mark a commit that changes the shape as breaking (`!`) so it is released as a new major version. This repository ships no queries (highlights, locals, injections, tags); do not add them. Do not implement, fix, or test incremental parsing (edits, reuse of an old tree, or agreement between incremental and fresh parses), and delete an existing test of it instead of fixing it. Do not list incremental parsing, queries, or tree-shape stability as requirements in issues or PRs.

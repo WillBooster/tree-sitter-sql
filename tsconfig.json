@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "importHelpers": false,
+    "noEmit": true,
+    "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
+    "rootDir": ".",
+    "types": ["bun"]
+  },
+  "extends": "@tsconfig/bun/tsconfig.json",
+  "include": ["*.config.mts", "*.config.ts", "script/**/*", "scripts/**/*", "src/**/*", "test/**/*"]
+}
