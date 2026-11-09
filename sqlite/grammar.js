@@ -389,8 +389,20 @@ export default grammar({
     generated_column_constraint: ($) =>
       choice(seq(keywords('GENERATED ALWAYS'), $._generated_column_expression), $._generated_column_expression),
 
+    // An identifier after the expression names how the column is stored, and GENERATED falls back to one there, so it
+    // starts no further constraint.
     _generated_column_expression: ($) =>
-      seq(keyword('AS'), '(', $._expression, ')', optional(choice(keyword('STORED'), keyword('VIRTUAL')))),
+      prec.right(
+        seq(
+          keyword('AS'),
+          '(',
+          $._expression,
+          ')',
+          optional(choice(keyword('STORED'), keyword('VIRTUAL'), $._generated_as_storage))
+        )
+      ),
+
+    _generated_as_storage: ($) => seq(keyword('GENERATED'), $._unreachable),
 
     conflict_clause: ($) => seq(keywords('ON CONFLICT'), $._conflict_resolution),
 
@@ -620,7 +632,7 @@ export default grammar({
         keyword('BEGIN')
       ),
 
-    // Statements in a trigger take no WITH clause, INDEXED BY clause, or RETURNING clause.
+    // INSERT, UPDATE, and DELETE statements in a trigger take no WITH clause, INDEXED BY clause, or RETURNING clause.
     _trigger_statement: ($) =>
       choice(
         alias($._trigger_update_statement, $.update_statement),

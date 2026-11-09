@@ -1492,59 +1492,85 @@
       ]
     },
     "_generated_column_expression": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Aa][Ss]"
+            },
+            "named": false,
+            "value": "AS"
+          },
+          {
+            "type": "STRING",
+            "value": "("
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_expression"
+          },
+          {
+            "type": "STRING",
+            "value": ")"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[Ss][Tt][Oo][Rr][Ee][Dd]"
+                    },
+                    "named": false,
+                    "value": "STORED"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[Vv][Ii][Rr][Tt][Uu][Aa][Ll]"
+                    },
+                    "named": false,
+                    "value": "VIRTUAL"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_generated_as_storage"
+                  }
+                ]
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "_generated_as_storage": {
       "type": "SEQ",
       "members": [
         {
           "type": "ALIAS",
           "content": {
             "type": "PATTERN",
-            "value": "[Aa][Ss]"
+            "value": "[Gg][Ee][Nn][Ee][Rr][Aa][Tt][Ee][Dd]"
           },
           "named": false,
-          "value": "AS"
-        },
-        {
-          "type": "STRING",
-          "value": "("
+          "value": "GENERATED"
         },
         {
           "type": "SYMBOL",
-          "name": "_expression"
-        },
-        {
-          "type": "STRING",
-          "value": ")"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Ss][Tt][Oo][Rr][Ee][Dd]"
-                  },
-                  "named": false,
-                  "value": "STORED"
-                },
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Vv][Ii][Rr][Tt][Uu][Aa][Ll]"
-                  },
-                  "named": false,
-                  "value": "VIRTUAL"
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
+          "name": "_unreachable"
         }
       ]
     },
