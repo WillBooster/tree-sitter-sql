@@ -690,7 +690,16 @@ export default grammar({
         optional(choice(seq('=', field('value', $._pragma_value)), seq('(', field('value', $._pragma_value), ')')))
       ),
 
-    _pragma_value: ($) => choice($._signed_number, $._name, keyword('ON'), keyword('DELETE'), keyword('DEFAULT')),
+    // A name, which takes the illegal tokens, stands for the unsigned number's.
+    _pragma_value: ($) =>
+      choice(
+        $._unseparated_number,
+        alias($._signed_unseparated_number, $.unary_expression),
+        $._name,
+        keyword('ON'),
+        keyword('DELETE'),
+        keyword('DEFAULT')
+      ),
 
     vacuum_statement: ($) =>
       seq(
@@ -1230,10 +1239,13 @@ export default grammar({
       ),
 
     // A number without digit separators (`number` in parse.y).
-    _signed_number: ($) => choice($._unseparated_number, alias($._signed_unseparated_number, $.unary_expression)),
+    // Each position of a number also takes the illegal tokens the scanner reports, such as a number followed by an
+    // identifier character, which the lexer would otherwise split.
+    _signed_number: ($) => choice($._unsigned_number, alias($._signed_unseparated_number, $.unary_expression)),
 
-    _signed_unseparated_number: ($) =>
-      seq(field('operator', choice('+', '-')), field('operand', $._unseparated_number)),
+    _unsigned_number: ($) => choice($._unseparated_number, $._illegal),
+
+    _signed_unseparated_number: ($) => seq(field('operator', choice('+', '-')), field('operand', $._unsigned_number)),
 
     _unseparated_number: ($) =>
       alias(token(choice(/0[xX][0-9a-fA-F]+/, /([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?/)), $.numeric_literal),

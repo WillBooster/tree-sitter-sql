@@ -4467,7 +4467,16 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_signed_number"
+          "name": "_unseparated_number"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_signed_unseparated_number"
+          },
+          "named": true,
+          "value": "unary_expression"
         },
         {
           "type": "SYMBOL",
@@ -16760,7 +16769,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_unseparated_number"
+          "name": "_unsigned_number"
         },
         {
           "type": "ALIAS",
@@ -16770,6 +16779,19 @@
           },
           "named": true,
           "value": "unary_expression"
+        }
+      ]
+    },
+    "_unsigned_number": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_unseparated_number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_illegal"
         }
       ]
     },
@@ -16798,7 +16820,7 @@
           "name": "operand",
           "content": {
             "type": "SYMBOL",
-            "name": "_unseparated_number"
+            "name": "_unsigned_number"
           }
         }
       ]
