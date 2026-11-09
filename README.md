@@ -12,21 +12,20 @@ SQL grammars for [tree-sitter](https://github.com/tree-sitter/tree-sitter), gene
 number and load with that fork's runtime, version 17.0.1 or later in the 17.x series.
 
 The `sqlite` grammar parses the SQL dialect of [SQLite](https://sqlite.org/lang.html) 3.54 in its default build. Its
-rules follow SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c`), which are in the public domain.
-Beyond them, it also rejects what SQLite rejects while parsing by the kinds of the tokens and the structure within one
-construct, such as an unknown join type, an ORDER BY clause before UNION, or a qualified table name in a trigger outside
-the temp schema. Its results differ from SQLite's only:
+rules follow SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c`), which are in the public domain:
+input that they reject, which SQLite reports as a syntax error, an unrecognized token, or incomplete input, yields
+`ERROR` or `MISSING` nodes, except for
 
-- where SQLite relates separate parts of a statement: it accepts, for example, a trigger whose table is in another
-  schema than the trigger, a WITHOUT ROWID table without a primary key or with AUTOINCREMENT, a table with two primary
-  keys, and rows of VALUES with different numbers of terms;
-- where SQLite decides by looking up the schema, the declared type of a column, or a limit of the connection: it
-  accepts a qualified table name in a trigger on a table that turns out not to be in the temp schema, AUTOINCREMENT on
-  a column not declared `INTEGER`, and a parameter number above the connection's limit;
-- where SQLite's tokenizer decides by the previous token: it accepts `OVER` as an alias without `AS` before a WINDOW
-  clause after a closing parenthesis other than a function call's, such as `SELECT (1) OVER WINDOW w AS ()`;
-- on a NUL character, which ends the input for SQLite but is an error here;
-- on input that is not valid UTF-8 or UTF-16, which SQLite reads byte by byte.
+- `OVER` as an alias without `AS` before a WINDOW clause after a closing parenthesis other than a function call's, such
+  as `SELECT (1) OVER WINDOW w AS ()`, which SQLite's tokenizer reads as a keyword by the token before it;
+- a NUL character, which ends the input for SQLite but is an error here;
+- input that is not valid UTF-8 or UTF-16, which SQLite reads byte by byte.
+
+SQLite's parser also reports errors of other kinds while it builds a statement, from comparing names (a trigger's
+schema with its table's), combining constraints (DEFAULT on a generated column, AUTOINCREMENT on a WITHOUT ROWID table),
+and looking up the schema or the limits of the connection. The grammar rejects some of them where they shape a single
+clause, such as an unknown join type, an ORDER BY clause before UNION, NULLS FIRST in an index, or a qualified table name
+in a trigger outside the temp schema, but it accepts the others.
 
 `common/common.mjs` holds the lexical rules that SQL dialects share, for the grammars of other dialects to build on.
 
