@@ -453,34 +453,13 @@ export default grammar({
         keywords('PRIMARY KEY'),
         '(',
         // Only a single column may autoincrement (`sqlite3AddPrimaryKey` in src/build.c).
-        choice(
-          seq(alias($._key_column, $.indexed_column), keyword('AUTOINCREMENT')),
-          commaSep1(alias($._key_column, $.indexed_column))
-        ),
+        choice(seq($.indexed_column, keyword('AUTOINCREMENT')), commaSep1($.indexed_column)),
         ')',
         optional($.conflict_clause)
       ),
 
     _table_unique_constraint: ($) =>
-      seq(keyword('UNIQUE'), '(', commaSep1(alias($._key_column, $.indexed_column)), ')', optional($.conflict_clause)),
-
-    // A PRIMARY KEY or UNIQUE constraint lists columns, not expressions (`sqlite3CreateIndex` in src/build.c).
-    _key_column: ($) => seq(field('value', $._key_value), optional(choice(keyword('ASC'), keyword('DESC')))),
-
-    _key_value: ($) =>
-      choice(
-        alias($._name_only, $.column_reference),
-        alias($._parenthesized_key_value, $.parenthesized_expression),
-        alias($._collated_key_value, $.collate_expression)
-      ),
-
-    _parenthesized_key_value: ($) => seq('(', $._key_value, ')'),
-
-    _collated_key_value: ($) =>
-      prec.left(
-        PREC.COLLATE,
-        seq(field('value', $._key_value), keyword('COLLATE'), field('collation', $._narrow_name))
-      ),
+      seq(keyword('UNIQUE'), '(', commaSep1($.indexed_column), ')', optional($.conflict_clause)),
 
     _table_check_constraint: ($) => seq(keyword('CHECK'), '(', $._expression, ')', optional($.conflict_clause)),
 

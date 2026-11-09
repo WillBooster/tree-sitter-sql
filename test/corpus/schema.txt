@@ -633,8 +633,7 @@ CREATE TABLE t (a, b, c, PRIMARY KEY ((a) COLLATE nocase DESC, 'b'), UNIQUE ("c"
               (identifier)))
           (identifier)))
       (indexed_column
-        (column_reference
-          (string_literal))))
+        (string_literal)))
     (unique_constraint
       (indexed_column
         (column_reference
