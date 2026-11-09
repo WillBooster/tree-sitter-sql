@@ -180,6 +180,7 @@ export default grammar({
     global: () => RESERVED.map(keywordPattern),
     // `ids` in parse.y: the alias that follows an expression or a table without `AS`, a type name, or a collation.
     ids: () => [...RESERVED, ...JOIN_KEYWORDS, 'INDEXED'].map(keywordPattern),
+    window_name: () => [...RESERVED, 'FILTER'].map(keywordPattern),
     // `id` in parse.y: an identifier as a default value.
     id: () => [...RESERVED, ...JOIN_KEYWORDS].map(keywordPattern),
   },
@@ -396,14 +397,14 @@ export default grammar({
       seq(
         keywords('PRIMARY KEY'),
         '(',
-        commaSep1($.ordering_term),
+        commaSep1($.indexed_column),
         optional(keyword('AUTOINCREMENT')),
         ')',
         optional($.conflict_clause)
       ),
 
     _table_unique_constraint: ($) =>
-      seq(keyword('UNIQUE'), '(', commaSep1($.ordering_term), ')', optional($.conflict_clause)),
+      seq(keyword('UNIQUE'), '(', commaSep1($.indexed_column), ')', optional($.conflict_clause)),
 
     _table_check_constraint: ($) => seq(keyword('CHECK'), '(', $._expression, ')', optional($.conflict_clause)),
 
@@ -450,7 +451,7 @@ export default grammar({
         keyword('ON'),
         field('table', $._name),
         '(',
-        commaSep1($.ordering_term),
+        commaSep1($.indexed_column),
         ')',
         optional($.where_clause)
       ),
@@ -681,7 +682,7 @@ export default grammar({
 
     _final_upsert_clause: ($) => seq(keywords('ON CONFLICT'), keyword('DO'), $._upsert_action),
 
-    conflict_target: ($) => seq('(', commaSep1($.ordering_term), ')', optional($.where_clause)),
+    conflict_target: ($) => seq('(', commaSep1($.indexed_column), ')', optional($.where_clause)),
 
     _upsert_action: ($) => choice(keyword('NOTHING'), seq(keyword('UPDATE'), $.set_clause, optional($.where_clause))),
 
@@ -833,7 +834,15 @@ export default grammar({
 
     having_clause: ($) => seq(keyword('HAVING'), field('condition', $._expression)),
 
-    window_clause: ($) => seq(keyword('WINDOW'), commaSep1($.named_window)),
+    window_clause: ($) =>
+      seq(keyword('WINDOW'), alias($._first_named_window, $.named_window), repeat(seq(',', $.named_window))),
+
+    // SQLite's tokenizer reads WINDOW and OVER as keywords only before a name that is not FILTER (`getToken` in
+    // src/tokenize.c), and FILTER elsewhere is a name.
+    _first_named_window: ($) =>
+      seq(field('name', $._window_name), keyword('AS'), '(', optional($.window_definition), ')'),
+
+    _window_name: ($) => choice(reserved('window_name', $.identifier), $.quoted_identifier, $.string_literal),
 
     named_window: ($) => seq(field('name', $._name), keyword('AS'), '(', optional($.window_definition), ')'),
 
@@ -893,6 +902,9 @@ export default grammar({
       ),
 
     order_by_clause: ($) => seq(keywords('ORDER BY'), commaSep1($.ordering_term)),
+
+    // NULLS FIRST and NULLS LAST order query results only (`sqlite3HasExplicitNulls` in src/build.c).
+    indexed_column: ($) => seq(field('value', $._expression), optional(choice(keyword('ASC'), keyword('DESC')))),
 
     ordering_term: ($) =>
       seq(
@@ -985,7 +997,7 @@ export default grammar({
     filter_clause: ($) => seq(keyword('FILTER'), '(', $.where_clause, ')'),
 
     over_clause: ($) =>
-      seq(keyword('OVER'), choice(seq('(', optional($.window_definition), ')'), field('window', $._name))),
+      seq(keyword('OVER'), choice(seq('(', optional($.window_definition), ')'), field('window', $._window_name))),
 
     cast_expression: ($) =>
       seq(keyword('CAST'), '(', field('value', $._expression), keyword('AS'), optional($.type_name), ')'),

@@ -97,7 +97,7 @@ INSERT INTO t VALUES (1) ON CONFLICT (a) WHERE a > 0 DO UPDATE SET b = excluded.
           (numeric_literal))))
     (upsert_clause
       (conflict_target
-        (ordering_term
+        (indexed_column
           (column_reference
             (identifier)))
         (where_clause
@@ -118,7 +118,7 @@ INSERT INTO t VALUES (1) ON CONFLICT (a) WHERE a > 0 DO UPDATE SET b = excluded.
           (null))))
     (upsert_clause
       (conflict_target
-        (ordering_term
+        (indexed_column
           (column_reference
             (identifier)))))
     (upsert_clause

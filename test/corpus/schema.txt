@@ -125,15 +125,15 @@ CREATE TABLE t (a, b, PRIMARY KEY (a, b AUTOINCREMENT) ON CONFLICT REPLACE, UNIQ
     (column_definition
       (identifier))
     (primary_key_constraint
-      (ordering_term
+      (indexed_column
         (column_reference
           (identifier)))
-      (ordering_term
+      (indexed_column
         (column_reference
           (identifier)))
       (conflict_clause))
     (unique_constraint
-      (ordering_term
+      (indexed_column
         (column_reference
           (identifier))))
     (constraint_name
@@ -290,12 +290,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS main.i ON t (a COLLATE nocase DESC, b + 1) WHE
       (identifier)
       (identifier))
     (identifier)
-    (ordering_term
+    (indexed_column
       (collate_expression
         (column_reference
           (identifier))
         (identifier)))
-    (ordering_term
+    (indexed_column
       (binary_expression
         (column_reference
           (identifier))
@@ -366,7 +366,7 @@ CREATE TRIGGER IF NOT EXISTS tr BEFORE UPDATE OF a, b ON t FOR EACH ROW WHEN new
             (numeric_literal))))
       (upsert_clause
         (conflict_target
-          (ordering_term
+          (indexed_column
             (column_reference
               (identifier))))))
     (delete_statement
@@ -591,3 +591,24 @@ ALTER TABLE t DROP CONSTRAINT c; ALTER TABLE t ALTER COLUMN a DROP NOT NULL; ALT
     (check_constraint
       (column_reference
         (identifier)))))
+
+================================================================================
+Tokens in module arguments
+================================================================================
+
+CREATE VIRTUAL TABLE t USING m(1__000, 1_, $foo(a'b), $a::b, @9, a->>b, $foo(());
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_virtual_table_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (module_argument)
+    (module_argument)
+    (module_argument)
+    (module_argument)
+    (module_argument)
+    (module_argument)
+    (module_argument)))

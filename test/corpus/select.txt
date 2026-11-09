@@ -671,3 +671,42 @@ Statements without semicolons and empty statements
     (select_core
       (result_column
         (numeric_literal)))))
+
+================================================================================
+FILTER, OVER, and WINDOW as window names
+================================================================================
+
+SELECT f() OVER (filter), sum(1) OVER over, sum(1) OVER "filter" FROM t WINDOW w AS (), filter AS ();
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (over_clause
+            (window_definition
+              (identifier)))))
+      (result_column
+        (function_call
+          (identifier)
+          (numeric_literal)
+          (over_clause
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (numeric_literal)
+          (over_clause
+            (quoted_identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (window_clause
+        (named_window
+          (identifier))
+        (named_window
+          (identifier))))))

@@ -2032,7 +2032,7 @@
       "required": true,
       "types": [
         {
-          "type": "ordering_term",
+          "type": "indexed_column",
           "named": true
         },
         {
@@ -2108,7 +2108,7 @@
           "named": true
         },
         {
-          "type": "ordering_term",
+          "type": "indexed_column",
           "named": true
         },
         {
@@ -3816,6 +3816,106 @@
     }
   },
   {
+    "type": "indexed_column",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "between_expression",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "bind_parameter",
+            "named": true
+          },
+          {
+            "type": "blob_literal",
+            "named": true
+          },
+          {
+            "type": "case_expression",
+            "named": true
+          },
+          {
+            "type": "cast_expression",
+            "named": true
+          },
+          {
+            "type": "collate_expression",
+            "named": true
+          },
+          {
+            "type": "column_reference",
+            "named": true
+          },
+          {
+            "type": "current_time",
+            "named": true
+          },
+          {
+            "type": "exists_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
+            "type": "null",
+            "named": true
+          },
+          {
+            "type": "null_test_expression",
+            "named": true
+          },
+          {
+            "type": "numeric_literal",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "raise_expression",
+            "named": true
+          },
+          {
+            "type": "row_value",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "subquery",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "insert_statement",
     "named": true,
     "fields": {
@@ -5142,7 +5242,7 @@
           "named": true
         },
         {
-          "type": "ordering_term",
+          "type": "indexed_column",
           "named": true
         }
       ]
@@ -6361,7 +6461,7 @@
           "named": true
         },
         {
-          "type": "ordering_term",
+          "type": "indexed_column",
           "named": true
         }
       ]

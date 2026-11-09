@@ -40,10 +40,13 @@ static void skip_spaces(TSLexer *lexer) {
   }
 }
 
-// Consumes a run of digits that may contain separators (`_`), after `after_digit` tells whether a digit was just
-// consumed, and returns whether each separator stands between two digits, as `sqlite3DequoteNumber` in src/util.c
-// requires.
-static bool scan_digits(TSLexer *lexer, bool (*is_valid_digit)(int32_t), bool after_digit) {
+// SQLite's tokenizer (`sqlite3GetToken`) rejects identifier characters right after a number (e.g. `1abc`), and
+// `sqlite3DequoteNumber` in src/util.c, which an expression applies to a number it reads, also rejects a digit
+// separator (`_`) that does not stand between two digits. `check_separators` tells whether a number is checked for
+// the latter.
+
+// Consumes a run of digits that may contain separators, after `after_digit` tells whether a digit was just consumed.
+static bool scan_digits(TSLexer *lexer, bool (*is_valid_digit)(int32_t), bool after_digit, bool check_separators) {
   bool valid = true;
   while (is_valid_digit(lexer->lookahead) || lexer->lookahead == '_') {
     if (lexer->lookahead == '_') {
@@ -54,7 +57,7 @@ static bool scan_digits(TSLexer *lexer, bool (*is_valid_digit)(int32_t), bool af
     }
     advance(lexer);
   }
-  return valid && after_digit;
+  return !check_separators || (valid && after_digit);
 }
 
 static void skip_identifier_chars(TSLexer *lexer) {
@@ -62,7 +65,7 @@ static void skip_identifier_chars(TSLexer *lexer) {
 }
 
 // Consumes identifier characters right after a number, if any, and returns whether the number, valid as far as
-// `valid` tells, is accepted: SQLite rejects identifier characters right after a number (e.g. `1abc`).
+// `valid` tells, is accepted.
 static bool end_number(TSLexer *lexer, bool valid) {
   if (!is_identifier_char(lexer->lookahead)) return valid;
   skip_identifier_chars(lexer);
@@ -71,45 +74,43 @@ static bool end_number(TSLexer *lexer, bool valid) {
 
 // Consumes the digits of a hexadecimal number after its `0x`. `0x` without a hexadecimal digit is the number 0
 // followed by identifier characters.
-static bool scan_hex_number(TSLexer *lexer) {
+static bool scan_hex_number(TSLexer *lexer, bool check_separators) {
   if (!is_hex_digit(lexer->lookahead)) return end_number(lexer, false);
-  return end_number(lexer, scan_digits(lexer, is_hex_digit, false));
+  return end_number(lexer, scan_digits(lexer, is_hex_digit, false, check_separators));
 }
 
 // Consumes the fraction digits and the exponent of a decimal number, if any. Without a digit, an `e` is no exponent
 // but an identifier character right after the number.
-static bool scan_fraction_and_exponent(TSLexer *lexer) {
+static bool scan_fraction_and_exponent(TSLexer *lexer, bool check_separators) {
   bool valid = true;
-  if (is_digit(lexer->lookahead) || lexer->lookahead == '_') valid = scan_digits(lexer, is_digit, false);
+  if (is_digit(lexer->lookahead) || lexer->lookahead == '_') {
+    valid = scan_digits(lexer, is_digit, false, check_separators);
+  }
   if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
     advance(lexer);
     if (lexer->lookahead == '+' || lexer->lookahead == '-') advance(lexer);
     if (!is_digit(lexer->lookahead)) return end_number(lexer, false);
-    valid = scan_digits(lexer, is_digit, false) && valid;
+    valid = scan_digits(lexer, is_digit, false, check_separators) && valid;
   }
   return end_number(lexer, valid);
 }
 
 // Consumes a decimal number after its first digit has been consumed when `after_digit` is set.
-static bool scan_decimal_number(TSLexer *lexer, bool after_digit) {
-  bool valid = scan_digits(lexer, is_digit, after_digit);
-  if (lexer->lookahead == '.') {
-    advance(lexer);
-    if (lexer->lookahead == '_') valid = false;
-  }
-  return scan_fraction_and_exponent(lexer) && valid;
+static bool scan_decimal_number(TSLexer *lexer, bool after_digit, bool check_separators) {
+  bool valid = scan_digits(lexer, is_digit, after_digit, check_separators);
+  if (lexer->lookahead == '.') advance(lexer);
+  return scan_fraction_and_exponent(lexer, check_separators) && valid;
 }
 
 // Consumes a number the way `sqlite3GetToken` does, from its first digit or from the digit after its leading `.`
-// (`after_dot`), and returns whether SQLite accepts it: it also rejects a digit separator (`_`) that does not stand
-// between two digits.
-static bool scan_number(TSLexer *lexer, bool after_dot) {
-  if (after_dot) return scan_fraction_and_exponent(lexer);
-  if (lexer->lookahead != '0') return scan_decimal_number(lexer, false);
+// (`after_dot`), and returns whether SQLite accepts it.
+static bool scan_number(TSLexer *lexer, bool after_dot, bool check_separators) {
+  if (after_dot) return scan_fraction_and_exponent(lexer, check_separators);
+  if (lexer->lookahead != '0') return scan_decimal_number(lexer, false, check_separators);
   advance(lexer);
-  if (lexer->lookahead != 'x' && lexer->lookahead != 'X') return scan_decimal_number(lexer, true);
+  if (lexer->lookahead != 'x' && lexer->lookahead != 'X') return scan_decimal_number(lexer, true, check_separators);
   advance(lexer);
-  return scan_hex_number(lexer);
+  return scan_hex_number(lexer, check_separators);
 }
 
 // Consumes a blob literal after its `x` and returns whether it holds an even number of hexadecimal digits.
@@ -133,9 +134,9 @@ static bool scan_illegal_token(TSLexer *lexer) {
   if (lexer->lookahead == '.') {
     advance(lexer);
     if (!is_digit(lexer->lookahead)) return false;
-    valid = scan_number(lexer, true);
+    valid = scan_number(lexer, true, true);
   } else if (is_digit(lexer->lookahead)) {
-    valid = scan_number(lexer, false);
+    valid = scan_number(lexer, false, true);
   } else if (lexer->lookahead == 'x' || lexer->lookahead == 'X') {
     advance(lexer);
     if (lexer->lookahead != '\'') return false;
@@ -163,45 +164,96 @@ static bool scan_quoted(TSLexer *lexer, int32_t quote, bool doubles) {
   }
 }
 
-// Consumes a variable. A variable needs a name; the forms of Tcl variable names are accepted loosely.
-static bool scan_variable(TSLexer *lexer) {
-  bool numbered = lexer->lookahead == '?';
+// Consumes a Tcl suffix of a variable, which runs from `(` to the first `)` without white space.
+static bool scan_tcl_suffix(TSLexer *lexer) {
+  do {
+    advance(lexer);
+  } while (!lexer->eof(lexer) && lexer->lookahead != 0 && !is_space(lexer->lookahead) && lexer->lookahead != ')');
+  if (lexer->lookahead != ')') return false;
   advance(lexer);
-  if (numbered) {
-    while (is_digit(lexer->lookahead)) advance(lexer);
-    return true;
-  }
-  if (!is_identifier_char(lexer->lookahead) && lexer->lookahead != ':') return false;
-  while (is_identifier_char(lexer->lookahead) || lexer->lookahead == ':') advance(lexer);
+  lexer->mark_end(lexer);
   return true;
 }
 
-// Consumes an operator or a punctuation character; any other character is illegal.
-static bool scan_punctuation(TSLexer *lexer) {
-  int32_t c = lexer->lookahead;
-  advance(lexer);
-  switch (c) {
-    case '.':
-      return !is_digit(lexer->lookahead) || scan_number(lexer, true);
-    case '!':
-      if (lexer->lookahead != '=') return false;
+// Consumes a variable after its `$`, `@`, `#`, or `:`: identifier characters, `::` pairs, and a Tcl suffix. A variable
+// without an identifier character is illegal. A single `:` ends the variable before it, so the end is marked as the
+// variable grows.
+static bool scan_named_variable(TSLexer *lexer) {
+  unsigned name_chars = 0;
+  for (;;) {
+    lexer->mark_end(lexer);
+    int32_t c = lexer->lookahead;
+    if (c == '(' && name_chars > 0) return scan_tcl_suffix(lexer);
+    if (is_identifier_char(c)) {
+      name_chars++;
       advance(lexer);
-      return true;
-    case '-': case '+': case '*': case '/': case '%': case '=': case '<': case '>': case '|': case '&': case '~':
-    case ';':
-      return true;
-    default:
-      return false;
+      continue;
+    }
+    if (c != ':') return name_chars > 0;
+    advance(lexer);
+    if (lexer->lookahead != ':') return name_chars > 0;
+    advance(lexer);
   }
 }
 
-// Consumes one token of a module argument the way `sqlite3GetToken` does and returns whether SQLite accepts it.
+static bool is_single_char_operator(int32_t c) {
+  return c == '+' || c == '*' || c == '%' || c == '&' || c == '~' || c == ';';
+}
+
+// Consumes an operator or a punctuation character other than a parenthesis, a comma, `-`, or `/`, which the caller
+// reads; any other character is illegal.
+static bool scan_punctuation(TSLexer *lexer) {
+  int32_t c = lexer->lookahead;
+  advance(lexer);
+  if (is_single_char_operator(c)) return true;
+  int32_t next = lexer->lookahead;
+  switch (c) {
+    case '.':
+      return !is_digit(next) || scan_number(lexer, true, false);
+    case '!':
+      if (next != '=') return false;
+      break;
+    case '<':
+      if (next != '=' && next != '>' && next != '<') return true;
+      break;
+    case '>':
+      if (next != '=' && next != '>') return true;
+      break;
+    case '=':
+    case '|':
+      if (next != c) return true;
+      break;
+    default:
+      return false;
+  }
+  advance(lexer);
+  return true;
+}
+
+static bool scan_unmarked_argument_token(TSLexer *lexer);
+
+// Consumes one token of a module argument the way `sqlite3GetToken` does, marks its end, and returns whether SQLite's
+// tokenizer accepts it.
 static bool scan_argument_token(TSLexer *lexer) {
+  if (lexer->lookahead == '$' || lexer->lookahead == '@' || lexer->lookahead == '#' || lexer->lookahead == ':') {
+    advance(lexer);
+    return scan_named_variable(lexer);
+  }
+  bool valid = scan_unmarked_argument_token(lexer);
+  lexer->mark_end(lexer);
+  return valid;
+}
+
+static bool scan_unmarked_argument_token(TSLexer *lexer) {
   int32_t c = lexer->lookahead;
   if (c == '\'' || c == '"' || c == '`') return scan_quoted(lexer, c, true);
   if (c == '[') return scan_quoted(lexer, ']', false);
-  if (is_digit(c)) return scan_number(lexer, false);
-  if (c == '?' || c == '$' || c == '@' || c == '#' || c == ':') return scan_variable(lexer);
+  if (is_digit(c)) return scan_number(lexer, false, false);
+  if (c == '?') {
+    advance(lexer);
+    while (is_digit(lexer->lookahead)) advance(lexer);
+    return true;
+  }
   if (c == 'x' || c == 'X') {
     advance(lexer);
     if (lexer->lookahead == '\'') return scan_blob(lexer);
@@ -233,6 +285,24 @@ static bool scan_comment(TSLexer *lexer, int32_t first) {
   return true;
 }
 
+// Consumes a comment or an operator that starts with `-` or `/`, sets its symbol, and returns whether it is accepted.
+static bool scan_minus_or_slash(TSLexer *lexer) {
+  int32_t c = lexer->lookahead;
+  advance(lexer);
+  bool comment = (c == '-' && lexer->lookahead == '-') || (c == '/' && lexer->lookahead == '*' && !lexer->eof(lexer));
+  if (comment) {
+    if (!scan_comment(lexer, c)) return false;
+    lexer->result_symbol = COMMENT;
+  } else {
+    // `->` and `->>`.
+    if (c == '-' && lexer->lookahead == '>') advance(lexer);
+    if (c == '-' && lexer->lookahead == '>') advance(lexer);
+    lexer->result_symbol = MODULE_ARGUMENT_TOKEN;
+  }
+  lexer->mark_end(lexer);
+  return true;
+}
+
 // Recognizes one token of a virtual table's module argument other than a parenthesis or a comma, which the grammar
 // reads itself, or a comment. SQLite passes the text of each argument to the module unparsed, but its tokenizer still
 // rejects illegal tokens in it. The internal lexer cannot read these tokens, so the scanner skips the white space before
@@ -241,18 +311,8 @@ static bool scan_module_argument_token(TSLexer *lexer) {
   skip_spaces(lexer);
   int32_t c = lexer->lookahead;
   if (lexer->eof(lexer) || c == '(' || c == ')' || c == ',') return false;
-  if (c == '-' || c == '/') {
-    advance(lexer);
-    if ((c == '-' && lexer->lookahead == '-') || (c == '/' && lexer->lookahead == '*' && !lexer->eof(lexer))) {
-      if (!scan_comment(lexer, c)) return false;
-      lexer->mark_end(lexer);
-      lexer->result_symbol = COMMENT;
-      return true;
-    }
-  } else if (!scan_argument_token(lexer)) {
-    return false;
-  }
-  lexer->mark_end(lexer);
+  if (c == '-' || c == '/') return scan_minus_or_slash(lexer);
+  if (!scan_argument_token(lexer)) return false;
   lexer->result_symbol = MODULE_ARGUMENT_TOKEN;
   return true;
 }
