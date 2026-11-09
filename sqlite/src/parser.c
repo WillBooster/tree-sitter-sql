@@ -6380,7 +6380,7 @@ static const uint8_t ts_lex_mode_ids[STATE_COUNT] = {
   7, 7, 7, 11, 1, 1, 3, 3, 1, 3, 6, 1, 1, 1, 1, 1, 
   1, 15, 16, 11, 1, 13, 7, 3, 1, 1, 7, 1, 11, 3, 13, 1, 
   1, 3, 3, 4, 11, 1, 1, 1, 6, 1, 1, 1, 1, 8, 17, 7, 
-  11, 11, 1, 1, 11, 1, 1, 1, 1, 2, 11, 1, 13, 3, 1, 7, 
+  11, 11, 1, 1, 11, 1, 1, 3, 1, 1, 2, 11, 1, 13, 1, 7, 
   7, 6, 6, 1, 1, 14, 7, 11, 1, 3, 18, 1, 3, 3, 19, 19, 
   7, 20, 1, 1, 1, 1, 19, 11, 3, 1, 1, 1, 4, 2, 1, 1, 
   6, 19, 1, 3, 1, 6, 1, 7, 7, 1, 11, 11, 11, 1, 11, 3, 
@@ -8232,7 +8232,7 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym_with_clause] = STATE(358),
     [sym_values_clause] = STATE(92),
     [sym_select_core] = STATE(10),
-    [aux_sym_source_file_repeat1] = STATE(109),
+    [aux_sym_source_file_repeat1] = STATE(103),
     [aux_sym_select_statement_repeat1] = STATE(196),
     [ts_builtin_sym_end] = ACTIONS(2),
     [anon_sym_SEMI] = ACTIONS(3),
@@ -9160,8 +9160,8 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym__illegal_token] = ACTIONS(184),
   },
   [STATE(34)] = {
-    [sym__module_argument_group] = STATE(108),
-    [aux_sym_module_argument_repeat1] = STATE(108),
+    [sym__module_argument_group] = STATE(109),
+    [aux_sym_module_argument_repeat1] = STATE(109),
     [anon_sym_LPAREN] = ACTIONS(186),
     [anon_sym_COMMA] = ACTIONS(187),
     [anon_sym_RPAREN] = ACTIONS(187),
@@ -10619,16 +10619,22 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym_comment] = ACTIONS(26),
   },
   [STATE(103)] = {
+    [aux_sym_source_file_repeat1] = STATE(18),
+    [ts_builtin_sym_end] = ACTIONS(61),
+    [anon_sym_SEMI] = ACTIONS(3),
+    [sym_comment] = ACTIONS(26),
+  },
+  [STATE(104)] = {
     [aux_sym_create_table_statement_token2] = ACTIONS(408),
     [aux_sym_create_view_statement_token1] = ACTIONS(408),
     [aux_sym_create_trigger_statement_token1] = ACTIONS(408),
     [sym_comment] = ACTIONS(26),
   },
-  [STATE(104)] = {
+  [STATE(105)] = {
     [aux_sym_create_table_statement_token2] = ACTIONS(409),
     [sym_comment] = ACTIONS(26),
   },
-  [STATE(105)] = {
+  [STATE(106)] = {
     [ts_builtin_sym_end] = ACTIONS(410),
     [sym_identifier] = ACTIONS(411),
     [anon_sym_SEMI] = ACTIONS(410),
@@ -10688,7 +10694,7 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym__illegal_token] = ACTIONS(410),
     [sym__window_before_name] = ACTIONS(410),
   },
-  [STATE(106)] = {
+  [STATE(107)] = {
     [sym_table_target] = STATE(123),
     [sym__illegal] = STATE(16),
     [sym_qualified_name] = STATE(37),
@@ -10700,7 +10706,7 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym_comment] = ACTIONS(26),
     [sym__illegal_token] = ACTIONS(230),
   },
-  [STATE(107)] = {
+  [STATE(108)] = {
     [anon_sym_COMMA] = ACTIONS(412),
     [anon_sym_RPAREN] = ACTIONS(412),
     [aux_sym_primary_key_constraint_token3] = ACTIONS(412),
@@ -10709,20 +10715,14 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [aux_sym_collate_clause_token1] = ACTIONS(412),
     [sym_comment] = ACTIONS(26),
   },
-  [STATE(108)] = {
-    [sym__module_argument_group] = STATE(108),
-    [aux_sym_module_argument_repeat1] = STATE(108),
+  [STATE(109)] = {
+    [sym__module_argument_group] = STATE(109),
+    [aux_sym_module_argument_repeat1] = STATE(109),
     [anon_sym_LPAREN] = ACTIONS(413),
     [anon_sym_COMMA] = ACTIONS(415),
     [anon_sym_RPAREN] = ACTIONS(415),
     [sym_comment] = ACTIONS(26),
     [sym__module_argument_token] = ACTIONS(416),
-  },
-  [STATE(109)] = {
-    [aux_sym_source_file_repeat1] = STATE(18),
-    [ts_builtin_sym_end] = ACTIONS(61),
-    [anon_sym_SEMI] = ACTIONS(3),
-    [sym_comment] = ACTIONS(26),
   },
   [STATE(110)] = {
     [aux_sym_create_virtual_table_statement_token1] = ACTIONS(418),
@@ -11361,7 +11361,7 @@ static const uint16_t ts_small_parse_table[] = {
     0, 7, 3320, 7, 0, 14, 6000, 14, 66, 67, 68, 69, 70, 71, 72, 75, 
     75, 75, 76, 77, 78, 70, 79, 80, 513, 513, 513, 26, 82, 
   [953] =
-    4, 8, 364, 0, 83, 370, 0, 3309, 373, 0, 105, 376, 0, 
+    4, 8, 364, 0, 83, 370, 0, 3309, 373, 0, 106, 376, 0, 
   [966] =
     5, 0, 33904, 2, 7219, 7, 64, 14, 1, 15, 0, 16, 0, 16, 0, 16, 
     0, 16, 0, 16, 0, 16, 1024, 16, 163, 163, 163, 163, 294, 295, 296, 297, 
@@ -11395,7 +11395,7 @@ static const uint16_t ts_small_parse_table[] = {
   [1122] =
     6, 1, 518, 19, 519, 180, 518, 181, 518, 186, 26, 188, 183, 
   [1135] =
-    8, 234, 202, 235, 79, 236, 79, 237, 803, 250, 107, 343, 120, 366, 120, 368, 
+    8, 234, 202, 235, 79, 236, 79, 237, 803, 250, 108, 343, 120, 366, 120, 368, 
     120, 
   [1152] =
     5, 1, 520, 180, 520, 181, 520, 186, 26, 188, 287, 
@@ -11923,7 +11923,7 @@ static const uint16_t ts_small_parse_table[] = {
   [4660] =
     2, 19, 780, 186, 26, 
   [4665] =
-    8, 234, 244, 235, 79, 236, 79, 237, 803, 250, 107, 343, 120, 366, 120, 368, 
+    8, 234, 244, 235, 79, 236, 79, 237, 803, 250, 108, 343, 120, 366, 120, 368, 
     120, 
   [4682] =
     8, 1, 155, 32, 107, 43, 159, 87, 781, 180, 161, 181, 161, 186, 26, 188, 
@@ -12801,7 +12801,7 @@ static const uint16_t ts_small_parse_table[] = {
     4, 253, 1, 365, 255, 1, 305, 252, 3, 343, 366, 368, 254, 5, 308, 309, 
     310, 311, 312, 
   [11048] =
-    8, 234, 871, 235, 79, 236, 79, 237, 803, 250, 107, 343, 120, 366, 120, 368, 
+    8, 234, 871, 235, 79, 236, 79, 237, 803, 250, 108, 343, 120, 366, 120, 368, 
     120, 
   [11065] =
     3, 26, 1, 186, 1128, 1, 142, 1127, 10, 0, 2, 20, 21, 48, 101, 129, 
@@ -13695,7 +13695,7 @@ static const uint16_t ts_small_parse_table[] = {
   [17161] =
     6, 1, 782, 19, 519, 180, 782, 181, 782, 186, 26, 188, 230, 
   [17174] =
-    7, 235, 869, 236, 869, 237, 803, 250, 107, 343, 42, 366, 42, 368, 42, 
+    7, 235, 869, 236, 869, 237, 803, 250, 108, 343, 42, 366, 42, 368, 42, 
   [17189] =
     2, 26, 1, 186, 1371, 11, 0, 2, 20, 21, 48, 101, 106, 108, 109, 141, 
     145, 
@@ -30356,10 +30356,10 @@ static const uint32_t ts_parse_actions[] = {
   [137] = ACTION_LIST(1, true) | SHIFT(816),
   [138] = ACTION_LIST(1, true) | SHIFT(297),
   [139] = ACTION_LIST(1, true) | SHIFT(44),
-  [140] = ACTION_LIST(1, false) | SHIFT(103),
-  [141] = ACTION_LIST(1, true) | SHIFT(103),
+  [140] = ACTION_LIST(1, false) | SHIFT(104),
+  [141] = ACTION_LIST(1, true) | SHIFT(104),
   [142] = ACTION_LIST(1, true) | SHIFT(925),
-  [143] = ACTION_LIST(1, true) | SHIFT(104),
+  [143] = ACTION_LIST(1, true) | SHIFT(105),
   [144] = ACTION_LIST(1, true) | SHIFT(2675),
   [145] = ACTION_LIST(1, true) | SHIFT(742),
   [146] = ACTION_LIST(1, true) | SHIFT(94),
@@ -30403,7 +30403,7 @@ static const uint32_t ts_parse_actions[] = {
   [185] = ACTION_LIST(1, false) | REDUCE(3408),
   [186] = ACTION_LIST(1, true) | SHIFT(557),
   [187] = ACTION_LIST(1, true) | REDUCE(3410),
-  [188] = ACTION_LIST(1, true) | SHIFT(108),
+  [188] = ACTION_LIST(1, true) | SHIFT(109),
   [189] = ACTION_LIST(1, true) | SHIFT(36),
   [190] = ACTION_LIST(1, true) | SHIFT(138),
   [191] = ACTION_LIST(1, true) | REDUCE(3412),
@@ -30616,7 +30616,7 @@ static const uint32_t ts_parse_actions[] = {
   [412] = ACTION_LIST(1, true) | REDUCE(3482),
   [413] = ACTION_LIST(2, true) | REDUCE(3484), SHIFT_REPEAT(557),
   [415] = ACTION_LIST(1, true) | REDUCE(3484),
-  [416] = ACTION_LIST(2, true) | REDUCE(3484), SHIFT_REPEAT(108),
+  [416] = ACTION_LIST(2, true) | REDUCE(3484), SHIFT_REPEAT(109),
   [418] = ACTION_LIST(1, true) | SHIFT(76),
   [419] = ACTION_LIST(1, true) | SHIFT(426),
   [420] = ACTION_LIST(1, false) | SHIFT(2819),
@@ -30710,7 +30710,7 @@ static const uint32_t ts_parse_actions[] = {
   [510] = ACTION_LIST(1, true) | SHIFT(146),
   [511] = ACTION_LIST(1, true) | SHIFT(148),
   [512] = ACTION_LIST(1, true) | REDUCE(3510),
-  [513] = ACTION_LIST(1, true) | SHIFT(105),
+  [513] = ACTION_LIST(1, true) | SHIFT(106),
   [514] = ACTION_LIST(1, true) | REDUCE(3512),
   [515] = ACTION_LIST(1, true) | SHIFT(894),
   [516] = ACTION_LIST(1, true) | SHIFT(896),
@@ -30724,7 +30724,7 @@ static const uint32_t ts_parse_actions[] = {
   [524] = ACTION_LIST(1, true) | REDUCE(3518),
   [525] = ACTION_LIST(1, true) | SHIFT(155),
   [526] = ACTION_LIST(1, true) | SHIFT(156),
-  [527] = ACTION_LIST(1, true) | SHIFT(106),
+  [527] = ACTION_LIST(1, true) | SHIFT(107),
   [528] = ACTION_LIST(1, true) | REDUCE(3520),
   [529] = ACTION_LIST(1, false) | REDUCE(3520),
   [530] = ACTION_LIST(1, true) | REDUCE(3522),
