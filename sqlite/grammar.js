@@ -200,9 +200,10 @@ export default grammar({
   rules: {
     source_file: ($) => seq(optional($._statement), repeat(seq(';', optional($._statement)))),
 
-    _statement: ($) =>
+    _statement: ($) => choice($.explain_statement, $._explainable_statement),
+
+    _explainable_statement: ($) =>
       choice(
-        $.explain_statement,
         $.select_statement,
         $.insert_statement,
         $.update_statement,
@@ -227,7 +228,7 @@ export default grammar({
         $.analyze_statement
       ),
 
-    explain_statement: ($) => seq(keyword('EXPLAIN'), optional(keywords('QUERY PLAN')), $._statement),
+    explain_statement: ($) => seq(keyword('EXPLAIN'), optional(keywords('QUERY PLAN')), $._explainable_statement),
 
     // Transactions
 
