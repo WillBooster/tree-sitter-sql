@@ -172,7 +172,14 @@ export default grammar({
   // A byte order mark is white space anywhere.
   extras: ($) => [/[\t\n\f\r ][\t\n\v\f\r ]*/, new RegExp(String.raw`\uFEFF`), $.comment],
 
-  externals: ($) => [$._module_argument_token, $._illegal_token, $._unreachable, $.comment, $.blob_literal],
+  externals: ($) => [
+    $._module_argument_token,
+    $._illegal_token,
+    $._unreachable,
+    $.comment,
+    $.blob_literal,
+    $._over_before_window,
+  ],
 
   word: ($) => $.identifier,
 
@@ -180,7 +187,7 @@ export default grammar({
     global: () => RESERVED.map(keywordPattern),
     // `ids` in parse.y: the alias that follows an expression or a table without `AS`, a type name, or a collation.
     ids: () => [...RESERVED, ...JOIN_KEYWORDS, 'INDEXED'].map(keywordPattern),
-    window_name: () => [...RESERVED, 'FILTER'].map(keywordPattern),
+    window_name: () => [...RESERVED, 'FILTER', 'INDEXED'].map(keywordPattern),
     // `id` in parse.y: an identifier as a default value.
     id: () => [...RESERVED, ...JOIN_KEYWORDS].map(keywordPattern),
   },
@@ -257,13 +264,14 @@ export default grammar({
 
     // Schema statements
 
+    // A temporary table or view may name only the temp schema (`sqlite3StartTable` in src/build.c).
     create_table_statement: ($) =>
       seq(
         keyword('CREATE'),
-        optional($.temporary),
-        keyword('TABLE'),
-        optional($.if_not_exists),
-        field('name', $.qualified_name),
+        choice(
+          seq($.temporary, keyword('TABLE'), optional($.if_not_exists), field('name', $._temporary_object_name)),
+          seq(keyword('TABLE'), optional($.if_not_exists), field('name', $.qualified_name))
+        ),
         choice(
           seq(
             '(',
@@ -429,8 +437,11 @@ export default grammar({
       seq(
         keywords('PRIMARY KEY'),
         '(',
-        commaSep1(alias($._key_column, $.indexed_column)),
-        optional(keyword('AUTOINCREMENT')),
+        // Only a single column may autoincrement (`sqlite3AddPrimaryKey` in src/build.c).
+        choice(
+          seq(alias($._key_column, $.indexed_column), keyword('AUTOINCREMENT')),
+          commaSep1(alias($._key_column, $.indexed_column))
+        ),
         ')',
         optional($.conflict_clause)
       ),
@@ -482,10 +493,10 @@ export default grammar({
     create_view_statement: ($) =>
       seq(
         keyword('CREATE'),
-        optional($.temporary),
-        keyword('VIEW'),
-        optional($.if_not_exists),
-        field('name', $.qualified_name),
+        choice(
+          seq($.temporary, keyword('VIEW'), optional($.if_not_exists), field('name', $._temporary_object_name)),
+          seq(keyword('VIEW'), optional($.if_not_exists), field('name', $.qualified_name))
+        ),
         optional($.column_list),
         keyword('AS'),
         $.select_statement
@@ -517,7 +528,7 @@ export default grammar({
             $.temporary,
             keyword('TRIGGER'),
             optional($.if_not_exists),
-            field('name', $._unqualified_name),
+            field('name', $._unqualified_temp_name),
             $._trigger_event,
             field('table', $.qualified_name),
             $._trigger_body
@@ -527,7 +538,7 @@ export default grammar({
             optional($.if_not_exists),
             choice(
               seq(
-                field('name', $._possibly_temporary_qualified_name),
+                field('name', $._temp_qualified_name),
                 $._trigger_event,
                 field('table', $.qualified_name),
                 $._trigger_body
@@ -539,13 +550,10 @@ export default grammar({
                 $._restricted_trigger_body
               ),
               seq(
-                field('name', $._unqualified_trigger_name),
+                field('name', $._unqualified_temp_name),
                 $._trigger_event,
                 choice(
-                  seq(
-                    field('table', choice($._unqualified_trigger_name, $._possibly_temporary_qualified_name)),
-                    $._trigger_body
-                  ),
+                  seq(field('table', choice($._unqualified_temp_name, $._temp_qualified_name)), $._trigger_body),
                   seq(field('table', $._other_qualified_name), $._restricted_trigger_body)
                 )
               )
@@ -556,26 +564,35 @@ export default grammar({
 
     _unqualified_name: ($) => alias($._name_only, $.qualified_name),
 
-    // Where `temp.` may start a qualified name, `temp` is a keyword, which may still be a name on its own.
-    _unqualified_trigger_name: ($) => choice($._unqualified_name, alias($._temp_name_only, $.qualified_name)),
+    _temporary_object_name: ($) => choice($._unqualified_temp_name, $._temp_qualified_name),
+
+    // Where a name in the temp schema may start, `temp` is a keyword or a token of its own, which may still be a name.
+    _unqualified_temp_name: ($) => choice($._unqualified_name, alias($._temp_name_only, $.qualified_name)),
 
     _name_only: ($) => field('name', $._name),
 
-    _temp_name_only: ($) => field('name', alias(keyword('TEMP'), $.identifier)),
+    _temp_name_only: ($) => field('name', $._temp_schema),
 
-    // A name in the temp schema, or in a schema whose quoted name may be `temp`.
-    _possibly_temporary_qualified_name: ($) => alias($._possibly_temporary_qualified_name_parts, $.qualified_name),
-
-    _possibly_temporary_qualified_name_parts: ($) =>
-      seq(
-        field('schema', choice(alias(keyword('TEMP'), $.identifier), $.quoted_identifier, $.string_literal)),
-        '.',
-        field('name', $._name)
+    // SQLite looks up a schema by its name without quotes, ignoring case (`sqlite3FindDb` in src/build.c).
+    _temp_schema: ($) =>
+      choice(
+        alias(keyword('TEMP'), $.identifier),
+        alias($._quoted_temp, $.quoted_identifier),
+        alias($._string_temp, $.string_literal)
       ),
+
+    _quoted_temp: () => token(prec(1, choice(/"[tT][eE][mM][pP]"/, /`[tT][eE][mM][pP]`/, /\[[tT][eE][mM][pP]\]/))),
+
+    _string_temp: () => token(prec(1, /'[tT][eE][mM][pP]'/)),
+
+    _temp_qualified_name: ($) => alias($._temp_qualified_name_parts, $.qualified_name),
+
+    _temp_qualified_name_parts: ($) => seq(field('schema', $._temp_schema), '.', field('name', $._name)),
 
     _other_qualified_name: ($) => alias($._other_qualified_name_parts, $.qualified_name),
 
-    _other_qualified_name_parts: ($) => seq(field('schema', $.identifier), '.', field('name', $._name)),
+    _other_qualified_name_parts: ($) =>
+      seq(field('schema', choice($.identifier, $.quoted_identifier, $.string_literal)), '.', field('name', $._name)),
 
     _trigger_event: ($) =>
       seq(
@@ -887,8 +904,8 @@ export default grammar({
     window_clause: ($) =>
       seq(keyword('WINDOW'), alias($._first_named_window, $.named_window), repeat(seq(',', $.named_window))),
 
-    // SQLite's tokenizer reads WINDOW and OVER as keywords only before a name that is not FILTER (`getToken` in
-    // src/tokenize.c), and FILTER elsewhere is a name.
+    // SQLite's tokenizer reads WINDOW and OVER as keywords only before a token that its `getToken` (src/tokenize.c)
+    // counts as a name, which neither FILTER nor INDEXED is, though both are names elsewhere.
     _first_named_window: ($) =>
       seq(field('name', $._window_name), keyword('AS'), '(', optional($.window_definition), ')'),
 
@@ -973,9 +990,10 @@ export default grammar({
     limit_clause: ($) =>
       seq(
         keyword('LIMIT'),
-        field('limit', $._expression),
-        optional(
-          choice(seq(keyword('OFFSET'), field('offset', $._expression)), seq(',', field('limit', $._expression)))
+        choice(
+          seq(field('limit', $._expression), optional(seq(keyword('OFFSET'), field('offset', $._expression)))),
+          // The offset comes first after a comma.
+          seq(field('offset', $._expression), ',', field('limit', $._expression))
         )
       ),
 
@@ -1049,8 +1067,13 @@ export default grammar({
 
     filter_clause: ($) => seq(keyword('FILTER'), '(', $.where_clause, ')'),
 
+    // OVER before WINDOW is the keyword, never an alias (`analyzeOverKeyword` in src/tokenize.c); the scanner reads it
+    // so that the parser does not also try the alias.
     over_clause: ($) =>
-      seq(keyword('OVER'), choice(seq('(', optional($.window_definition), ')'), field('window', $._window_name))),
+      seq(
+        choice(keyword('OVER'), alias($._over_before_window, 'OVER')),
+        choice(seq('(', optional($.window_definition), ')'), field('window', $._window_name))
+      ),
 
     cast_expression: ($) =>
       seq(keyword('CAST'), '(', field('value', $._expression), keyword('AS'), optional($.type_name), ')'),

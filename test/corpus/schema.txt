@@ -113,7 +113,7 @@ CREATE TABLE t (a DEFAULT 'x', b DEFAULT (1 + 2), c DEFAULT +1.5, d DEFAULT true
 Table constraints
 ================================================================================
 
-CREATE TABLE t (a, b, PRIMARY KEY (a, b AUTOINCREMENT) ON CONFLICT REPLACE, UNIQUE (b DESC) CONSTRAINT c CHECK (a > b) FOREIGN KEY (a) REFERENCES u (x) ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE t (a, b, PRIMARY KEY (a AUTOINCREMENT) ON CONFLICT REPLACE, UNIQUE (b DESC) CONSTRAINT c CHECK (a > b) FOREIGN KEY (a) REFERENCES u (x) ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED);
 
 --------------------------------------------------------------------------------
 
@@ -126,9 +126,6 @@ CREATE TABLE t (a, b, PRIMARY KEY (a, b AUTOINCREMENT) ON CONFLICT REPLACE, UNIQ
     (column_definition
       (identifier))
     (primary_key_constraint
-      (indexed_column
-        (column_reference
-          (identifier)))
       (indexed_column
         (column_reference
           (identifier)))
@@ -679,3 +676,46 @@ CREATE TABLE t (a GENERATED, b INT GENERATED ALWAYS AS (1), c INT(5) GENERATED A
       (not_null_constraint)
       (generated_column_constraint
         (numeric_literal)))))
+
+================================================================================
+Names in the temp schema
+================================================================================
+
+CREATE TEMP TABLE "temp".t (a); CREATE TEMP TABLE temp (a); CREATE TEMP VIEW [TEMP].v AS SELECT 1; CREATE TRIGGER 'temp'.tr INSERT ON t BEGIN DELETE FROM main.u; END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (temporary)
+    (qualified_name
+      (quoted_identifier)
+      (identifier))
+    (column_definition
+      (identifier)))
+  (create_table_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)))
+  (create_view_statement
+    (temporary)
+    (qualified_name
+      (quoted_identifier)
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (create_trigger_statement
+    (qualified_name
+      (string_literal)
+      (identifier))
+    (qualified_name
+      (identifier))
+    (delete_statement
+      (table_target
+        (qualified_name
+          (identifier)
+          (identifier))))))

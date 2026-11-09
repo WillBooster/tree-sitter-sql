@@ -9,6 +9,7 @@ enum TokenType {
   UNREACHABLE,
   COMMENT,
   BLOB_LITERAL,
+  OVER_BEFORE_WINDOW,
 };
 
 // The character classes of SQLite's tokenizer (`aiClass` and `IdChar` in src/tokenize.c), for code points rather than
@@ -320,6 +321,36 @@ static bool scan_module_argument_token(TSLexer *lexer) {
   return true;
 }
 
+// Consumes `word`, given in lower case, ignoring case, and returns whether no identifier character follows it.
+static bool scan_word(TSLexer *lexer, const char *word) {
+  for (; *word; word++) {
+    if (lexer->lookahead != *word && lexer->lookahead != *word - 'a' + 'A') return false;
+    advance(lexer);
+  }
+  return !is_identifier_char(lexer->lookahead);
+}
+
+// Consumes white space and comments, and returns whether something other than a lone `-` or `/` follows them.
+static bool skip_spaces_and_comments(TSLexer *lexer) {
+  for (;;) {
+    while (is_space(lexer->lookahead) || lexer->lookahead == 0xFEFF) advance(lexer);
+    int32_t c = lexer->lookahead;
+    if (c != '-' && c != '/') return true;
+    advance(lexer);
+    bool comment = (c == '-' && lexer->lookahead == '-') || (c == '/' && lexer->lookahead == '*');
+    if (!comment || !scan_comment(lexer, c)) return false;
+  }
+}
+
+// Recognizes OVER followed by WINDOW, with white space and comments between them.
+static bool scan_over_before_window(TSLexer *lexer) {
+  if (!scan_word(lexer, "over")) return false;
+  lexer->mark_end(lexer);
+  if (!skip_spaces_and_comments(lexer) || !scan_word(lexer, "window")) return false;
+  lexer->result_symbol = OVER_BEFORE_WINDOW;
+  return true;
+}
+
 void *tree_sitter_sqlite_external_scanner_create(void) { return NULL; }
 
 void tree_sitter_sqlite_external_scanner_destroy(void *payload) { (void)payload; }
@@ -341,6 +372,11 @@ bool tree_sitter_sqlite_external_scanner_scan(void *payload, TSLexer *lexer, con
   // During error recovery every token is valid; a module argument token is then never one, since it would swallow the
   // text that recovery has to resynchronize on.
   if (valid_symbols[MODULE_ARGUMENT_TOKEN] && !valid_symbols[ILLEGAL_TOKEN]) return scan_module_argument_token(lexer);
+  skip_spaces(lexer);
+  if (valid_symbols[OVER_BEFORE_WINDOW] && !valid_symbols[MODULE_ARGUMENT_TOKEN] &&
+      (lexer->lookahead == 'o' || lexer->lookahead == 'O')) {
+    return scan_over_before_window(lexer);
+  }
   if (valid_symbols[ILLEGAL_TOKEN]) return scan_illegal_token(lexer, valid_symbols[BLOB_LITERAL]);
   return false;
 }

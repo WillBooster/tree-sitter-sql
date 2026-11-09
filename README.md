@@ -19,6 +19,8 @@ UNION, or a qualified table name in a trigger outside the temp schema. Its resul
 - where SQLite decides by looking up the schema, the declared type of a column, or a limit of the connection: it
   accepts a qualified table name in a trigger on a table that turns out not to be in the temp schema, AUTOINCREMENT on
   a column not declared `INTEGER`, and a parameter number above the connection's limit;
+- where SQLite's tokenizer decides by the previous token: it accepts `OVER` as an alias without `AS` before a WINDOW
+  clause after a closing parenthesis other than a function call's, such as `SELECT (1) OVER WINDOW w AS ()`;
 - on a NUL character, which ends the input for SQLite but is an error here;
 - on input that is not valid UTF-8 or UTF-16, which SQLite reads byte by byte.
 

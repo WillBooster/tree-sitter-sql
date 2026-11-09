@@ -712,3 +712,46 @@ SELECT f() OVER (filter), sum(1) OVER over, sum(1) OVER "filter" FROM t WINDOW w
           (identifier))
         (named_window
           (identifier))))))
+
+================================================================================
+OVER as an alias before WINDOW
+================================================================================
+
+SELECT 1 OVER WINDOW w AS (); SELECT sum(1) OVER window;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal)
+        (identifier))
+      (window_clause
+        (named_window
+          (identifier)))))
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (numeric_literal)
+          (over_clause
+            (identifier)))))))
+
+================================================================================
+Limit with an offset before a comma
+================================================================================
+
+SELECT 1 LIMIT 5, 10;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal)))
+    (limit_clause
+      (numeric_literal)
+      (numeric_literal))))
