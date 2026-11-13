@@ -9,9 +9,10 @@
 
 SQL grammars for [tree-sitter](https://github.com/tree-sitter/tree-sitter), generated with the
 [WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. Each generated `TSLanguage` carries
-the WillBooster ABI (`0x5742000c`), which upstream `tree-sitter` runtimes reject, and omits `alias_map` and
-`primary_state_bitmap` tables that pre-19.1.0 WillBooster runtimes dereference despite sharing ABI `0x5742000c`. The
-supported WillBooster runtime is version 20.0.0 or later in the 20.x series.
+the WillBooster ABI (`0x5742000c`), which upstream `tree-sitter` runtimes reject. It also omits the `alias_map` and
+`primary_state_bitmap` tables, which WillBooster runtimes before 19.0.0 dereference and Wasmtime-based Wasm loaders
+before 19.1.0 read despite sharing ABI `0x5742000c`. The supported WillBooster runtime is version 20.0.0 or later in the
+20.x series.
 
 The `sqlite` grammar parses the SQL dialect of [SQLite](https://sqlite.org/lang.html) 3.54 in its default build. Its
 rules follow SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c`), which are in the public domain:
