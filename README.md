@@ -8,8 +8,10 @@
 [![crates.io](https://img.shields.io/crates/v/willbooster-tree-sitter-sql.svg)](https://crates.io/crates/willbooster-tree-sitter-sql)
 
 SQL grammars for [tree-sitter](https://github.com/tree-sitter/tree-sitter), generated with the
-[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. The parsers carry that fork's own ABI
-number and load with that fork's runtime, version 17.0.1 or later in the 17.x series.
+[WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. Each generated `TSLanguage` carries
+the WillBooster ABI (`0x5742000c`), which upstream `tree-sitter` runtimes reject, and omits `alias_map` and
+`primary_state_bitmap` tables that pre-19.1.0 WillBooster runtimes dereference despite sharing ABI `0x5742000c`. The
+supported WillBooster runtime is version 20.0.0 or later in the 20.x series.
 
 The `sqlite` grammar parses the SQL dialect of [SQLite](https://sqlite.org/lang.html) 3.54 in its default build. Its
 rules follow SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c`), which are in the public domain:
@@ -32,15 +34,15 @@ in a trigger outside the temp schema, but it accepts the others.
 ## Support Scope
 
 This repository maintains only full parsing: valid input yields a correct tree, and invalid input yields `ERROR` or
-`MISSING` nodes without crashing, hanging, or taking more than linear time. No queries (highlights, locals, injections,
-tags) are shipped. Node types, field names, and the trees that error recovery produces may change; such changes are
-released as new major versions.
+`MISSING` nodes without crashing, hanging, or taking more than linear time. Incremental parsing is not supported, and no
+queries (highlights, locals, injections, tags) are shipped. Node types, field names, and the trees that error recovery
+produces may change; such changes are released as new major versions.
 
 ## Usage
 
 The npm package ships `tree-sitter-sqlite.wasm` for
-[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 17.0.1 or later in
-the 17.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from
+[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 20.0.0 or later in
+the 20.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from
 its path:
 
 ```js
@@ -84,11 +86,11 @@ The package also ships the grammar definitions (`common/common.mjs` and `sqlite/
 file that marks the latter as an ES module) and the node types in `sqlite/src/node-types.json`.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-sql) and on
-[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
-fuzzed with:
+[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) version 20.0.0 or later in the 20.x series,
+the runtime this package is tested and fuzzed with:
 
 ```sh
-cargo add willbooster-tree-sitter@17.0.1 --rename tree-sitter
+cargo add willbooster-tree-sitter@20.0.0 --rename tree-sitter
 cargo add willbooster-tree-sitter-sql --rename tree-sitter-sql
 ```
 

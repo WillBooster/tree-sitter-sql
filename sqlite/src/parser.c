@@ -3352,45 +3352,6 @@ static const TSSymbol ts_alias_sequences[85] = {
   [71] = anon_alias_sym_FILTER,
 };
 
-static const uint16_t ts_non_terminal_alias_map[] = {
-  aux_sym__type_words, 2,
-    aux_sym__type_words,
-    sym_type_name,
-  sym__sized_type_name, 2,
-    sym__sized_type_name,
-    sym_type_name,
-  sym__generated_column_expression, 2,
-    sym__generated_column_expression,
-    sym_generated_column_constraint,
-  0,
-};
-
-static const uint8_t ts_primary_state_bitmap[] = {
-  255, 255, 247, 251, 127, 223, 255, 255, 255, 255, 255, 247, 255, 255, 207, 255, 
-  255, 255, 143, 251, 255, 63, 255, 255, 229, 255, 255, 237, 255, 255, 255, 67, 
-  215, 253, 255, 255, 255, 255, 255, 255, 255, 195, 247, 255, 255, 255, 255, 255, 
-  255, 255, 253, 125, 132, 241, 231, 219, 251, 195, 255, 247, 255, 223, 255, 255, 
-  255, 255, 255, 253, 221, 255, 255, 255, 255, 255, 239, 254, 255, 207, 134, 57, 
-  223, 255, 251, 255, 253, 189, 254, 206, 223, 95, 251, 231, 255, 255, 255, 159, 
-  207, 127, 247, 254, 231, 255, 255, 255, 255, 255, 255, 255, 255, 255, 191, 254, 
-  118, 255, 255, 36, 124, 0, 68, 222, 215, 1, 0, 2, 0, 0, 0, 0, 
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 8, 0, 
-  0, 0, 0, 0, 128, 0, 0, 32, 0, 0, 0, 0, 0, 0, 6, 0, 
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-  0, 0, 40, 0, 0, 0, 0, 0, 0, 84, 0, 33, 0, 0, 0, 0, 
-  0, 0, 12, 222, 133, 240, 7, 128, 252, 15, 176, 0, 254, 253, 118, 9, 
-  255, 255, 3, 204, 2, 148, 30, 254, 159, 100, 0, 101, 249, 254, 8, 5, 
-  135, 2, 10, 200, 24, 152, 67, 12, 16, 4, 199, 240, 38, 90, 146, 168, 
-  84, 88, 192, 119, 255, 255, 255, 255, 251, 223, 226, 9, 91, 219, 0, 1, 
-  9, 160, 234, 138, 193, 137, 64, 246, 251, 255, 255, 255, 166, 174, 236, 198, 
-  6, 4, 208, 36, 64, 16, 8, 4, 0, 128, 36, 3, 48, 148, 64, 212, 
-  0, 0, 5, 8, 0, 128, 34, 131, 12, 0, 128, 0, 0, 6, 0, 
-};
-
 static const TSSymbol ts_supertype_symbols[SUPERTYPE_COUNT] = {
   sym__statement,
 };
@@ -30247,7 +30208,6 @@ TS_PUBLIC const TSLanguage *tree_sitter_sqlite(void) {
     .supertype_symbols = ts_supertype_symbols,
     .symbol_metadata = ts_symbol_metadata,
     .public_symbol_map = ts_symbol_map,
-    .alias_map = ts_non_terminal_alias_map,
     .alias_sequences = ts_alias_sequences,
     .alias_sequence_offsets = ts_alias_sequence_offsets,
     .alias_sequence_count = 85,
@@ -30267,7 +30227,6 @@ TS_PUBLIC const TSLanguage *tree_sitter_sqlite(void) {
       tree_sitter_sqlite_external_scanner_serialize,
       tree_sitter_sqlite_external_scanner_deserialize,
     },
-    .primary_state_bitmap = ts_primary_state_bitmap,
     .name = "sqlite",
     .reserved_words = ts_reserved_words,
     .reserved_word_slices = ts_reserved_word_slices,
