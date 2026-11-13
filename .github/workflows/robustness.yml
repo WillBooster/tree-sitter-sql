@@ -71,12 +71,6 @@ jobs:
         run: |
           jq '.. | select((.type? == "STRING" or (.type? == "ALIAS" and .named? == false)) and .value? != "") | .value' \
             "$GRAMMAR/src/grammar.json" | grep -v '\\' | iconv -c -f UTF-8 -t ASCII//TRANSLIT > .tmp/fuzz-dict
-          # An empty external scanner state passes a NULL buffer with length 0 to deserialize.
-          cat << 'EOF' > .tmp/ignorelist.ini
-          [nonnull-attribute]
-          fun:tree_sitter_*_external_scanner_serialize
-          fun:tree_sitter_*_external_scanner_deserialize
-          EOF
           # tree-sitter/fuzz-action builds upstream's runtime and calls 4-argument ts_parser_parse_string, whereas
           # WillBooster/tree-sitter v20 removed the old_tree parameter.
           cat << 'EOF' > .tmp/fuzzer.c
@@ -103,8 +97,7 @@ jobs:
           # Instrument only the grammar, not the runtime.
           clang -std=c11 -Og -g -c -D_POSIX_C_SOURCE=200112L -D_DEFAULT_SOURCE -I.tmp/tree-sitter/lib/include \
             -I.tmp/tree-sitter/lib/src .tmp/tree-sitter/lib/src/lib.c -o .tmp/tree-sitter.o
-          clang -std=c11 -Og -g -fsanitize=fuzzer,address,undefined \
-            -fsanitize-ignorelist=.tmp/ignorelist.ini -I.tmp/tree-sitter/lib/include -I"$GRAMMAR/src" \
+          clang -std=c11 -Og -g -fsanitize=fuzzer,address,undefined -I.tmp/tree-sitter/lib/include -I"$GRAMMAR/src" \
             -DTS_LANG="tree_sitter_$GRAMMAR" .tmp/fuzzer.c "$GRAMMAR/src/parser.c" "$GRAMMAR/src/scanner.c" \
             .tmp/tree-sitter.o -o .tmp/fuzzer
         env:
