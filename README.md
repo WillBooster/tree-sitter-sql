@@ -9,10 +9,8 @@
 
 SQL grammars for [tree-sitter](https://github.com/tree-sitter/tree-sitter), generated with the
 [WillBooster/tree-sitter](https://github.com/WillBooster/tree-sitter) generator. Each generated `TSLanguage` carries
-the WillBooster ABI (`0x5742000c`), which upstream `tree-sitter` runtimes reject. It also omits the `alias_map` and
-`primary_state_bitmap` tables, which WillBooster runtimes before 19.0.0 dereference and Wasmtime-based Wasm loaders
-before 19.1.0 read despite sharing ABI `0x5742000c`. The supported WillBooster runtime is version 20.0.0 or later in the
-20.x series.
+the WillBooster ABI (`0x5742000d`), which upstream `tree-sitter` runtimes and WillBooster runtimes prior to 22.0.0
+reject. The supported WillBooster runtime is version 23.0.0 or later in the 23.x series.
 
 The `sqlite` grammar parses the SQL dialect of [SQLite](https://sqlite.org/lang.html) 3.54 in its default build. Its
 rules follow SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c`), which are in the public domain:
@@ -42,8 +40,8 @@ produces may change; such changes are released as new major versions.
 ## Usage
 
 The npm package ships `tree-sitter-sqlite.wasm` for
-[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 20.0.0 or later in
-the 20.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from
+[@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 23.0.0 or later in
+the 23.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from
 its path:
 
 ```js
@@ -87,11 +85,11 @@ The package also ships the grammar definitions (`common/common.mjs` and `sqlite/
 file that marks the latter as an ES module) and the node types in `sqlite/src/node-types.json`.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-sql) and on
-[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) version 20.0.0 or later in the 20.x series,
+[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) version 23.0.0 or later in the 23.x series,
 the runtime this package is tested and fuzzed with:
 
 ```sh
-cargo add willbooster-tree-sitter@20.0.0 --rename tree-sitter
+cargo add willbooster-tree-sitter@23.0.0 --rename tree-sitter
 cargo add willbooster-tree-sitter-sql --rename tree-sitter-sql
 ```
 
