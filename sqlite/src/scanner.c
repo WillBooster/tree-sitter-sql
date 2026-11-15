@@ -32,6 +32,8 @@ static bool starts_space(int32_t c) { return c == ' ' || c == '\t' || c == '\n' 
 
 static bool is_space(int32_t c) { return starts_space(c) || c == '\v'; }
 
+static bool at_eof(TSLexer *lexer) { return lexer->lookahead == 0 && lexer->eof(lexer); }
+
 static void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
 
 static void skip_spaces(TSLexer *lexer) {
@@ -128,7 +130,7 @@ static bool scan_blob(TSLexer *lexer) {
     digits++;
   }
   bool valid = lexer->lookahead == '\'' && digits % 2 == 0;
-  while (!lexer->eof(lexer) && lexer->lookahead != '\'' && lexer->lookahead != 0) advance(lexer);
+  while (lexer->lookahead != 0 && lexer->lookahead != '\'') advance(lexer);
   if (lexer->lookahead == '\'') advance(lexer);
   return valid;
 }
@@ -163,7 +165,7 @@ static bool scan_illegal_token(TSLexer *lexer, bool blob_is_valid) {
 static bool scan_quoted(TSLexer *lexer, int32_t quote, bool doubles) {
   advance(lexer);
   for (;;) {
-    if (lexer->eof(lexer) || lexer->lookahead == 0) return false;
+    if (lexer->lookahead == 0) return false;
     if (lexer->lookahead == quote) {
       advance(lexer);
       if (!doubles || lexer->lookahead != quote) return true;
@@ -176,7 +178,7 @@ static bool scan_quoted(TSLexer *lexer, int32_t quote, bool doubles) {
 static bool scan_tcl_suffix(TSLexer *lexer) {
   do {
     advance(lexer);
-  } while (!lexer->eof(lexer) && lexer->lookahead != 0 && !is_space(lexer->lookahead) && lexer->lookahead != ')');
+  } while (lexer->lookahead != 0 && !is_space(lexer->lookahead) && lexer->lookahead != ')');
   if (lexer->lookahead != ')') return false;
   advance(lexer);
   lexer->mark_end(lexer);
@@ -275,7 +277,7 @@ static bool scan_unmarked_argument_token(TSLexer *lexer) {
 // NUL character. An unterminated block comment ends at the end of the input.
 static bool scan_comment(TSLexer *lexer, int32_t first) {
   if (first == '-') {
-    while (!lexer->eof(lexer) && lexer->lookahead != '\n') {
+    while (!at_eof(lexer) && lexer->lookahead != '\n') {
       if (lexer->lookahead == 0) return false;
       advance(lexer);
     }
@@ -283,7 +285,7 @@ static bool scan_comment(TSLexer *lexer, int32_t first) {
   }
   advance(lexer);
   bool star = false;
-  while (!lexer->eof(lexer)) {
+  while (!at_eof(lexer)) {
     int32_t c = lexer->lookahead;
     if (c == 0) return false;
     advance(lexer);
@@ -297,7 +299,7 @@ static bool scan_comment(TSLexer *lexer, int32_t first) {
 static bool scan_minus_or_slash(TSLexer *lexer) {
   int32_t c = lexer->lookahead;
   advance(lexer);
-  bool comment = (c == '-' && lexer->lookahead == '-') || (c == '/' && lexer->lookahead == '*' && !lexer->eof(lexer));
+  bool comment = (c == '-' && lexer->lookahead == '-') || (c == '/' && lexer->lookahead == '*');
   if (comment) {
     if (!scan_comment(lexer, c)) return false;
     lexer->result_symbol = COMMENT;
@@ -318,7 +320,7 @@ static bool scan_minus_or_slash(TSLexer *lexer) {
 static bool scan_module_argument_token(TSLexer *lexer) {
   skip_spaces(lexer);
   int32_t c = lexer->lookahead;
-  if (lexer->eof(lexer) || c == '(' || c == ')' || c == ',') return false;
+  if (at_eof(lexer) || c == '(' || c == ')' || c == ',') return false;
   if (c == '-' || c == '/') return scan_minus_or_slash(lexer);
   if (!scan_argument_token(lexer)) return false;
   lexer->result_symbol = MODULE_ARGUMENT_TOKEN;
@@ -370,8 +372,17 @@ static bool scan_keyword_spelling(TSLexer *lexer, char *word, unsigned size) {
 }
 
 static bool is_non_name_word(const char *word) {
-  for (unsigned i = 0; i < sizeof NON_NAME_WORDS / sizeof *NON_NAME_WORDS; i++) {
-    if (strcmp(word, NON_NAME_WORDS[i]) == 0) return true;
+  unsigned lo = 0;
+  unsigned hi = sizeof NON_NAME_WORDS / sizeof *NON_NAME_WORDS;
+  while (lo < hi) {
+    unsigned mid = lo + (hi - lo) / 2;
+    int cmp = strcmp(word, NON_NAME_WORDS[mid]);
+    if (cmp == 0) return true;
+    if (cmp < 0) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
+    }
   }
   return false;
 }

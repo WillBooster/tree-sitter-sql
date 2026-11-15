@@ -101,23 +101,6 @@ const RESERVED = [
 // Names (`nm` in parse.y) may also be these, but an identifier in a narrower position (`id` and `ids`) may not.
 const JOIN_KEYWORDS = ['CROSS', 'FULL', 'INNER', 'LEFT', 'NATURAL', 'OUTER', 'RIGHT'];
 
-// SQLite accepts any sequence of one to three join keywords whose combination is not contradictory
-// (`sqlite3JoinType` in src/select.c): `INNER` or `CROSS` with an outer join, or `OUTER` without a side, is an error.
-/** @type {string[][]} */
-const JOIN_TYPES = [];
-/** @param {string[]} words */
-const isJoinType = (words) => {
-  const inner = words.some((word) => word === 'INNER' || word === 'CROSS');
-  const side = words.some((word) => word === 'LEFT' || word === 'RIGHT' || word === 'FULL');
-  return !(inner && (side || words.includes('OUTER'))) && !(words.includes('OUTER') && !side);
-};
-/** @param {string[]} words */
-const addJoinTypes = (words) => {
-  if (words.length > 0 && isJoinType(words)) JOIN_TYPES.push(words);
-  if (words.length < 3) for (const word of JOIN_KEYWORDS) addJoinTypes([...words, word]);
-};
-addJoinTypes([]);
-
 // SQLite's identifier characters: ASCII letters, digits, `_`, `$`, and every non-ASCII character. A byte order mark
 // before an identifier is white space instead.
 const IDENTIFIER_START = String.raw`A-Za-z_\u0080-\uFEFE\uFF00-\u{10FFFF}`;
@@ -878,22 +861,60 @@ export default grammar({
 
     indexed_clause: ($) => choice(seq(keywords('INDEXED BY'), field('index', $._name)), keywords('NOT INDEXED')),
 
-    join_operator: () =>
+    // SQLite accepts any sequence of one to three join keywords whose combination is not contradictory
+    // (`sqlite3JoinType` in src/select.c): `INNER` or `CROSS` with an outer join, or `OUTER` without a side, is an
+    // error. Partitioning by the leading keyword avoids unrolling all 180 combinations into grammar.json.
+    join_operator: ($) =>
       choice(
         ',',
-        ...JOIN_TYPES.filter((words) => !words.includes('NATURAL')).map((words) =>
-          seq(...words.map(keyword), keyword('JOIN'))
+        seq(
+          choice(
+            seq($._join_inner, optional(seq($._join_inner, optional($._join_inner)))),
+            seq($._join_side, optional(seq($._join_side_or_outer, optional($._join_side_or_outer)))),
+            seq(keyword('OUTER'), $._join_side, optional($._join_side_or_outer)),
+            seq(keyword('OUTER'), keyword('OUTER'), $._join_side)
+          ),
+          keyword('JOIN')
         ),
         keyword('JOIN')
       ),
 
     // A natural join may not have an ON or USING clause.
-    _natural_join_operator: () =>
-      choice(
-        ...JOIN_TYPES.filter((words) => words.includes('NATURAL')).map((words) =>
-          seq(...words.map(keyword), keyword('JOIN'))
-        )
+    _natural_join_operator: ($) =>
+      seq(
+        choice(
+          seq(
+            $._join_inner,
+            choice(seq(keyword('NATURAL'), optional($._join_inner_or_natural)), seq($._join_inner, keyword('NATURAL')))
+          ),
+          seq(
+            $._join_side,
+            choice(
+              seq(keyword('NATURAL'), optional($._join_outer_word)),
+              seq($._join_side_or_outer, keyword('NATURAL'))
+            )
+          ),
+          seq(keyword('OUTER'), choice(seq($._join_side, keyword('NATURAL')), seq(keyword('NATURAL'), $._join_side))),
+          seq(
+            keyword('NATURAL'),
+            optional(
+              choice(
+                seq(keyword('NATURAL'), optional(choice(keyword('NATURAL'), $._join_inner, $._join_side))),
+                seq($._join_inner, optional($._join_inner_or_natural)),
+                seq($._join_side, optional($._join_outer_word)),
+                seq(keyword('OUTER'), $._join_side)
+              )
+            )
+          )
+        ),
+        keyword('JOIN')
       ),
+
+    _join_inner: () => choice(keyword('INNER'), keyword('CROSS')),
+    _join_side: () => choice(keyword('LEFT'), keyword('RIGHT'), keyword('FULL')),
+    _join_side_or_outer: ($) => choice($._join_side, keyword('OUTER')),
+    _join_inner_or_natural: ($) => choice($._join_inner, keyword('NATURAL')),
+    _join_outer_word: ($) => choice($._join_side, keyword('OUTER'), keyword('NATURAL')),
 
     join_constraint: ($) =>
       choice(seq(keyword('ON'), field('condition', $._expression)), seq(keyword('USING'), $.column_list)),
