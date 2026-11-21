@@ -86,11 +86,11 @@ The package also ships the grammar definitions (`common/common.mjs` and `sqlite/
 file that marks the latter as an ES module) and the node types in `sqlite/src/node-types.json`.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-sql) and on
-[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) version 23.0.0 or later in the 23.x series,
-the runtime this package is tested and fuzzed with:
+[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) version 23.0.0 or later in the 23.x series;
+`Cargo.lock` records the version this package is tested and fuzzed with:
 
 ```sh
-cargo add willbooster-tree-sitter@23.0.0 --rename tree-sitter
+cargo add willbooster-tree-sitter@23 --rename tree-sitter
 cargo add willbooster-tree-sitter-sql --rename tree-sitter-sql
 ```
 
