@@ -18,7 +18,7 @@
 //! generated `TSLanguage` carries the WillBooster ABI (`0x5742000d`), which upstream `tree-sitter`
 //! runtimes and WillBooster runtimes prior to 22.0.0 reject.
 //!
-//! [`Parser`]: https://docs.rs/willbooster-tree-sitter/23.0.0/tree_sitter/struct.Parser.html
+//! [`Parser`]: https://docs.rs/willbooster-tree-sitter/23/tree_sitter/struct.Parser.html
 //! [tree-sitter]: https://tree-sitter.github.io/
 //! [willbooster-tree-sitter]: https://crates.io/crates/willbooster-tree-sitter
 
