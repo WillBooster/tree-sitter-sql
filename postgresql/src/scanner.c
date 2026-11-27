@@ -101,24 +101,73 @@ static bool scan_quote_continuation(TSLexer *lexer) {
   }
 }
 
-static bool step_quoted_char(TSLexer *lexer, int32_t quote, bool c_escapes, CharArray *out, bool *done, bool *has_nul) {
+static bool step_surrogate_state(int32_t cp, bool *expecting_low) {
+  bool is_high = cp >= 0xD800 && cp <= 0xDBFF;
+  bool is_low = cp >= 0xDC00 && cp <= 0xDFFF;
+  if (*expecting_low) {
+    *expecting_low = false;
+    return is_low;
+  }
+  *expecting_low = is_high;
+  return !is_low;
+}
+
+static bool scan_c_unicode_escape(TSLexer *lexer, unsigned digits, bool *expecting_low, bool *invalid) {
+  uint32_t cp = 0;
+  for (unsigned i = 0; i < digits; i++) {
+    if (!is_hex_digit(lexer->lookahead)) {
+      *invalid = true;
+      *expecting_low = false;
+      return true;
+    }
+    cp = (cp << 4) | (uint32_t)hex_value(lexer->lookahead);
+    advance(lexer);
+  }
+  if (cp == 0 || cp > 0x10FFFF || !step_surrogate_state((int32_t)cp, expecting_low)) {
+    *invalid = true;
+    *expecting_low = false;
+  }
+  return true;
+}
+
+static bool scan_c_escape(TSLexer *lexer, bool *expecting_low, bool *invalid) {
+  if (at_eof(lexer)) return false;
+  int32_t c = lexer->lookahead;
+  if (c == 'u' || c == 'U') {
+    advance(lexer);
+    return scan_c_unicode_escape(lexer, c == 'u' ? 4 : 8, expecting_low, invalid);
+  }
+  if (*expecting_low) {
+    *invalid = true;
+    *expecting_low = false;
+  }
+  if (c == 0) *invalid = true;
+  advance(lexer);
+  return true;
+}
+
+static bool step_quoted_char(
+    TSLexer *lexer, int32_t quote, bool c_escapes, CharArray *out, bool *done, bool *expecting_low, bool *invalid) {
   int32_t c = lexer->lookahead;
   advance(lexer);
   if (c == 0) {
-    *has_nul = true;
+    *invalid = true;
+    *expecting_low = false;
     return true;
   }
   if (c == quote) {
     if (lexer->lookahead != quote) {
+      if (*expecting_low) *invalid = true;
       *done = true;
       return true;
     }
     advance(lexer);
   } else if (c_escapes && c == '\\') {
-    if (at_eof(lexer)) return false;
-    if (lexer->lookahead == 0) *has_nul = true;
-    advance(lexer);
-    return true;
+    return scan_c_escape(lexer, expecting_low, invalid);
+  }
+  if (*expecting_low) {
+    *invalid = true;
+    *expecting_low = false;
   }
   if (out != NULL) array_push(out, c);
   return true;
@@ -126,13 +175,14 @@ static bool step_quoted_char(TSLexer *lexer, int32_t quote, bool c_escapes, Char
 
 static bool scan_quoted_segment(TSLexer *lexer, int32_t quote, bool c_escapes, CharArray *out, unsigned *count) {
   advance(lexer);
-  bool has_nul = false;
+  bool invalid = false;
+  bool expecting_low = false;
   bool done = false;
   while (!at_eof(lexer) && !done) {
-    if (!step_quoted_char(lexer, quote, c_escapes, out, &done, &has_nul)) return false;
+    if (!step_quoted_char(lexer, quote, c_escapes, out, &done, &expecting_low, &invalid)) return false;
     if (!done) (*count)++;
   }
-  return done && !has_nul;
+  return done && !invalid;
 }
 
 static bool scan_string_segments(TSLexer *lexer, bool c_escapes, CharArray *out) {
@@ -184,26 +234,16 @@ static bool is_valid_uescape_char(int32_t c) {
 
 static bool parse_hex_run(const CharArray *buf, unsigned *idx, unsigned digits, int32_t *out) {
   if (*idx + digits > buf->size) return false;
-  int32_t val = 0;
+  uint32_t val = 0;
   for (unsigned i = 0; i < digits; i++) {
     int32_t c = buf->contents[*idx + i];
     if (!is_hex_digit(c)) return false;
-    val = (val << 4) | hex_value(c);
+    val = (val << 4) | (uint32_t)hex_value(c);
   }
   *idx += digits;
-  *out = val;
-  return val > 0 && val <= 0x10FFFF;
-}
-
-static bool step_surrogate_state(int32_t cp, bool *expecting_low) {
-  bool is_high = cp >= 0xD800 && cp <= 0xDBFF;
-  bool is_low = cp >= 0xDC00 && cp <= 0xDFFF;
-  if (*expecting_low) {
-    *expecting_low = false;
-    return is_low;
-  }
-  *expecting_low = is_high;
-  return !is_low;
+  if (val == 0 || val > 0x10FFFF) return false;
+  *out = (int32_t)val;
+  return true;
 }
 
 static bool step_unicode_char(const CharArray *buf, unsigned *idx, int32_t esc, bool *expecting_low) {
