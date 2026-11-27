@@ -48463,44 +48463,52 @@
                   }
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SEQ",
-                        "members": [
-                          {
-                            "type": "ALIAS",
-                            "content": {
-                              "type": "PATTERN",
-                              "value": "[Cc][Aa][Ss][Cc][Aa][Dd][Ee]"
-                            },
-                            "named": false,
-                            "value": "CASCADE"
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "PATTERN",
+                            "value": "[Cc][Aa][Ss][Cc][Aa][Dd][Ee]"
                           },
-                          {
-                            "type": "ALIAS",
-                            "content": {
-                              "type": "PATTERN",
-                              "value": "[Cc][Oo][Nn][Ss][Tt][Rr][Aa][Ii][Nn][Tt][Ss]"
-                            },
-                            "named": false,
-                            "value": "CONSTRAINTS"
-                          }
-                        ]
-                      },
-                      {
-                        "type": "ALIAS",
-                        "content": {
-                          "type": "PATTERN",
-                          "value": "[Pp][Uu][Rr][Gg][Ee]"
+                          "named": false,
+                          "value": "CASCADE"
                         },
-                        "named": false,
-                        "value": "PURGE"
-                      }
-                    ]
-                  }
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "PATTERN",
+                            "value": "[Cc][Oo][Nn][Ss][Tt][Rr][Aa][Ii][Nn][Tt][Ss]"
+                          },
+                          "named": false,
+                          "value": "CONSTRAINTS"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Pp][Uu][Rr][Gg][Ee]"
+                      },
+                      "named": false,
+                      "value": "PURGE"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
                 }
               ]
             },
@@ -48862,30 +48870,83 @@
                   }
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "ALIAS",
-                        "content": {
-                          "type": "PATTERN",
-                          "value": "[Oo][Nn][Ll][Ii][Nn][Ee]"
-                        },
-                        "named": false,
-                        "value": "ONLINE"
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Oo][Nn][Ll][Ii][Nn][Ee]"
                       },
-                      {
-                        "type": "ALIAS",
-                        "content": {
-                          "type": "PATTERN",
-                          "value": "[Ff][Oo][Rr][Cc][Ee]"
+                      "named": false,
+                      "value": "ONLINE"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Ff][Oo][Rr][Cc][Ee]"
+                      },
+                      "named": false,
+                      "value": "FORCE"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Dd][Ee][Ff][Ee][Rr][Rr][Ee][Dd]"
+                              },
+                              "named": false,
+                              "value": "DEFERRED"
+                            },
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Ii][Mm][Mm][Ee][Dd][Ii][Aa][Tt][Ee]"
+                              },
+                              "named": false,
+                              "value": "IMMEDIATE"
+                            }
+                          ]
                         },
-                        "named": false,
-                        "value": "FORCE"
-                      }
-                    ]
-                  }
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "PATTERN",
+                            "value": "[Ii][Nn][Vv][Aa][Ll][Ii][Dd][Aa][Tt][Ii][Oo][Nn]"
+                          },
+                          "named": false,
+                          "value": "INVALIDATION"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
                 }
               ]
             },
@@ -49664,58 +49725,80 @@
                           ]
                         },
                         {
-                          "type": "REPEAT",
-                          "content": {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "SEQ",
-                                "members": [
-                                  {
-                                    "type": "ALIAS",
-                                    "content": {
-                                      "type": "PATTERN",
-                                      "value": "[Aa][Nn][Dd]"
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "ALIAS",
+                                      "content": {
+                                        "type": "PATTERN",
+                                        "value": "[Aa][Nn][Dd]"
+                                      },
+                                      "named": false,
+                                      "value": "AND"
                                     },
-                                    "named": false,
-                                    "value": "AND"
+                                    {
+                                      "type": "ALIAS",
+                                      "content": {
+                                        "type": "PATTERN",
+                                        "value": "[Kk][Ee][Ee][Pp]"
+                                      },
+                                      "named": false,
+                                      "value": "KEEP"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "ALIAS",
+                                  "content": {
+                                    "type": "PATTERN",
+                                    "value": "[Dd][Aa][Tt][Aa][Ff][Ii][Ll][Ee][Ss]"
                                   },
-                                  {
-                                    "type": "ALIAS",
-                                    "content": {
-                                      "type": "PATTERN",
-                                      "value": "[Dd][Aa][Tt][Aa][Ff][Ii][Ll][Ee][Ss]"
-                                    },
-                                    "named": false,
-                                    "value": "DATAFILES"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "SEQ",
-                                "members": [
-                                  {
-                                    "type": "ALIAS",
-                                    "content": {
-                                      "type": "PATTERN",
-                                      "value": "[Cc][Aa][Ss][Cc][Aa][Dd][Ee]"
-                                    },
-                                    "named": false,
-                                    "value": "CASCADE"
+                                  "named": false,
+                                  "value": "DATAFILES"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "BLANK"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "ALIAS",
+                                  "content": {
+                                    "type": "PATTERN",
+                                    "value": "[Cc][Aa][Ss][Cc][Aa][Dd][Ee]"
                                   },
-                                  {
-                                    "type": "ALIAS",
-                                    "content": {
-                                      "type": "PATTERN",
-                                      "value": "[Cc][Oo][Nn][Ss][Tt][Rr][Aa][Ii][Nn][Tt][Ss]"
-                                    },
-                                    "named": false,
-                                    "value": "CONSTRAINTS"
-                                  }
-                                ]
-                              }
-                            ]
-                          }
+                                  "named": false,
+                                  "value": "CASCADE"
+                                },
+                                {
+                                  "type": "ALIAS",
+                                  "content": {
+                                    "type": "PATTERN",
+                                    "value": "[Cc][Oo][Nn][Ss][Tt][Rr][Aa][Ii][Nn][Tt][Ss]"
+                                  },
+                                  "named": false,
+                                  "value": "CONSTRAINTS"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "BLANK"
+                            }
+                          ]
                         }
                       ]
                     },
@@ -49920,140 +50003,156 @@
                   }
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SEQ",
-                        "members": [
-                          {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "ALIAS",
-                                "content": {
-                                  "type": "PATTERN",
-                                  "value": "[Pp][Rr][Ee][Ss][Ee][Rr][Vv][Ee]"
-                                },
-                                "named": false,
-                                "value": "PRESERVE"
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Pp][Rr][Ee][Ss][Ee][Rr][Vv][Ee]"
                               },
-                              {
-                                "type": "ALIAS",
-                                "content": {
-                                  "type": "PATTERN",
-                                  "value": "[Pp][Uu][Rr][Gg][Ee]"
-                                },
-                                "named": false,
-                                "value": "PURGE"
-                              }
-                            ]
-                          },
-                          {
-                            "type": "SEQ",
-                            "members": [
-                              {
-                                "type": "ALIAS",
-                                "content": {
-                                  "type": "PATTERN",
-                                  "value": "[Mm][Aa][Tt][Ee][Rr][Ii][Aa][Ll][Ii][Zz][Ee][Dd]"
-                                },
-                                "named": false,
-                                "value": "MATERIALIZED"
-                              },
-                              {
-                                "type": "ALIAS",
-                                "content": {
-                                  "type": "PATTERN",
-                                  "value": "[Vv][Ii][Ee][Ww]"
-                                },
-                                "named": false,
-                                "value": "VIEW"
-                              },
-                              {
-                                "type": "ALIAS",
-                                "content": {
-                                  "type": "PATTERN",
-                                  "value": "[Ll][Oo][Gg]"
-                                },
-                                "named": false,
-                                "value": "LOG"
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "type": "SEQ",
-                        "members": [
-                          {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "SEQ",
-                                "members": [
-                                  {
-                                    "type": "ALIAS",
-                                    "content": {
-                                      "type": "PATTERN",
-                                      "value": "[Dd][Rr][Oo][Pp]"
-                                    },
-                                    "named": false,
-                                    "value": "DROP"
-                                  },
-                                  {
-                                    "type": "CHOICE",
-                                    "members": [
-                                      {
-                                        "type": "ALIAS",
-                                        "content": {
-                                          "type": "PATTERN",
-                                          "value": "[Aa][Ll][Ll]"
-                                        },
-                                        "named": false,
-                                        "value": "ALL"
-                                      },
-                                      {
-                                        "type": "BLANK"
-                                      }
-                                    ]
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "ALIAS",
-                                "content": {
-                                  "type": "PATTERN",
-                                  "value": "[Rr][Ee][Uu][Ss][Ee]"
-                                },
-                                "named": false,
-                                "value": "REUSE"
-                              }
-                            ]
-                          },
-                          {
-                            "type": "ALIAS",
-                            "content": {
-                              "type": "PATTERN",
-                              "value": "[Ss][Tt][Oo][Rr][Aa][Gg][Ee]"
+                              "named": false,
+                              "value": "PRESERVE"
                             },
-                            "named": false,
-                            "value": "STORAGE"
-                          }
-                        ]
-                      },
-                      {
-                        "type": "ALIAS",
-                        "content": {
-                          "type": "PATTERN",
-                          "value": "[Cc][Aa][Ss][Cc][Aa][Dd][Ee]"
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Pp][Uu][Rr][Gg][Ee]"
+                              },
+                              "named": false,
+                              "value": "PURGE"
+                            }
+                          ]
                         },
-                        "named": false,
-                        "value": "CASCADE"
-                      }
-                    ]
-                  }
+                        {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Mm][Aa][Tt][Ee][Rr][Ii][Aa][Ll][Ii][Zz][Ee][Dd]"
+                              },
+                              "named": false,
+                              "value": "MATERIALIZED"
+                            },
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Vv][Ii][Ee][Ww]"
+                              },
+                              "named": false,
+                              "value": "VIEW"
+                            },
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Ll][Oo][Gg]"
+                              },
+                              "named": false,
+                              "value": "LOG"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "ALIAS",
+                                  "content": {
+                                    "type": "PATTERN",
+                                    "value": "[Dd][Rr][Oo][Pp]"
+                                  },
+                                  "named": false,
+                                  "value": "DROP"
+                                },
+                                {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "ALIAS",
+                                      "content": {
+                                        "type": "PATTERN",
+                                        "value": "[Aa][Ll][Ll]"
+                                      },
+                                      "named": false,
+                                      "value": "ALL"
+                                    },
+                                    {
+                                      "type": "BLANK"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Rr][Ee][Uu][Ss][Ee]"
+                              },
+                              "named": false,
+                              "value": "REUSE"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "PATTERN",
+                            "value": "[Ss][Tt][Oo][Rr][Aa][Gg][Ee]"
+                          },
+                          "named": false,
+                          "value": "STORAGE"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Cc][Aa][Ss][Cc][Aa][Dd][Ee]"
+                      },
+                      "named": false,
+                      "value": "CASCADE"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
                 }
               ]
             },

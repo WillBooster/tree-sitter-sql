@@ -5744,7 +5744,8 @@ export default grammar({
             keyword('TABLE'),
             optionalIfExists($),
             field('name', $.object_name),
-            repeat(choice(keywords('CASCADE CONSTRAINTS'), keyword('PURGE')))
+            optional(keywords('CASCADE CONSTRAINTS')),
+            optional(keyword('PURGE'))
           ),
           seq(
             keyword('VIEW'),
@@ -5769,7 +5770,9 @@ export default grammar({
             keyword('INDEX'),
             optionalIfExists($),
             field('name', $.object_name),
-            repeat(choice(keyword('ONLINE'), keyword('FORCE')))
+            optional(keyword('ONLINE')),
+            optional(keyword('FORCE')),
+            optional(seq(choice(keyword('DEFERRED'), keyword('IMMEDIATE')), keyword('INVALIDATION')))
           ),
           seq(keyword('SEQUENCE'), optionalIfExists($), field('name', $.object_name)),
           seq(keyword('DIMENSION'), optionalIfExists($), field('name', $.object_name)),
@@ -5811,7 +5814,8 @@ export default grammar({
             optional(
               seq(
                 keywords('INCLUDING CONTENTS'),
-                repeat(choice(keywords('AND DATAFILES'), keywords('CASCADE CONSTRAINTS')))
+                optional(seq(choice(keyword('AND'), keyword('KEEP')), keyword('DATAFILES'))),
+                optional(keywords('CASCADE CONSTRAINTS'))
               )
             )
           ),
@@ -5840,13 +5844,9 @@ export default grammar({
           seq(
             keyword('TABLE'),
             field('name', $.object_name),
-            repeat(
-              choice(
-                seq(choice(keyword('PRESERVE'), keyword('PURGE')), keywords('MATERIALIZED VIEW LOG')),
-                seq(choice(seq(keyword('DROP'), optional(keyword('ALL'))), keyword('REUSE')), keyword('STORAGE')),
-                keyword('CASCADE')
-              )
-            )
+            optional(seq(choice(keyword('PRESERVE'), keyword('PURGE')), keywords('MATERIALIZED VIEW LOG'))),
+            optional(seq(choice(seq(keyword('DROP'), optional(keyword('ALL'))), keyword('REUSE')), keyword('STORAGE'))),
+            optional(keyword('CASCADE'))
           ),
           seq(
             keyword('CLUSTER'),
