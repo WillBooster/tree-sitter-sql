@@ -500,7 +500,7 @@ const buildExpressionFamily = (prefix) => {
           pub($, 'cursor_attribute'),
           ...(isPlsql
             ? [alias($._expr_cc_directive, $.conditional_compilation_directive)]
-            : [$.outer_join_expression, $.model_cell_reference]),
+            : [$.outer_join_expression, $.model_cell_reference, alias($._ordered_aggregate_call, $.function_call)]),
           pub($, 'function_call'),
           alias(ref($, '_conversion_function_call'), $.function_call),
           pub($, 'new_expression'),
@@ -534,7 +534,17 @@ const buildExpressionFamily = (prefix) => {
     [
       k('_expr_identifier'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
-        choice(baseIdentifier($), $._special_expr_id, ...(isPlsql ? [] : [alias(keyword('CURSOR'), $.identifier)])),
+        choice(
+          baseIdentifier($),
+          $._special_expr_id,
+          ...(isPlsql
+            ? []
+            : [
+                alias(keyword('CURSOR'), $.identifier),
+                alias(keyword('XMLAGG'), $.identifier),
+                alias(keyword('COLLECT'), $.identifier),
+              ])
+        ),
     ],
     def('parenthesized_expression', ($) => seq('(', ref($, '_expression'), ')')),
     def('expression_list', ($) => seq('(', ref($, '_expression_list_body'), ')')),
@@ -1293,6 +1303,26 @@ function sqlOnlyExpressionRules() {
   return {
     outer_join_expression: ($) =>
       seq(field('column', choice($._identifier, $.member_expression)), $.outer_join_indicator),
+    _ordered_aggregate_call: ($) =>
+      choice(
+        seq(
+          field('name', alias(keyword('XMLAGG'), $.identifier)),
+          '(',
+          alias($._expression, $.function_argument),
+          optional($.order_by_clause),
+          ')',
+          optional($.filter_clause)
+        ),
+        seq(
+          field('name', alias(keyword('COLLECT'), $.identifier)),
+          '(',
+          optional(choice(keyword('DISTINCT'), keyword('UNIQUE'))),
+          alias($._expression, $.function_argument),
+          optional($.order_by_clause),
+          ')',
+          optional($.filter_clause)
+        )
+      ),
     function_call: ($) =>
       seq(field('name', $._callable_expression), '(', optional($._sql_func_args), ')', optional($._analytic_tail)),
     _sql_func_args: ($) =>
@@ -1411,6 +1441,7 @@ export default grammar({
     [$._non_ref_column_constraint],
     [$._inline_references_constraint],
     [$.function_call],
+    [$._ordered_aggregate_call],
     [$._conversion_function_call],
     [$.listagg_expression],
     [$.json_function_expression],
@@ -6956,11 +6987,7 @@ export default grammar({
 
     partition_by_clause: ($) => seq(keywords('PARTITION BY'), commaSep1($._expression)),
 
-    _sql_function_in_parens_tail: ($) =>
-      choice(
-        seq(choice(keyword('RESPECT'), keyword('IGNORE')), keyword('NULLS'), optional($.order_by_clause)),
-        $.order_by_clause
-      ),
+    _sql_function_in_parens_tail: () => seq(choice(keyword('RESPECT'), keyword('IGNORE')), keyword('NULLS')),
 
     _json_path_function_name: () => JSON_PATH_FUNCTION_TOKEN(),
 

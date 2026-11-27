@@ -684,3 +684,13 @@ XMLSERIALIZE with duplicate or conflicting options
 SELECT XMLSERIALIZE(CONTENT x AS CLOB AS VARCHAR2(10)) FROM t;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Ordinary aggregate SUM with in-parentheses ORDER BY clause
+:error
+:language(oracle)
+================================================================================
+
+SELECT SUM(salary ORDER BY employee_id) FROM employees;
+
+--------------------------------------------------------------------------------

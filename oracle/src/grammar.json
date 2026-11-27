@@ -61938,6 +61938,15 @@
           "name": "model_cell_reference"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_ordered_aggregate_call"
+          },
+          "named": true,
+          "value": "function_call"
+        },
+        {
           "type": "SYMBOL",
           "name": "function_call"
         },
@@ -62058,6 +62067,34 @@
             },
             "named": false,
             "value": "CURSOR"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Xx][Mm][Ll][Aa][Gg][Gg]"
+            },
+            "named": false,
+            "value": "XMLAGG"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Cc][Oo][Ll][Ll][Ee][Cc][Tt]"
+            },
+            "named": false,
+            "value": "COLLECT"
           },
           "named": true,
           "value": "identifier"
@@ -67451,6 +67488,170 @@
         {
           "type": "SYMBOL",
           "name": "outer_join_indicator"
+        }
+      ]
+    },
+    "_ordered_aggregate_call": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Xx][Mm][Ll][Aa][Gg][Gg]"
+                  },
+                  "named": false,
+                  "value": "XMLAGG"
+                },
+                "named": true,
+                "value": "identifier"
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_expression"
+              },
+              "named": true,
+              "value": "function_argument"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "order_by_clause"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "filter_clause"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Cc][Oo][Ll][Ll][Ee][Cc][Tt]"
+                  },
+                  "named": false,
+                  "value": "COLLECT"
+                },
+                "named": true,
+                "value": "identifier"
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]"
+                      },
+                      "named": false,
+                      "value": "DISTINCT"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Uu][Nn][Ii][Qq][Uu][Ee]"
+                      },
+                      "named": false,
+                      "value": "UNIQUE"
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_expression"
+              },
+              "named": true,
+              "value": "function_argument"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "order_by_clause"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "filter_clause"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -76916,60 +77117,39 @@
       ]
     },
     "_sql_function_in_parens_tail": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
         {
-          "type": "SEQ",
+          "type": "CHOICE",
           "members": [
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Rr][Ee][Ss][Pp][Ee][Cc][Tt]"
-                  },
-                  "named": false,
-                  "value": "RESPECT"
-                },
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Ii][Gg][Nn][Oo][Rr][Ee]"
-                  },
-                  "named": false,
-                  "value": "IGNORE"
-                }
-              ]
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Rr][Ee][Ss][Pp][Ee][Cc][Tt]"
+              },
+              "named": false,
+              "value": "RESPECT"
             },
             {
               "type": "ALIAS",
               "content": {
                 "type": "PATTERN",
-                "value": "[Nn][Uu][Ll][Ll][Ss]"
+                "value": "[Ii][Gg][Nn][Oo][Rr][Ee]"
               },
               "named": false,
-              "value": "NULLS"
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "order_by_clause"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
+              "value": "IGNORE"
             }
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "order_by_clause"
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Nn][Uu][Ll][Ll][Ss]"
+          },
+          "named": false,
+          "value": "NULLS"
         }
       ]
     },
@@ -79264,6 +79444,9 @@
     ],
     [
       "function_call"
+    ],
+    [
+      "_ordered_aggregate_call"
     ],
     [
       "_conversion_function_call"
