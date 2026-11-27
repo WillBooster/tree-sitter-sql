@@ -2541,19 +2541,21 @@ export default grammar({
         )
       ),
 
-    _fdw_option: ($) =>
+    _fdw_handler_option: ($) => choice(seq(keyword('HANDLER'), $.qualified_name), keywords('NO HANDLER')),
+
+    _fdw_validator_option: ($) => choice(seq(keyword('VALIDATOR'), $.qualified_name), keywords('NO VALIDATOR')),
+
+    _fdw_options: ($) =>
       choice(
-        seq(keyword('HANDLER'), $.qualified_name),
-        keywords('NO HANDLER'),
-        seq(keyword('VALIDATOR'), $.qualified_name),
-        keywords('NO VALIDATOR')
+        seq($._fdw_handler_option, optional($._fdw_validator_option)),
+        seq($._fdw_validator_option, optional($._fdw_handler_option))
       ),
 
     create_foreign_data_wrapper_statement: ($) =>
       seq(
         keywords('CREATE FOREIGN DATA WRAPPER'),
         field('name', $._identifier),
-        repeat($._fdw_option),
+        optional($._fdw_options),
         optional($._create_generic_options)
       ),
 
@@ -2564,7 +2566,7 @@ export default grammar({
         choice(
           seq(keywords('OWNER TO'), $._role_spec),
           seq(keywords('RENAME TO'), $._identifier),
-          seq(repeat1($._fdw_option), optional($._alter_generic_options)),
+          seq($._fdw_options, optional($._alter_generic_options)),
           $._alter_generic_options
         )
       ),

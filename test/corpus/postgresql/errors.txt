@@ -1139,3 +1139,13 @@ Computed expression in CREATE TRIGGER function argument
 CREATE TRIGGER tr AFTER INSERT ON t EXECUTE FUNCTION f(1 + 2);
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Repeated HANDLER option in CREATE FOREIGN DATA WRAPPER
+:error
+:language(postgresql)
+================================================================================
+
+CREATE FOREIGN DATA WRAPPER repeated NO HANDLER NO HANDLER;
+
+--------------------------------------------------------------------------------
