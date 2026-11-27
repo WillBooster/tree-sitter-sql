@@ -30650,40 +30650,211 @@
               "value": "X509"
             },
             {
+              "type": "SYMBOL",
+              "name": "_tls_opts_7"
+            }
+          ]
+        }
+      ]
+    },
+    "_tls_opts_1": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Cc][Ii][Pp][Hh][Ee][Rr]"
+          },
+          "named": false,
+          "value": "CIPHER"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_string_segment"
+          },
+          "named": true,
+          "value": "string_literal"
+        }
+      ]
+    },
+    "_tls_opts_2": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ii][Ss][Ss][Uu][Ee][Rr]"
+          },
+          "named": false,
+          "value": "ISSUER"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_string_segment"
+          },
+          "named": true,
+          "value": "string_literal"
+        }
+      ]
+    },
+    "_tls_opts_3": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
               "type": "SEQ",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "_tls_option"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Cc][Ii][Pp][Hh][Ee][Rr]"
+                  },
+                  "named": false,
+                  "value": "CIPHER"
                 },
                 {
-                  "type": "REPEAT",
+                  "type": "ALIAS",
                   "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "ALIAS",
-                            "content": {
-                              "type": "PATTERN",
-                              "value": "[Aa][Nn][Dd]"
-                            },
-                            "named": false,
-                            "value": "AND"
-                          },
-                          {
-                            "type": "BLANK"
-                          }
-                        ]
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Cc][Ii][Pp][Hh][Ee][Rr]"
                       },
-                      {
+                      "named": false,
+                      "value": "CIPHER"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
                         "type": "SYMBOL",
-                        "name": "_tls_option"
-                      }
-                    ]
-                  }
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_2"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Ii][Ss][Ss][Uu][Ee][Rr]"
+                  },
+                  "named": false,
+                  "value": "ISSUER"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Ii][Ss][Ss][Uu][Ee][Rr]"
+                      },
+                      "named": false,
+                      "value": "ISSUER"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_1"
                 }
               ]
             }
@@ -30691,44 +30862,580 @@
         }
       ]
     },
-    "_tls_option": {
+    "_tls_opts_4": {
       "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
+          },
+          "named": false,
+          "value": "SUBJECT"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_string_segment"
+          },
+          "named": true,
+          "value": "string_literal"
+        }
+      ]
+    },
+    "_tls_opts_5": {
+      "type": "CHOICE",
       "members": [
         {
           "type": "CHOICE",
           "members": [
             {
-              "type": "ALIAS",
-              "content": {
-                "type": "PATTERN",
-                "value": "[Cc][Ii][Pp][Hh][Ee][Rr]"
-              },
-              "named": false,
-              "value": "CIPHER"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Cc][Ii][Pp][Hh][Ee][Rr]"
+                  },
+                  "named": false,
+                  "value": "CIPHER"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
             },
             {
-              "type": "ALIAS",
-              "content": {
-                "type": "PATTERN",
-                "value": "[Ii][Ss][Ss][Uu][Ee][Rr]"
-              },
-              "named": false,
-              "value": "ISSUER"
-            },
-            {
-              "type": "ALIAS",
-              "content": {
-                "type": "PATTERN",
-                "value": "[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
-              },
-              "named": false,
-              "value": "SUBJECT"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Cc][Ii][Pp][Hh][Ee][Rr]"
+                      },
+                      "named": false,
+                      "value": "CIPHER"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_4"
+                }
+              ]
             }
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "string_literal"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
+                  },
+                  "named": false,
+                  "value": "SUBJECT"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
+                      },
+                      "named": false,
+                      "value": "SUBJECT"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "_tls_opts_6": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Ii][Ss][Ss][Uu][Ee][Rr]"
+                  },
+                  "named": false,
+                  "value": "ISSUER"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Ii][Ss][Ss][Uu][Ee][Rr]"
+                      },
+                      "named": false,
+                      "value": "ISSUER"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_4"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
+                  },
+                  "named": false,
+                  "value": "SUBJECT"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
+                      },
+                      "named": false,
+                      "value": "SUBJECT"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_2"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "_tls_opts_7": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Cc][Ii][Pp][Hh][Ee][Rr]"
+                  },
+                  "named": false,
+                  "value": "CIPHER"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Cc][Ii][Pp][Hh][Ee][Rr]"
+                      },
+                      "named": false,
+                      "value": "CIPHER"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_6"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Ii][Ss][Ss][Uu][Ee][Rr]"
+                  },
+                  "named": false,
+                  "value": "ISSUER"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Ii][Ss][Ss][Uu][Ee][Rr]"
+                      },
+                      "named": false,
+                      "value": "ISSUER"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_5"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
+                  },
+                  "named": false,
+                  "value": "SUBJECT"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_string_segment"
+                  },
+                  "named": true,
+                  "value": "string_literal"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
+                      },
+                      "named": false,
+                      "value": "SUBJECT"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_string_segment"
+                      },
+                      "named": true,
+                      "value": "string_literal"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_tls_opts_3"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

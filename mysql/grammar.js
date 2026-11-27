@@ -587,6 +587,27 @@ const commonStatements = ($) => [
   $.handler_statement,
 ];
 
+/** @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
+function buildTlsOptionRules() {
+  const attrs = ['CIPHER', 'ISSUER', 'SUBJECT'];
+  /** @type {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
+  const out = {};
+  for (let mask = 1; mask < 1 << attrs.length; mask++) {
+    out[`_tls_opts_${mask}`] = ($) => {
+      /** @type {RuleOrLiteral[]} */
+      const alts = [];
+      for (let i = 0; i < attrs.length; i++) {
+        if (!(mask & (1 << i))) continue;
+        const head = seq(keyword(attrs[i]), alias($._string_segment, $.string_literal));
+        const rem = mask & ~(1 << i);
+        alts.push(rem ? choice(head, seq(head, optional(keyword('AND')), $[`_tls_opts_${rem}`])) : head);
+      }
+      return alts.length === 1 ? alts[0] : choice(...alts);
+    };
+  }
+  return out;
+}
+
 export default grammar({
   name: 'mysql',
 
@@ -3154,17 +3175,9 @@ export default grammar({
       ),
 
     _require_clause: ($) =>
-      seq(
-        keyword('REQUIRE'),
-        choice(
-          keyword('NONE'),
-          keyword('SSL'),
-          keyword('X509'),
-          seq($._tls_option, repeat(seq(optional(keyword('AND')), $._tls_option)))
-        )
-      ),
+      seq(keyword('REQUIRE'), choice(keyword('NONE'), keyword('SSL'), keyword('X509'), $._tls_opts_7)),
 
-    _tls_option: ($) => seq(choice(keyword('CIPHER'), keyword('ISSUER'), keyword('SUBJECT')), $.string_literal),
+    ...buildTlsOptionRules(),
 
     _resource_options: ($) =>
       seq(
