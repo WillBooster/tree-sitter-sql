@@ -41,7 +41,14 @@ clone() {
 
 cd "$(dirname "$0")/.."
 
+all_dialects=$(node -e 'const {grammars} = require("./tree-sitter.json"); console.log(grammars.map(({name}) => name).join("\n"));')
 selected=("$@")
+for arg in "${selected[@]}"; do
+  if ! grep -qxF "$arg" <<< "$all_dialects"; then
+    echo "Unknown dialect: $arg (expected one of: $(tr '\n' ' ' <<< "$all_dialects"))" >&2
+    exit 1
+  fi
+done
 should_run() {
   if [[ ${#selected[@]} -eq 0 ]]; then
     return 0
