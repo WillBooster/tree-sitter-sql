@@ -2459,7 +2459,7 @@ export default grammar({
           ),
           seq(field('cursor', $._identifier), keywords('CURSOR FOR'), alias($._subquery_select, $.select_statement)),
           seq(
-            choice(keyword('CONTINUE'), keyword('EXIT'), keyword('UNDO')),
+            choice(keyword('CONTINUE'), keyword('EXIT')),
             keywords('HANDLER FOR'),
             commaSep1($._handler_condition_value),
             $._routine_statement

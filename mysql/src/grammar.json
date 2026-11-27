@@ -21077,15 +21077,6 @@
                       },
                       "named": false,
                       "value": "EXIT"
-                    },
-                    {
-                      "type": "ALIAS",
-                      "content": {
-                        "type": "PATTERN",
-                        "value": "[Uu][Nn][Dd][Oo]"
-                      },
-                      "named": false,
-                      "value": "UNDO"
                     }
                   ]
                 },
