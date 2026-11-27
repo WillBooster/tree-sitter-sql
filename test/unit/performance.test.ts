@@ -8,31 +8,41 @@ import { generationInputMtime } from '../helpers/generationInputs.js';
 
 const Root = path.join(import.meta.dirname, '../..');
 
+type ReadVolumeCase = [name: string, buildSource: (lines: number) => string, forbiddenNodeType?: string];
+
 interface DialectChecks {
   errorLine: string;
-  readVolumeCases: [name: string, line: string][];
+  readVolumeCases: ReadVolumeCase[];
 }
 
 const DialectSuites: Record<string, DialectChecks> = {
   mysql: {
     errorLine: 'SELECT a FROM WHERE b;\n',
     readVolumeCases: [
-      ['unclosed backslash-escaped string', "SELECT 'a\\'b\n"],
-      ['unclosed versioned comment', 'SELECT /*!50700 (a\n'],
+      [
+        'unclosed backslash-escaped string',
+        (lines) => `SELECT 'a\\'b\n${'SELECT a, b FROM c;\n'.repeat(lines)}`,
+        'string_literal',
+      ],
+      ['unclosed versioned comment', (lines) => 'SELECT /*!50700 (a\n'.repeat(lines), 'comment'],
     ],
   },
   oracle: {
     errorLine: 'SELECT a FROM WHERE b;\n',
     readVolumeCases: [
-      ['unclosed alternative-quoted literal', "SELECT q'[hello\n"],
-      ['unclosed block comment', 'SELECT /* hello\n'],
+      ['unclosed alternative-quoted literal', (lines) => "SELECT q'[hello\n".repeat(lines), 'string_literal'],
+      ['unclosed block comment', (lines) => 'SELECT /* hello\n'.repeat(lines), 'comment'],
     ],
   },
   postgresql: {
     errorLine: 'SELECT a FROM WHERE b;\n',
     readVolumeCases: [
-      ['unclosed nested block comment', 'SELECT /* /* a\n'],
-      ['unclosed dollar-quoted string', 'SELECT $tag$ a\n'],
+      ['unclosed nested block comment', (lines) => 'SELECT /* /* a\n'.repeat(lines), 'comment'],
+      [
+        'unclosed dollar-quoted string',
+        (lines) => Array.from({ length: lines }, (_, index) => `SELECT $tag${index}$ a\n`).join(''),
+        'string_literal',
+      ],
     ],
   },
   sqlite: {
@@ -40,8 +50,12 @@ const DialectSuites: Record<string, DialectChecks> = {
     // The scanner reads the tokens of a module argument; an unbalanced parenthesis or quote in one statement must not
     // make it read the rest of the input again for each later statement.
     readVolumeCases: [
-      ['parenthesis in module argument', 'CREATE VIRTUAL TABLE t USING m((a\n'],
-      ['quote in module argument', "CREATE VIRTUAL TABLE t USING m(a, 'b\n"],
+      ['parenthesis in module argument', (lines) => 'CREATE VIRTUAL TABLE t USING m((a\n'.repeat(lines)],
+      [
+        'quote in module argument',
+        (lines) => `CREATE VIRTUAL TABLE t USING m(a, 'b\n${'CREATE VIRTUAL TABLE u USING m(a, b);\n'.repeat(lines)}`,
+        'string_literal',
+      ],
     ],
   },
 };
@@ -100,16 +114,16 @@ for (const [grammar, { errorLine, readVolumeCases }] of Object.entries(DialectSu
       expect(largeFastest / smallFastest).toBeLessThan(18);
     });
 
-    test.each(readVolumeCases)('reads repeated %s in linear input volume', (_, line) => {
-      const small = countReads(parser, line.repeat(200));
-      const large = countReads(parser, line.repeat(2000));
+    test.each(readVolumeCases)('reads repeated %s in linear input volume', (_, buildSource, forbiddenNodeType) => {
+      const small = countReads(parser, buildSource(200), forbiddenNodeType);
+      const large = countReads(parser, buildSource(2000), forbiddenNodeType);
       expect(small).toBeGreaterThan(0);
       expect(large / small).toBeLessThan(18);
     });
   });
 }
 
-function countReads(parser: Parser, source: string): number {
+function countReads(parser: Parser, source: string, forbiddenNodeType?: string): number {
   let reads = 0;
   const tree = parser.parse((index) => {
     reads++;
@@ -118,6 +132,9 @@ function countReads(parser: Parser, source: string): number {
   if (!tree) throw new Error('The parser returned no tree');
   try {
     expect(tree.rootNode.hasError).toBe(true);
+    if (forbiddenNodeType) {
+      expect(tree.rootNode.descendantsOfType(forbiddenNodeType)).toHaveLength(0);
+    }
   } finally {
     tree.delete();
   }
