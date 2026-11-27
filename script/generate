@@ -62,7 +62,7 @@ done < "$examples"
 all_grammars=$(node -e 'const {grammars} = require("./tree-sitter.json"); console.log([...new Set(grammars.map(({path}) => path ?? "."))].sort().join("\n"));')
 if [[ $# -gt 0 ]]; then
   for requested in "$@"; do
-    if ! grep -qxF "$requested" <<< "$all_grammars"; then
+    if ! grep -qxF -- "$requested" <<< "$all_grammars"; then
       echo "Unknown grammar directory: $requested" >&2
       exit 1
     fi
