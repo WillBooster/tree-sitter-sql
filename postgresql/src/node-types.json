@@ -3611,7 +3611,19 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "json_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
             "named": true
           },
           {
@@ -3624,6 +3636,10 @@
           },
           {
             "type": "numeric_literal",
+            "named": true
+          },
+          {
+            "type": "overlaps_expression",
             "named": true
           },
           {
@@ -4182,7 +4198,19 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "json_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
             "named": true
           },
           {
@@ -4195,6 +4223,10 @@
           },
           {
             "type": "numeric_literal",
+            "named": true
+          },
+          {
+            "type": "overlaps_expression",
             "named": true
           },
           {
@@ -5668,7 +5700,19 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "json_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
             "named": true
           },
           {
@@ -5681,6 +5725,10 @@
           },
           {
             "type": "numeric_literal",
+            "named": true
+          },
+          {
+            "type": "overlaps_expression",
             "named": true
           },
           {
@@ -12381,7 +12429,19 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "json_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
             "named": true
           },
           {
@@ -12394,6 +12454,10 @@
           },
           {
             "type": "numeric_literal",
+            "named": true
+          },
+          {
+            "type": "overlaps_expression",
             "named": true
           },
           {
@@ -13154,6 +13218,10 @@
           },
           {
             "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {
@@ -14458,7 +14526,19 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "json_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
             "named": true
           },
           {
@@ -14471,6 +14551,10 @@
           },
           {
             "type": "numeric_literal",
+            "named": true
+          },
+          {
+            "type": "overlaps_expression",
             "named": true
           },
           {
@@ -17998,6 +18082,10 @@
           },
           {
             "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "is_expression",
             "named": true
           },
           {

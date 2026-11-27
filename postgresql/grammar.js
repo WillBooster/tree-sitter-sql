@@ -24,8 +24,9 @@ const PREC = {
   MULTIPLICATIVE: 10,
   EXPONENT: 11,
   AT: 12,
-  UNARY: 13,
-  POSTFIX: 14,
+  COLLATE: 13,
+  UNARY: 14,
+  POSTFIX: 15,
 };
 
 // PostgreSQL 18 `RESERVED_KEYWORD` (`catcode = 'R'`): never valid as unquoted `ColId` or `type_function_name`.
@@ -269,6 +270,30 @@ const parens = (rule) => seq('(', rule, ')');
  */
 const leftBinary = (operand, precedence, operator) =>
   prec.left(precedence, seq(field('left', operand), field('operator', operator), field('right', operand)));
+
+/**
+ * @param {RuleOrLiteral} left
+ * @param {RuleOrLiteral} right
+ * @param {number} precedence
+ * @param {RuleOrLiteral} operator
+ */
+const leftBinaryAsym = (left, right, precedence, operator) =>
+  prec.left(precedence, seq(field('left', left), field('operator', operator), field('right', right)));
+
+/** @param {GrammarSymbols<string>} $ */
+const tightLhs = ($) => choice($._tight_expr, $._closed_pattern, $._closed_cmp, $._closed_is);
+
+/** @param {GrammarSymbols<string>} $ */
+const patternLhs = ($) => choice($._pattern_expr, $._closed_cmp, $._closed_is);
+
+/** @param {GrammarSymbols<string>} $ */
+const cmpLhs = ($) => choice($._cmp_expr, $._closed_is);
+
+/** @param {GrammarSymbols<string>} $ */
+const bArithLhs = ($) => choice($._b_arith_expr, $._b_closed_expr);
+
+/** @param {GrammarSymbols<string>} $ */
+const bCmpLhs = ($) => choice($._b_cmp_expr, $._b_closed_expr);
 
 export default grammar({
   name: 'postgresql',
@@ -3464,13 +3489,11 @@ export default grammar({
 
     _expression: ($) => choice($._is_expr, $.unary_expression, $.binary_expression),
 
-    _is_expr: ($) => choice($._cmp_expr, $.is_expression),
+    _is_expr: ($) => choice($._cmp_expr, alias($._open_is_expression, $.is_expression), $._closed_is),
 
-    _cmp_expr: ($) =>
-      choice($._pattern_expr, alias($._cmp_binary_expression, $.binary_expression), $.quantified_comparison_expression),
+    _cmp_expr: ($) => choice($._pattern_expr, alias($._cmp_binary_expression, $.binary_expression), $._closed_cmp),
 
-    _pattern_expr: ($) =>
-      choice($._tight_expr, $.between_expression, $.in_expression, $.like_expression, $.overlaps_expression),
+    _pattern_expr: ($) => choice($._tight_expr, $.between_expression, $.like_expression, $._closed_pattern),
 
     _tight_expr: ($) =>
       choice(
@@ -3483,7 +3506,14 @@ export default grammar({
         alias($._tight_quantified_expression, $.quantified_comparison_expression)
       ),
 
-    _b_expr: ($) => choice($._b_cmp_expr, alias($._b_is_expression, $.is_expression)),
+    _closed_pattern: ($) =>
+      choice($.in_expression, alias($._quantified_like_expression, $.like_expression), $.overlaps_expression),
+
+    _closed_cmp: ($) => $.quantified_comparison_expression,
+
+    _closed_is: ($) => alias($._postfix_is_expression, $.is_expression),
+
+    _b_expr: ($) => choice($._b_cmp_expr, alias($._b_open_is_expression, $.is_expression), $._b_closed_expr),
 
     _b_cmp_expr: ($) => choice($._b_arith_expr, alias($._b_cmp_binary_expression, $.binary_expression)),
 
@@ -3494,6 +3524,8 @@ export default grammar({
         alias($._b_unary_expression, $.unary_expression),
         alias($._b_arith_binary_expression, $.binary_expression)
       ),
+
+    _b_closed_expr: ($) => alias($._b_postfix_is_expression, $.is_expression),
 
     _primary_expr: ($) =>
       choice(
@@ -3735,10 +3767,10 @@ export default grammar({
       ),
 
     _typecast_expression: ($) =>
-      prec.left(PREC.POSTFIX, seq(field('value', $._tight_expr), '::', field('type', $.type_name))),
+      prec.left(PREC.POSTFIX, seq(field('value', tightLhs($)), '::', field('type', $.type_name))),
 
     _b_typecast_expression: ($) =>
-      prec.left(PREC.POSTFIX, seq(field('value', $._b_arith_expr), '::', field('type', $.type_name))),
+      prec.left(PREC.POSTFIX, seq(field('value', bArithLhs($)), '::', field('type', $.type_name))),
 
     case_expression: ($) =>
       seq(
@@ -3779,7 +3811,7 @@ export default grammar({
             prec(
               PREC.PATTERN,
               seq(
-                field('source', $._tight_expr),
+                field('source', tightLhs($)),
                 keyword('SIMILAR'),
                 field('pattern', $._expression),
                 keyword('ESCAPE'),
@@ -4121,13 +4153,16 @@ export default grammar({
       prec.left(
         PREC.AT,
         seq(
-          field('value', $._tight_expr),
+          field('value', tightLhs($)),
           choice(seq(keywords('AT TIME ZONE'), field('zone', $._tight_expr)), keywords('AT LOCAL'))
         )
       ),
 
     collate_expression: ($) =>
-      prec.left(PREC.AT, seq(field('value', $._tight_expr), keyword('COLLATE'), field('collation', $.qualified_name))),
+      prec.left(
+        PREC.COLLATE,
+        seq(field('value', tightLhs($)), keyword('COLLATE'), field('collation', $.qualified_name))
+      ),
 
     unary_expression: ($) =>
       prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', $._expression))),
@@ -4162,33 +4197,25 @@ export default grammar({
     binary_expression: ($) =>
       choice(leftBinary($._expression, PREC.OR, keyword('OR')), leftBinary($._expression, PREC.AND, keyword('AND'))),
 
-    _cmp_binary_expression: ($) =>
-      prec.left(
-        PREC.COMPARISON,
-        seq(field('left', $._pattern_expr), field('operator', $._cmp_operator), field('right', $._pattern_expr))
-      ),
+    _cmp_binary_expression: ($) => leftBinaryAsym(patternLhs($), $._pattern_expr, PREC.COMPARISON, $._cmp_operator),
 
     _tight_binary_expression: ($) =>
       choice(
-        leftBinary($._tight_expr, PREC.OP, choice($.custom_operator, $.operator_invocation)),
-        leftBinary($._tight_expr, PREC.ADDITIVE, choice('+', '-')),
-        leftBinary($._tight_expr, PREC.MULTIPLICATIVE, choice('*', '/', '%')),
-        leftBinary($._tight_expr, PREC.EXPONENT, '^')
+        leftBinaryAsym(tightLhs($), $._tight_expr, PREC.OP, choice($.custom_operator, $.operator_invocation)),
+        leftBinaryAsym(tightLhs($), $._tight_expr, PREC.ADDITIVE, choice('+', '-')),
+        leftBinaryAsym(tightLhs($), $._tight_expr, PREC.MULTIPLICATIVE, choice('*', '/', '%')),
+        leftBinaryAsym(tightLhs($), $._tight_expr, PREC.EXPONENT, '^')
       ),
 
     _b_arith_binary_expression: ($) =>
       choice(
-        leftBinary($._b_arith_expr, PREC.OP, choice($.custom_operator, $.operator_invocation)),
-        leftBinary($._b_arith_expr, PREC.ADDITIVE, choice('+', '-')),
-        leftBinary($._b_arith_expr, PREC.MULTIPLICATIVE, choice('*', '/', '%')),
-        leftBinary($._b_arith_expr, PREC.EXPONENT, '^')
+        leftBinaryAsym(bArithLhs($), $._b_arith_expr, PREC.OP, choice($.custom_operator, $.operator_invocation)),
+        leftBinaryAsym(bArithLhs($), $._b_arith_expr, PREC.ADDITIVE, choice('+', '-')),
+        leftBinaryAsym(bArithLhs($), $._b_arith_expr, PREC.MULTIPLICATIVE, choice('*', '/', '%')),
+        leftBinaryAsym(bArithLhs($), $._b_arith_expr, PREC.EXPONENT, '^')
       ),
 
-    _b_cmp_binary_expression: ($) =>
-      prec.left(
-        PREC.COMPARISON,
-        seq(field('left', $._b_arith_expr), field('operator', $._cmp_operator), field('right', $._b_arith_expr))
-      ),
+    _b_cmp_binary_expression: ($) => leftBinaryAsym(bArithLhs($), $._b_arith_expr, PREC.COMPARISON, $._cmp_operator),
 
     _quantifier_tail: ($) =>
       seq(
@@ -4199,7 +4226,7 @@ export default grammar({
     quantified_comparison_expression: ($) =>
       prec.left(
         PREC.COMPARISON,
-        seq(field('left', $._pattern_expr), field('operator', $._cmp_operator), $._quantifier_tail)
+        seq(field('left', patternLhs($)), field('operator', $._cmp_operator), $._quantifier_tail)
       ),
 
     _tight_quantified_expression: ($) => {
@@ -4212,7 +4239,7 @@ export default grammar({
       ];
       return choice(
         ...operators.map(([precedence, operator]) =>
-          prec.left(precedence, seq(field('left', $._tight_expr), field('operator', operator), $._quantifier_tail))
+          prec.left(precedence, seq(field('left', tightLhs($)), field('operator', operator), $._quantifier_tail))
         )
       );
     },
@@ -4221,7 +4248,7 @@ export default grammar({
       prec.left(
         PREC.PATTERN,
         seq(
-          field('value', $._tight_expr),
+          field('value', tightLhs($)),
           optional(keyword('NOT')),
           keyword('BETWEEN'),
           optional(choice(keyword('SYMMETRIC'), keyword('ASYMMETRIC'))),
@@ -4235,7 +4262,7 @@ export default grammar({
       prec.left(
         PREC.PATTERN,
         seq(
-          field('value', $._tight_expr),
+          field('value', tightLhs($)),
           optional(keyword('NOT')),
           keyword('IN'),
           parens(choice($.select_statement, commaSep1($._expression)))
@@ -4245,20 +4272,23 @@ export default grammar({
     like_expression: ($) =>
       prec.left(
         PREC.PATTERN,
-        choice(
-          seq(
-            field('left', $._tight_expr),
-            optional(keyword('NOT')),
-            field('operator', choice(keyword('LIKE'), keyword('ILIKE'), keywords('SIMILAR TO'))),
-            field('right', $._tight_expr),
-            optional(seq(keyword('ESCAPE'), field('escape', $._tight_expr)))
-          ),
-          seq(
-            field('left', $._tight_expr),
-            optional(keyword('NOT')),
-            field('operator', choice(keyword('LIKE'), keyword('ILIKE'))),
-            $._quantifier_tail
-          )
+        seq(
+          field('left', tightLhs($)),
+          optional(keyword('NOT')),
+          field('operator', choice(keyword('LIKE'), keyword('ILIKE'), keywords('SIMILAR TO'))),
+          field('right', $._tight_expr),
+          optional(seq(keyword('ESCAPE'), field('escape', $._tight_expr)))
+        )
+      ),
+
+    _quantified_like_expression: ($) =>
+      prec.left(
+        PREC.PATTERN,
+        seq(
+          field('left', tightLhs($)),
+          optional(keyword('NOT')),
+          field('operator', choice(keyword('LIKE'), keyword('ILIKE'))),
+          $._quantifier_tail
         )
       ),
 
@@ -4268,20 +4298,19 @@ export default grammar({
         seq(field('left', $.row_expression), keyword('OVERLAPS'), field('right', $.row_expression))
       ),
 
-    is_expression: ($) =>
+    _postfix_is_expression: ($) =>
       prec.left(
         PREC.IS,
         choice(
-          seq(field('value', $._cmp_expr), choice(keyword('ISNULL'), keyword('NOTNULL'))),
+          seq(field('value', cmpLhs($)), choice(keyword('ISNULL'), keyword('NOTNULL'))),
           seq(
-            field('value', $._cmp_expr),
+            field('value', cmpLhs($)),
             keyword('IS'),
             optional(keyword('NOT')),
             choice(
               $.null,
               $.boolean_literal,
               keyword('UNKNOWN'),
-              seq(keywords('DISTINCT FROM'), field('right', $._cmp_expr)),
               keyword('DOCUMENT'),
               seq(
                 optional(choice(keyword('NFC'), keyword('NFD'), keyword('NFKC'), keyword('NFKD'))),
@@ -4297,14 +4326,30 @@ export default grammar({
         )
       ),
 
-    _b_is_expression: ($) =>
+    _open_is_expression: ($) =>
       prec.left(
         PREC.IS,
         seq(
-          field('value', $._b_cmp_expr),
+          field('value', cmpLhs($)),
           keyword('IS'),
           optional(keyword('NOT')),
-          choice(seq(keywords('DISTINCT FROM'), field('right', $._b_cmp_expr)), keyword('DOCUMENT'))
+          keywords('DISTINCT FROM'),
+          field('right', $._cmp_expr)
+        )
+      ),
+
+    _b_postfix_is_expression: ($) =>
+      prec.left(PREC.IS, seq(field('value', bCmpLhs($)), keyword('IS'), optional(keyword('NOT')), keyword('DOCUMENT'))),
+
+    _b_open_is_expression: ($) =>
+      prec.left(
+        PREC.IS,
+        seq(
+          field('value', bCmpLhs($)),
+          keyword('IS'),
+          optional(keyword('NOT')),
+          keywords('DISTINCT FROM'),
+          field('right', $._b_cmp_expr)
         )
       ),
 

@@ -1183,3 +1183,54 @@ SELECT a + ANY (b), a - ANY (b), a * ALL (SELECT 1), SUBSTRING(s SIMILAR p ESCAP
         (table
           (qualified_name
             (identifier)))))))
+
+
+================================================================================
+COLLATE above AT TIME ZONE and chained closed IS, IN, and ANY predicates
+:language(postgresql)
+================================================================================
+
+SELECT a AT TIME ZONE b COLLATE "C" AT TIME ZONE c, a IS NULL IS NULL, a IN (1) IN (true), 1 = ANY(ARRAY[1]) = true FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (at_time_zone_expression
+          (at_time_zone_expression
+            (column_reference
+              (identifier))
+            (collate_expression
+              (column_reference
+                (identifier))
+              (qualified_name
+                (quoted_identifier))))
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (is_expression
+            (column_reference
+              (identifier))
+            (null))
+          (null)))
+      (result_column
+        (in_expression
+          (in_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))
+          (boolean_literal)))
+      (result_column
+        (binary_expression
+          (quantified_comparison_expression
+            (numeric_literal)
+            (array_expression
+              (numeric_literal)))
+          (boolean_literal)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
