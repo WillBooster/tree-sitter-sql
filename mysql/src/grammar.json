@@ -1199,13 +1199,8 @@
                   "value": "ALL"
                 },
                 {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]"
-                  },
-                  "named": false,
-                  "value": "DISTINCT"
+                  "type": "SYMBOL",
+                  "name": "_distinct_keyword"
                 }
               ]
             },
@@ -1244,13 +1239,8 @@
                   "value": "ALL"
                 },
                 {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]"
-                  },
-                  "named": false,
-                  "value": "DISTINCT"
+                  "type": "SYMBOL",
+                  "name": "_distinct_keyword"
                 }
               ]
             },
@@ -39515,6 +39505,29 @@
         }
       ]
     },
+    "_distinct_keyword": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]"
+          },
+          "named": false,
+          "value": "DISTINCT"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt][Rr][Oo][Ww]"
+          },
+          "named": false,
+          "value": "DISTINCTROW"
+        }
+      ]
+    },
     "_aggregate_function_call": {
       "type": "CHOICE",
       "members": [
@@ -39607,13 +39620,8 @@
                   "type": "SEQ",
                   "members": [
                     {
-                      "type": "ALIAS",
-                      "content": {
-                        "type": "PATTERN",
-                        "value": "[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]"
-                      },
-                      "named": false,
-                      "value": "DISTINCT"
+                      "type": "SYMBOL",
+                      "name": "_distinct_keyword"
                     },
                     {
                       "type": "SEQ",
@@ -39743,13 +39751,8 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "ALIAS",
-                      "content": {
-                        "type": "PATTERN",
-                        "value": "[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]"
-                      },
-                      "named": false,
-                      "value": "DISTINCT"
+                      "type": "SYMBOL",
+                      "name": "_distinct_keyword"
                     },
                     {
                       "type": "ALIAS",
@@ -40080,13 +40083,8 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]"
-                  },
-                  "named": false,
-                  "value": "DISTINCT"
+                  "type": "SYMBOL",
+                  "name": "_distinct_keyword"
                 },
                 {
                   "type": "BLANK"

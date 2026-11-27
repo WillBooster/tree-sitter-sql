@@ -763,10 +763,10 @@ export default grammar({
         )
       ),
 
-    _union_or_except_operator: () =>
-      seq(choice(keyword('UNION'), keyword('EXCEPT')), optional(choice(keyword('ALL'), keyword('DISTINCT')))),
+    _union_or_except_operator: ($) =>
+      seq(choice(keyword('UNION'), keyword('EXCEPT')), optional(choice(keyword('ALL'), $._distinct_keyword))),
 
-    _intersect_operator: () => seq(keyword('INTERSECT'), optional(choice(keyword('ALL'), keyword('DISTINCT')))),
+    _intersect_operator: ($) => seq(keyword('INTERSECT'), optional(choice(keyword('ALL'), $._distinct_keyword))),
 
     _query_primary_no_into: ($) =>
       choice($.select_core, $.values_statement, $.table_value_statement, $.parenthesized_query),
@@ -3900,6 +3900,8 @@ export default grammar({
         )
       ),
 
+    _distinct_keyword: () => choice(keyword('DISTINCT'), keyword('DISTINCTROW')),
+
     _aggregate_function_call: ($) =>
       choice(
         seq(
@@ -3908,14 +3910,14 @@ export default grammar({
           choice(
             seq(optional(keyword('ALL')), alias('*', $.all_columns)),
             seq(optional(keyword('ALL')), $._expression),
-            seq(keyword('DISTINCT'), commaSep1($._expression))
+            seq($._distinct_keyword, commaSep1($._expression))
           ),
           ')'
         ),
         seq(
           field('name', choice(...DISTINCT_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))),
           '(',
-          optional(choice(keyword('DISTINCT'), keyword('ALL'))),
+          optional(choice($._distinct_keyword, keyword('ALL'))),
           $._expression,
           ')'
         ),
@@ -3939,7 +3941,7 @@ export default grammar({
         seq(
           field('name', alias(keyword('GROUP_CONCAT'), $.identifier)),
           '(',
-          optional(keyword('DISTINCT')),
+          optional($._distinct_keyword),
           commaSep1($._expression),
           optional($.order_by_clause),
           optional(seq(keyword('SEPARATOR'), $.string_literal)),

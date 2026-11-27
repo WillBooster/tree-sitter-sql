@@ -995,3 +995,35 @@ SELECT DATE '2020-01-01' 'created', TIME '12:00:00' 'clock', TIMESTAMP '2020-01-
         (temporal_literal
           (string_literal))
         (string_literal)))))
+
+================================================================================
+DISTINCTROW in aggregate arguments
+:language(mysql)
+================================================================================
+
+SELECT COUNT(DISTINCTROW x), SUM(DISTINCTROW x), GROUP_CONCAT(DISTINCTROW x) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
