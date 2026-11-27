@@ -808,10 +808,7 @@ void tree_sitter_oracle_external_scanner_deserialize(void *payload, const char *
 static bool scan_nul_or_comment(TSLexer *lexer, const bool *valid_symbols, bool line_only_hspace, bool *result) {
   int32_t c = lexer->lookahead;
   if (c == 0) {
-    if (lexer->eof(lexer)) {
-      *result = false;
-      return true;
-    }
+    if (lexer->eof(lexer)) return false;
     while (!at_eof(lexer) && lexer->lookahead == 0) advance(lexer);
     *result = emit_illegal(lexer, valid_symbols);
     return true;
