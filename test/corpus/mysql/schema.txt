@@ -902,6 +902,7 @@ ALTER TABLE space-separated options, loadable functions, tablespaces, servers, S
 ================================================================================
 
 ALTER TABLE orders ENGINE = InnoDB ROW_FORMAT = DYNAMIC;
+ALTER TABLE orders SECONDARY_LOAD, SECONDARY_UNLOAD;
 ALTER TABLE orders;
 CREATE AGGREGATE FUNCTION IF NOT EXISTS udf_sum RETURNS REAL SONAME 'udf_sum.so';
 CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd' ENGINE = InnoDB;
@@ -928,6 +929,11 @@ ALTER INSTANCE ROTATE INNODB MASTER KEY;
       (table_option
         (identifier))
       (table_option)))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action)
+    (alter_table_action))
   (alter_table_statement
     (qualified_name
       (identifier)))

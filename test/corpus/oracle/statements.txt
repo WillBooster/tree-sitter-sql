@@ -464,3 +464,93 @@ END;
         (function_argument
           (numeric_literal)))
       (numeric_literal))))
+
+================================================================================
+System privileges, AUDIT SESSION, RETURNING OLD/NEW, and PL/SQL 23ai features
+:language(oracle)
+================================================================================
+
+GRANT ADMINISTER DATABASE TRIGGER, DEBUG CONNECT ANY, USE ANY JOB RESOURCE TO app_user;
+AUDIT SESSION BY scott WHENEVER NOT SUCCESSFUL;
+NOAUDIT SESSION;
+UPDATE emp log SET log.sal = 1 RETURNING OLD sal, NEW sal INTO :o, :n;
+DECLARE
+  file VARCHAR2(10);
+BEGIN
+  $IF $$debug $THEN
+    file := TRANSLATE(file, 'a', 'b');
+    s := t_arr(1 => 'a', OTHERS => 'z');
+    FOR i IN 1, 3, 5..7 WHEN i > 0 LOOP
+      CASE i WHEN > 2, 1 THEN p@dblink(i); END CASE;
+    END LOOP;
+  $END
+END;
+/
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (grant_statement
+    (identifier))
+  (audit_statement
+    (identifier))
+  (noaudit_statement)
+  (update_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (set_clause
+      (update_assignment
+        (object_name
+          (identifier)
+          (identifier))
+        (numeric_literal)))
+    (returning_into_clause
+      (identifier)
+      (identifier)
+      (bind_variable)
+      (bind_variable)))
+  (anonymous_block
+    (variable_declaration
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (conditional_compilation_directive
+      (inquiry_directive)
+      (assignment_statement
+        (identifier)
+        (translate_expression
+          (identifier)
+          (string_literal)
+          (string_literal)))
+      (assignment_statement
+        (identifier)
+        (function_call
+          (identifier)
+          (function_argument
+            (numeric_literal)
+            (string_literal))
+          (function_argument
+            (string_literal))))
+      (for_statement
+        (identifier)
+        (numeric_literal)
+        (numeric_literal)
+        (numeric_literal)
+        (numeric_literal)
+        (binary_expression
+          (identifier)
+          (numeric_literal))
+        (plsql_case_statement
+          (identifier)
+          (plsql_when_clause
+            (numeric_literal)
+            (numeric_literal)
+            (procedure_call_statement
+              (function_call
+                (dblink_expression
+                  (identifier)
+                  (dblink_name
+                    (identifier)))
+                (function_argument
+                  (identifier))))))))))

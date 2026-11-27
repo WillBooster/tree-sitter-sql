@@ -304,3 +304,61 @@ sElEcT dIsTiNcT a FrOm t WhErE b iS nOt NuLl OrDeR bY a LiMiT 1;
           (identifier))))
     (limit_clause
       (numeric_literal))))
+
+
+================================================================================
+Operator keywords as bare column aliases
+:language(postgresql)
+================================================================================
+
+SELECT now() at, price between, s collate, a ilike, b in, c is, d like, e not, f operator, g similar FROM products;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier))
+        (identifier))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))

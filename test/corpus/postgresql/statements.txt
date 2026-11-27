@@ -387,3 +387,63 @@ SET NAMES 'UTF8'; SET SCHEMA 'public'; SET XML OPTION DOCUMENT; SET log_error_ve
       (identifier))
     (string_literal)
     (string_literal)))
+
+
+================================================================================
+EXPLAIN CREATE TABLE AS and MATERIALIZED VIEW, EXPLAIN and PREPARE SELECT INTO, and REINDEX target rules
+:language(postgresql)
+================================================================================
+
+EXPLAIN CREATE TEMP TABLE IF NOT EXISTS q_exp AS EXECUTE p; EXPLAIN CREATE MATERIALIZED VIEW mv_exp AS SELECT 1; EXPLAIN SELECT 1 INTO TEMP tmp_exp; PREPARE p_into AS SELECT 1 INTO TEMP tmp_prep; REINDEX DATABASE; REINDEX SYSTEM; REINDEX DATABASE mydb; REINDEX SCHEMA myschema; REINDEX TABLE CONCURRENTLY public.accounts; REINDEX (VERBOSE) INDEX idx_accounts;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (explain_statement
+    (create_table_statement
+      (temporary)
+      (if_not_exists)
+      (qualified_name
+        (identifier))
+      (execute_statement
+        (identifier))))
+  (explain_statement
+    (create_view_statement
+      (qualified_name
+        (identifier))
+      (select_statement
+        (select_core
+          (result_column
+            (numeric_literal))))))
+  (explain_statement
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal))
+        (into_clause
+          (temporary)
+          (qualified_name
+            (identifier))))))
+  (prepare_statement
+    (identifier)
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal))
+        (into_clause
+          (temporary)
+          (qualified_name
+            (identifier))))))
+  (reindex_statement)
+  (reindex_statement)
+  (reindex_statement
+    (identifier))
+  (reindex_statement
+    (identifier))
+  (reindex_statement
+    (qualified_name
+      (identifier)
+      (identifier)))
+  (reindex_statement
+    (qualified_name
+      (identifier))))

@@ -91,6 +91,8 @@ SHOW COUNT(*) ERRORS;
 SHOW ENGINE InnoDB STATUS;
 SHOW REPLICA STATUS FOR CHANNEL 'ch1';
 DESCRIBE orders id;
+EXPLAIN orders '%id%';
+DESCRIBE SELECT 1;
 EXPLAIN ANALYZE SELECT * FROM orders WHERE id = 1;
 EXPLAIN FORMAT = JSON UPDATE orders SET status = 'paid' WHERE id = 1;
 EXPLAIN FOR CONNECTION 42;
@@ -144,6 +146,15 @@ EXPLAIN FOR CONNECTION 42;
     (qualified_name
       (identifier))
     (identifier))
+  (describe_statement
+    (qualified_name
+      (identifier))
+    (string_literal))
+  (explain_statement
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
   (explain_statement
     (select_statement
       (select_core
@@ -182,8 +193,10 @@ Users, roles, GRANT, and REVOKE
 
 CREATE USER IF NOT EXISTS 'app'@'%' IDENTIFIED WITH caching_sha2_password BY 'secret' REQUIRE SSL WITH MAX_CONNECTIONS_PER_HOUR 100 PASSWORD EXPIRE INTERVAL 90 DAY ACCOUNT UNLOCK;
 ALTER USER IF EXISTS 'app'@'%' ACCOUNT LOCK;
+ALTER USER 'app'@'%' IDENTIFIED WITH 'caching_sha2_password' AS 0x244124303035241C;
 RENAME USER 'app'@'%' TO 'app_v2'@'%';
 CREATE ROLE IF NOT EXISTS 'app_read', 'app_write';
+CREATE ROLE `event`, app_role;
 GRANT SELECT, INSERT (code, amount) ON app_db.orders TO 'app_v2'@'%' WITH GRANT OPTION;
 GRANT 'app_read' TO 'app_v2'@'%' WITH ADMIN OPTION;
 SET DEFAULT ROLE ALL TO 'app_v2'@'%';
@@ -214,6 +227,14 @@ DROP USER IF EXISTS 'app_v2'@'%';
       (account_name
         (string_literal)
         (string_literal))))
+  (alter_user_statement
+    (user_specification
+      (account_name
+        (string_literal)
+        (string_literal))
+      (user_auth_option
+        (string_literal)
+        (hex_literal))))
   (rename_user_statement
     (account_name
       (string_literal)
@@ -227,6 +248,11 @@ DROP USER IF EXISTS 'app_v2'@'%';
       (string_literal))
     (account_name
       (string_literal)))
+  (create_role_statement
+    (account_name
+      (quoted_identifier))
+    (account_name
+      (identifier)))
   (grant_statement
     (privilege_item)
     (privilege_item
@@ -585,3 +611,28 @@ GET DIAGNOSTICS @err_count = NUMBER;
       (string_literal)))
   (get_diagnostics_statement
     (user_variable)))
+
+
+================================================================================
+CREATE USER TLS certificate attributes and GET DIAGNOSTICS RETURNED_SQLSTATE
+:language(mysql)
+================================================================================
+
+CREATE USER 'tls_u'@'%' REQUIRE SUBJECT 'CN=a' AND ISSUER 'CN=b' CIPHER 'TLS';
+GET DIAGNOSTICS CONDITION 1 @ret_state = RETURNED_SQLSTATE;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_user_statement
+    (user_specification
+      (account_name
+        (string_literal)
+        (string_literal)))
+    (string_literal)
+    (string_literal)
+    (string_literal))
+  (get_diagnostics_statement
+    (numeric_literal)
+    (user_variable)
+    (identifier)))

@@ -497,7 +497,63 @@
       "required": false,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -505,7 +561,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -513,7 +585,139 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
           "type": "definer_clause",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
           "named": true
         },
         {
@@ -521,7 +725,39 @@
           "named": true
         },
         {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
+          "named": true
+        },
+        {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -529,11 +765,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -545,7 +813,27 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
           "type": "qualified_name",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
           "named": true
         },
         {
@@ -553,7 +841,83 @@
           "named": true
         },
         {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
+          "named": true
+        },
+        {
           "type": "return_statement",
+          "named": true
+        },
+        {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
           "named": true
         },
         {
@@ -561,7 +925,39 @@
           "named": true
         },
         {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -850,6 +1246,10 @@
           "named": true
         },
         {
+          "type": "partition_names_clause",
+          "named": true
+        },
+        {
           "type": "qualified_name",
           "named": true
         },
@@ -1124,6 +1524,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -1153,6 +1557,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -1274,6 +1682,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -1303,6 +1715,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -1415,6 +1831,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -1440,6 +1860,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -1525,6 +1949,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -1550,6 +1978,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -1635,6 +2067,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -1660,6 +2096,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -1771,6 +2211,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -1800,6 +2244,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -2039,6 +2487,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -2068,6 +2520,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -2248,6 +2704,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -2277,6 +2737,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -2387,6 +2851,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -2416,6 +2884,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -2521,6 +2993,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -2550,6 +3026,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -2671,6 +3151,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -2703,6 +3187,10 @@
             "named": true
           },
           {
+            "type": "temporal_literal",
+            "named": true
+          },
+          {
             "type": "unary_expression",
             "named": true
           },
@@ -2718,11 +3206,55 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
           "named": true
         },
         {
           "type": "assignment_expression",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
           "named": true
         },
         {
@@ -2734,11 +3266,23 @@
           "named": true
         },
         {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
           "type": "bit_literal",
           "named": true
         },
         {
           "type": "boolean_literal",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -2754,6 +3298,18 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
           "named": true
         },
@@ -2766,6 +3322,10 @@
           "named": true
         },
         {
+          "type": "commit_statement",
+          "named": true
+        },
+        {
           "type": "compound_statement",
           "named": true
         },
@@ -2774,7 +3334,143 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
           "type": "current_time_expression",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
           "named": true
         },
         {
@@ -2782,11 +3478,39 @@
           "named": true
         },
         {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
           "named": true
         },
         {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
           "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -2798,7 +3522,19 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
           "type": "in_expression",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
           "named": true
         },
         {
@@ -2814,11 +3550,31 @@
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
           "named": true
         },
         {
           "type": "like_expression",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -2842,6 +3598,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "open_statement",
           "named": true
         },
@@ -2854,7 +3614,27 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
           "type": "quantified_comparison_expression",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
           "named": true
         },
         {
@@ -2862,7 +3642,31 @@
           "named": true
         },
         {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
+          "named": true
+        },
+        {
           "type": "return_statement",
+          "named": true
+        },
+        {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
           "named": true
         },
         {
@@ -2871,6 +3675,58 @@
         },
         {
           "type": "row_value",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
           "named": true
         },
         {
@@ -2886,7 +3742,39 @@
           "named": true
         },
         {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
           "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
           "named": true
         },
         {
@@ -2895,6 +3783,10 @@
         },
         {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -3017,6 +3909,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -3046,6 +3942,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -3246,6 +4146,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -3275,6 +4179,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -3426,6 +4334,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -3451,6 +4363,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -3556,7 +4472,7 @@
     "fields": {
       "name": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "identifier",
@@ -3748,7 +4664,63 @@
       "required": false,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -3756,7 +4728,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -3764,7 +4752,147 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
           "type": "declare_statement",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
           "named": true
         },
         {
@@ -3772,7 +4900,43 @@
           "named": true
         },
         {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
+          "named": true
+        },
+        {
           "type": "if_statement",
+          "named": true
+        },
+        {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
           "named": true
         },
         {
@@ -3780,7 +4944,27 @@
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -3792,7 +4976,43 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
+          "named": true
+        },
+        {
           "type": "repeat_statement",
+          "named": true
+        },
+        {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
           "named": true
         },
         {
@@ -3800,7 +5020,99 @@
           "named": true
         },
         {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
+          "named": true
+        },
+        {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -3947,6 +5259,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -3976,6 +5292,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -4044,7 +5364,63 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -4052,7 +5428,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -4060,7 +5452,139 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
           "type": "definer_clause",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
           "named": true
         },
         {
@@ -4068,7 +5592,39 @@
           "named": true
         },
         {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
+          "named": true
+        },
+        {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -4080,11 +5636,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -4096,7 +5684,43 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
+          "named": true
+        },
+        {
           "type": "repeat_statement",
+          "named": true
+        },
+        {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
           "named": true
         },
         {
@@ -4104,11 +5728,103 @@
           "named": true
         },
         {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
+          "named": true
+        },
+        {
           "type": "string_literal",
           "named": true
         },
         {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -4152,7 +5868,63 @@
       "required": false,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -4160,7 +5932,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -4168,7 +5956,71 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
           "type": "data_type",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
           "named": true
         },
         {
@@ -4176,11 +6028,111 @@
           "named": true
         },
         {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
           "named": true
         },
         {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
           "type": "function_parameter",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -4192,11 +6144,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -4208,7 +6192,43 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
+          "named": true
+        },
+        {
           "type": "repeat_statement",
+          "named": true
+        },
+        {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
           "named": true
         },
         {
@@ -4216,11 +6236,103 @@
           "named": true
         },
         {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
           "type": "routine_characteristic",
           "named": true
         },
         {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
+          "named": true
+        },
+        {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -4336,7 +6448,63 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -4344,7 +6512,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -4352,11 +6536,175 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
           "type": "definer_clause",
           "named": true
         },
         {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
+          "named": true
+        },
+        {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -4368,11 +6716,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -4384,7 +6764,27 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
           "type": "procedure_parameter",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
           "named": true
         },
         {
@@ -4392,7 +6792,31 @@
           "named": true
         },
         {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
+          "named": true
+        },
+        {
           "type": "return_statement",
+          "named": true
+        },
+        {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
           "named": true
         },
         {
@@ -4400,7 +6824,91 @@
           "named": true
         },
         {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
+          "named": true
+        },
+        {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -4673,7 +7181,63 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -4681,7 +7245,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -4689,11 +7269,175 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
           "type": "definer_clause",
           "named": true
         },
         {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
+          "named": true
+        },
+        {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -4705,11 +7449,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -4721,7 +7497,27 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
           "type": "qualified_name",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
           "named": true
         },
         {
@@ -4729,11 +7525,119 @@
           "named": true
         },
         {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
+          "named": true
+        },
+        {
           "type": "return_statement",
           "named": true
         },
         {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
+          "named": true
+        },
+        {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -5018,6 +7922,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -5050,6 +7958,10 @@
             "named": true
           },
           {
+            "type": "temporal_literal",
+            "named": true
+          },
+          {
             "type": "unary_expression",
             "named": true
           },
@@ -5065,7 +7977,63 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -5073,7 +8041,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -5081,11 +8065,175 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
           "type": "data_type",
           "named": true
         },
         {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
+          "named": true
+        },
+        {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -5097,11 +8245,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -5117,7 +8297,27 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
           "type": "quoted_identifier",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
           "named": true
         },
         {
@@ -5125,7 +8325,83 @@
           "named": true
         },
         {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
+          "named": true
+        },
+        {
           "type": "return_statement",
+          "named": true
+        },
+        {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
           "named": true
         },
         {
@@ -5133,7 +8409,39 @@
           "named": true
         },
         {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -5268,6 +8576,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -5297,6 +8609,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -5437,6 +8753,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -5466,6 +8786,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -5560,7 +8884,7 @@
       },
       "table": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "identifier",
@@ -5705,6 +9029,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -5734,6 +9062,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -6218,6 +9550,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -6247,6 +9583,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -6494,6 +9834,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -6523,6 +9867,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -6648,6 +9996,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -6677,6 +10029,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -6877,6 +10233,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "order_by_clause",
           "named": true
         },
@@ -6918,6 +10278,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -7058,6 +10422,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -7087,6 +10455,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -7109,18 +10481,6 @@
       "required": true,
       "types": [
         {
-          "type": "assignment_expression",
-          "named": true
-        },
-        {
-          "type": "between_expression",
-          "named": true
-        },
-        {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
           "type": "bit_literal",
           "named": true
         },
@@ -7129,35 +10489,7 @@
           "named": true
         },
         {
-          "type": "case_expression",
-          "named": true
-        },
-        {
-          "type": "cast_expression",
-          "named": true
-        },
-        {
-          "type": "collate_expression",
-          "named": true
-        },
-        {
           "type": "column_reference",
-          "named": true
-        },
-        {
-          "type": "convert_expression",
-          "named": true
-        },
-        {
-          "type": "current_time_expression",
-          "named": true
-        },
-        {
-          "type": "exists_expression",
-          "named": true
-        },
-        {
-          "type": "function_call",
           "named": true
         },
         {
@@ -7169,30 +10501,6 @@
           "named": true
         },
         {
-          "type": "in_expression",
-          "named": true
-        },
-        {
-          "type": "interval_expression",
-          "named": true
-        },
-        {
-          "type": "is_expression",
-          "named": true
-        },
-        {
-          "type": "like_expression",
-          "named": true
-        },
-        {
-          "type": "match_expression",
-          "named": true
-        },
-        {
-          "type": "member_of_expression",
-          "named": true
-        },
-        {
           "type": "null",
           "named": true
         },
@@ -7201,27 +10509,7 @@
           "named": true
         },
         {
-          "type": "parenthesized_expression",
-          "named": true
-        },
-        {
-          "type": "placeholder",
-          "named": true
-        },
-        {
-          "type": "quantified_comparison_expression",
-          "named": true
-        },
-        {
           "type": "quoted_identifier",
-          "named": true
-        },
-        {
-          "type": "row_constructor",
-          "named": true
-        },
-        {
-          "type": "row_value",
           "named": true
         },
         {
@@ -7229,15 +10517,11 @@
           "named": true
         },
         {
-          "type": "subquery",
-          "named": true
-        },
-        {
           "type": "system_variable",
           "named": true
         },
         {
-          "type": "unary_expression",
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -7367,6 +10651,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -7396,6 +10684,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -7564,6 +10856,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -7593,6 +10889,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -7707,6 +11007,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -7736,6 +11040,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -7887,6 +11195,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -7919,6 +11231,10 @@
             "named": true
           },
           {
+            "type": "temporal_literal",
+            "named": true
+          },
+          {
             "type": "unary_expression",
             "named": true
           },
@@ -7934,11 +11250,55 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
           "named": true
         },
         {
           "type": "assignment_expression",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
           "named": true
         },
         {
@@ -7950,11 +11310,23 @@
           "named": true
         },
         {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
           "type": "bit_literal",
           "named": true
         },
         {
           "type": "boolean_literal",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -7970,6 +11342,18 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
           "named": true
         },
@@ -7982,6 +11366,10 @@
           "named": true
         },
         {
+          "type": "commit_statement",
+          "named": true
+        },
+        {
           "type": "compound_statement",
           "named": true
         },
@@ -7990,7 +11378,143 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
           "type": "current_time_expression",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
           "named": true
         },
         {
@@ -7998,11 +11522,39 @@
           "named": true
         },
         {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
           "named": true
         },
         {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
           "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -8014,7 +11566,19 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
           "type": "in_expression",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
           "named": true
         },
         {
@@ -8030,11 +11594,31 @@
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
           "named": true
         },
         {
           "type": "like_expression",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -8058,6 +11642,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "open_statement",
           "named": true
         },
@@ -8070,7 +11658,27 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
           "type": "quantified_comparison_expression",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
           "named": true
         },
         {
@@ -8078,7 +11686,31 @@
           "named": true
         },
         {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
+          "named": true
+        },
+        {
           "type": "return_statement",
+          "named": true
+        },
+        {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
           "named": true
         },
         {
@@ -8087,6 +11719,58 @@
         },
         {
           "type": "row_value",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
           "named": true
         },
         {
@@ -8102,7 +11786,39 @@
           "named": true
         },
         {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
           "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
           "named": true
         },
         {
@@ -8111,6 +11827,10 @@
         },
         {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -8208,6 +11928,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -8233,6 +11957,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -8339,6 +12067,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -8372,6 +12104,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -8605,6 +12341,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -8634,6 +12374,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -8798,6 +12542,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -8827,6 +12575,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -8981,6 +12733,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -9010,6 +12766,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -9159,6 +12919,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -9188,6 +12952,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -9309,6 +13077,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -9338,6 +13110,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -9401,131 +13177,7 @@
         "required": true,
         "types": [
           {
-            "type": "assignment_expression",
-            "named": true
-          },
-          {
-            "type": "between_expression",
-            "named": true
-          },
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "bit_literal",
-            "named": true
-          },
-          {
-            "type": "boolean_literal",
-            "named": true
-          },
-          {
-            "type": "case_expression",
-            "named": true
-          },
-          {
-            "type": "cast_expression",
-            "named": true
-          },
-          {
-            "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "column_reference",
-            "named": true
-          },
-          {
-            "type": "convert_expression",
-            "named": true
-          },
-          {
-            "type": "current_time_expression",
-            "named": true
-          },
-          {
-            "type": "exists_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
-            "type": "hex_literal",
-            "named": true
-          },
-          {
-            "type": "in_expression",
-            "named": true
-          },
-          {
-            "type": "interval_expression",
-            "named": true
-          },
-          {
-            "type": "is_expression",
-            "named": true
-          },
-          {
-            "type": "like_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "member_of_expression",
-            "named": true
-          },
-          {
-            "type": "null",
-            "named": true
-          },
-          {
-            "type": "numeric_literal",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
-          },
-          {
-            "type": "placeholder",
-            "named": true
-          },
-          {
-            "type": "quantified_comparison_expression",
-            "named": true
-          },
-          {
-            "type": "row_constructor",
-            "named": true
-          },
-          {
-            "type": "row_value",
-            "named": true
-          },
-          {
             "type": "string_literal",
-            "named": true
-          },
-          {
-            "type": "subquery",
-            "named": true
-          },
-          {
-            "type": "system_variable",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          },
-          {
-            "type": "user_variable",
             "named": true
           }
         ]
@@ -9623,6 +13275,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -9652,6 +13308,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -9710,75 +13370,7 @@
       "required": false,
       "types": [
         {
-          "type": "assignment_expression",
-          "named": true
-        },
-        {
-          "type": "between_expression",
-          "named": true
-        },
-        {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "bit_literal",
-          "named": true
-        },
-        {
-          "type": "boolean_literal",
-          "named": true
-        },
-        {
-          "type": "case_expression",
-          "named": true
-        },
-        {
-          "type": "cast_expression",
-          "named": true
-        },
-        {
-          "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "column_reference",
-          "named": true
-        },
-        {
-          "type": "convert_expression",
-          "named": true
-        },
-        {
-          "type": "current_time_expression",
-          "named": true
-        },
-        {
           "type": "data_type",
-          "named": true
-        },
-        {
-          "type": "exists_expression",
-          "named": true
-        },
-        {
-          "type": "function_call",
-          "named": true
-        },
-        {
-          "type": "hex_literal",
-          "named": true
-        },
-        {
-          "type": "in_expression",
-          "named": true
-        },
-        {
-          "type": "interval_expression",
-          "named": true
-        },
-        {
-          "type": "is_expression",
           "named": true
         },
         {
@@ -9786,63 +13378,7 @@
           "named": true
         },
         {
-          "type": "like_expression",
-          "named": true
-        },
-        {
-          "type": "match_expression",
-          "named": true
-        },
-        {
-          "type": "member_of_expression",
-          "named": true
-        },
-        {
-          "type": "null",
-          "named": true
-        },
-        {
-          "type": "numeric_literal",
-          "named": true
-        },
-        {
-          "type": "parenthesized_expression",
-          "named": true
-        },
-        {
-          "type": "placeholder",
-          "named": true
-        },
-        {
-          "type": "quantified_comparison_expression",
-          "named": true
-        },
-        {
-          "type": "row_constructor",
-          "named": true
-        },
-        {
-          "type": "row_value",
-          "named": true
-        },
-        {
           "type": "string_literal",
-          "named": true
-        },
-        {
-          "type": "subquery",
-          "named": true
-        },
-        {
-          "type": "system_variable",
-          "named": true
-        },
-        {
-          "type": "unary_expression",
-          "named": true
-        },
-        {
-          "type": "user_variable",
           "named": true
         }
       ]
@@ -9960,6 +13496,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -9989,6 +13529,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -10099,6 +13643,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -10128,6 +13676,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -10238,6 +13790,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -10263,6 +13819,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -10348,6 +13908,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -10373,6 +13937,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -10458,6 +14026,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -10483,6 +14055,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -10722,7 +14298,63 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -10730,7 +14362,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -10738,7 +14386,171 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
+          "named": true
+        },
+        {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -10746,11 +14558,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -10762,7 +14606,43 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
+          "named": true
+        },
+        {
           "type": "repeat_statement",
+          "named": true
+        },
+        {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
           "named": true
         },
         {
@@ -10770,7 +14650,99 @@
           "named": true
         },
         {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
+          "named": true
+        },
+        {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -10853,6 +14825,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -10878,6 +14854,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -10979,6 +14959,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -11004,6 +14988,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -11089,6 +15077,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -11114,6 +15106,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -11167,6 +15163,168 @@
     "type": "numeric_literal",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "odbc_escape_expression",
+    "named": true,
+    "fields": {
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "quoted_identifier",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "assignment_expression",
+            "named": true
+          },
+          {
+            "type": "between_expression",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "bit_literal",
+            "named": true
+          },
+          {
+            "type": "boolean_literal",
+            "named": true
+          },
+          {
+            "type": "case_expression",
+            "named": true
+          },
+          {
+            "type": "cast_expression",
+            "named": true
+          },
+          {
+            "type": "collate_expression",
+            "named": true
+          },
+          {
+            "type": "column_reference",
+            "named": true
+          },
+          {
+            "type": "convert_expression",
+            "named": true
+          },
+          {
+            "type": "current_time_expression",
+            "named": true
+          },
+          {
+            "type": "exists_expression",
+            "named": true
+          },
+          {
+            "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "hex_literal",
+            "named": true
+          },
+          {
+            "type": "in_expression",
+            "named": true
+          },
+          {
+            "type": "interval_expression",
+            "named": true
+          },
+          {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
+            "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
+            "named": true
+          },
+          {
+            "type": "null",
+            "named": true
+          },
+          {
+            "type": "numeric_literal",
+            "named": true
+          },
+          {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "placeholder",
+            "named": true
+          },
+          {
+            "type": "quantified_comparison_expression",
+            "named": true
+          },
+          {
+            "type": "row_constructor",
+            "named": true
+          },
+          {
+            "type": "row_value",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "subquery",
+            "named": true
+          },
+          {
+            "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          },
+          {
+            "type": "user_variable",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "on_duplicate_key_update_clause",
@@ -11315,6 +15473,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -11344,6 +15506,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -11485,6 +15651,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -11514,6 +15684,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -11671,6 +15845,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -11700,6 +15878,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -11814,6 +15996,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -11851,6 +16037,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -11976,6 +16166,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -12013,6 +16207,10 @@
         },
         {
           "type": "table_option",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -12252,6 +16450,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -12284,6 +16486,10 @@
           "named": true
         },
         {
+          "type": "temporal_literal",
+          "named": true
+        },
+        {
           "type": "unary_expression",
           "named": true
         },
@@ -12300,7 +16506,7 @@
     "fields": {
       "name": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "identifier",
@@ -12425,6 +16631,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -12454,6 +16664,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -12714,6 +16928,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -12743,6 +16961,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -12789,7 +17011,63 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -12797,7 +17075,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -12805,7 +17099,171 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
+          "named": true
+        },
+        {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -12813,11 +17271,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -12829,7 +17319,43 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
+          "named": true
+        },
+        {
           "type": "repeat_statement",
+          "named": true
+        },
+        {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
           "named": true
         },
         {
@@ -12837,7 +17363,99 @@
           "named": true
         },
         {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
+          "named": true
+        },
+        {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -13067,6 +17685,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -13096,6 +17718,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -13207,6 +17833,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -13236,6 +17866,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -13409,6 +18043,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -13438,6 +18076,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -13548,6 +18190,10 @@
           "named": true
         },
         {
+          "type": "odbc_escape_expression",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -13577,6 +18223,10 @@
         },
         {
           "type": "system_variable",
+          "named": true
+        },
+        {
+          "type": "temporal_literal",
           "named": true
         },
         {
@@ -13892,10 +18542,6 @@
           {
             "type": "identifier",
             "named": true
-          },
-          {
-            "type": "quoted_identifier",
-            "named": true
           }
         ]
       },
@@ -13903,18 +18549,6 @@
         "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": "assignment_expression",
-            "named": true
-          },
-          {
-            "type": "between_expression",
-            "named": true
-          },
-          {
-            "type": "binary_expression",
-            "named": true
-          },
           {
             "type": "bit_literal",
             "named": true
@@ -13924,63 +18558,11 @@
             "named": true
           },
           {
-            "type": "case_expression",
-            "named": true
-          },
-          {
-            "type": "cast_expression",
-            "named": true
-          },
-          {
-            "type": "collate_expression",
-            "named": true
-          },
-          {
             "type": "column_reference",
             "named": true
           },
           {
-            "type": "convert_expression",
-            "named": true
-          },
-          {
-            "type": "current_time_expression",
-            "named": true
-          },
-          {
-            "type": "exists_expression",
-            "named": true
-          },
-          {
-            "type": "function_call",
-            "named": true
-          },
-          {
             "type": "hex_literal",
-            "named": true
-          },
-          {
-            "type": "in_expression",
-            "named": true
-          },
-          {
-            "type": "interval_expression",
-            "named": true
-          },
-          {
-            "type": "is_expression",
-            "named": true
-          },
-          {
-            "type": "like_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
-            "named": true
-          },
-          {
-            "type": "member_of_expression",
             "named": true
           },
           {
@@ -13992,31 +18574,7 @@
             "named": true
           },
           {
-            "type": "parenthesized_expression",
-            "named": true
-          },
-          {
-            "type": "placeholder",
-            "named": true
-          },
-          {
-            "type": "quantified_comparison_expression",
-            "named": true
-          },
-          {
-            "type": "row_constructor",
-            "named": true
-          },
-          {
-            "type": "row_value",
-            "named": true
-          },
-          {
             "type": "string_literal",
-            "named": true
-          },
-          {
-            "type": "subquery",
             "named": true
           },
           {
@@ -14024,7 +18582,7 @@
             "named": true
           },
           {
-            "type": "unary_expression",
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -14275,7 +18833,7 @@
       },
       "table": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "identifier",
@@ -14432,6 +18990,22 @@
     }
   },
   {
+    "type": "temporal_literal",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "truncate_statement",
     "named": true,
     "fields": {
@@ -14544,6 +19118,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -14573,6 +19151,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -14754,6 +19336,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -14783,6 +19369,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -14871,6 +19461,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "hex_literal",
+          "named": true
+        },
         {
           "type": "identifier",
           "named": true
@@ -15045,6 +19639,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -15074,6 +19672,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -15203,6 +19805,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -15232,6 +19838,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -15337,6 +19947,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -15366,6 +19980,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -15477,6 +20095,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -15506,6 +20128,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -15617,6 +20243,10 @@
             "named": true
           },
           {
+            "type": "odbc_escape_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -15646,6 +20276,10 @@
           },
           {
             "type": "system_variable",
+            "named": true
+          },
+          {
+            "type": "temporal_literal",
             "named": true
           },
           {
@@ -15692,7 +20326,63 @@
       "required": true,
       "types": [
         {
-          "type": "_statement",
+          "type": "alter_database_statement",
+          "named": true
+        },
+        {
+          "type": "alter_event_statement",
+          "named": true
+        },
+        {
+          "type": "alter_instance_statement",
+          "named": true
+        },
+        {
+          "type": "alter_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "alter_routine_statement",
+          "named": true
+        },
+        {
+          "type": "alter_server_statement",
+          "named": true
+        },
+        {
+          "type": "alter_table_statement",
+          "named": true
+        },
+        {
+          "type": "alter_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "alter_user_statement",
+          "named": true
+        },
+        {
+          "type": "alter_view_statement",
+          "named": true
+        },
+        {
+          "type": "begin_statement",
+          "named": true
+        },
+        {
+          "type": "binlog_statement",
+          "named": true
+        },
+        {
+          "type": "cache_index_statement",
+          "named": true
+        },
+        {
+          "type": "call_statement",
           "named": true
         },
         {
@@ -15700,7 +20390,23 @@
           "named": true
         },
         {
+          "type": "change_replication_filter_statement",
+          "named": true
+        },
+        {
+          "type": "change_replication_source_statement",
+          "named": true
+        },
+        {
+          "type": "clone_statement",
+          "named": true
+        },
+        {
           "type": "close_statement",
+          "named": true
+        },
+        {
+          "type": "commit_statement",
           "named": true
         },
         {
@@ -15708,7 +20414,171 @@
           "named": true
         },
         {
+          "type": "create_database_statement",
+          "named": true
+        },
+        {
+          "type": "create_event_statement",
+          "named": true
+        },
+        {
+          "type": "create_function_statement",
+          "named": true
+        },
+        {
+          "type": "create_index_statement",
+          "named": true
+        },
+        {
+          "type": "create_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_procedure_statement",
+          "named": true
+        },
+        {
+          "type": "create_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "create_role_statement",
+          "named": true
+        },
+        {
+          "type": "create_server_statement",
+          "named": true
+        },
+        {
+          "type": "create_srs_statement",
+          "named": true
+        },
+        {
+          "type": "create_table_statement",
+          "named": true
+        },
+        {
+          "type": "create_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "create_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "create_user_statement",
+          "named": true
+        },
+        {
+          "type": "create_view_statement",
+          "named": true
+        },
+        {
+          "type": "deallocate_statement",
+          "named": true
+        },
+        {
+          "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "describe_statement",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "drop_database_statement",
+          "named": true
+        },
+        {
+          "type": "drop_event_statement",
+          "named": true
+        },
+        {
+          "type": "drop_index_statement",
+          "named": true
+        },
+        {
+          "type": "drop_logfile_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "drop_role_statement",
+          "named": true
+        },
+        {
+          "type": "drop_routine_statement",
+          "named": true
+        },
+        {
+          "type": "drop_server_statement",
+          "named": true
+        },
+        {
+          "type": "drop_srs_statement",
+          "named": true
+        },
+        {
+          "type": "drop_table_statement",
+          "named": true
+        },
+        {
+          "type": "drop_tablespace_statement",
+          "named": true
+        },
+        {
+          "type": "drop_trigger_statement",
+          "named": true
+        },
+        {
+          "type": "drop_user_statement",
+          "named": true
+        },
+        {
+          "type": "drop_view_statement",
+          "named": true
+        },
+        {
+          "type": "execute_statement",
+          "named": true
+        },
+        {
+          "type": "explain_statement",
+          "named": true
+        },
+        {
           "type": "fetch_statement",
+          "named": true
+        },
+        {
+          "type": "flush_statement",
+          "named": true
+        },
+        {
+          "type": "get_diagnostics_statement",
+          "named": true
+        },
+        {
+          "type": "grant_statement",
+          "named": true
+        },
+        {
+          "type": "group_replication_statement",
+          "named": true
+        },
+        {
+          "type": "handler_statement",
+          "named": true
+        },
+        {
+          "type": "help_statement",
           "named": true
         },
         {
@@ -15716,11 +20586,43 @@
           "named": true
         },
         {
+          "type": "import_table_statement",
+          "named": true
+        },
+        {
+          "type": "insert_statement",
+          "named": true
+        },
+        {
+          "type": "install_statement",
+          "named": true
+        },
+        {
           "type": "iterate_statement",
           "named": true
         },
         {
+          "type": "kill_statement",
+          "named": true
+        },
+        {
           "type": "leave_statement",
+          "named": true
+        },
+        {
+          "type": "load_index_statement",
+          "named": true
+        },
+        {
+          "type": "load_statement",
+          "named": true
+        },
+        {
+          "type": "lock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "lock_tables_statement",
           "named": true
         },
         {
@@ -15732,7 +20634,43 @@
           "named": true
         },
         {
+          "type": "prepare_statement",
+          "named": true
+        },
+        {
+          "type": "purge_statement",
+          "named": true
+        },
+        {
+          "type": "release_savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "rename_table_statement",
+          "named": true
+        },
+        {
+          "type": "rename_user_statement",
+          "named": true
+        },
+        {
           "type": "repeat_statement",
+          "named": true
+        },
+        {
+          "type": "replace_statement",
+          "named": true
+        },
+        {
+          "type": "reset_statement",
+          "named": true
+        },
+        {
+          "type": "resignal_statement",
+          "named": true
+        },
+        {
+          "type": "restart_statement",
           "named": true
         },
         {
@@ -15740,7 +20678,99 @@
           "named": true
         },
         {
+          "type": "revoke_statement",
+          "named": true
+        },
+        {
+          "type": "rollback_statement",
+          "named": true
+        },
+        {
+          "type": "savepoint_statement",
+          "named": true
+        },
+        {
+          "type": "select_statement",
+          "named": true
+        },
+        {
+          "type": "set_default_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_password_statement",
+          "named": true
+        },
+        {
+          "type": "set_resource_group_statement",
+          "named": true
+        },
+        {
+          "type": "set_role_statement",
+          "named": true
+        },
+        {
+          "type": "set_statement",
+          "named": true
+        },
+        {
+          "type": "show_statement",
+          "named": true
+        },
+        {
+          "type": "shutdown_statement",
+          "named": true
+        },
+        {
+          "type": "signal_statement",
+          "named": true
+        },
+        {
+          "type": "start_replica_statement",
+          "named": true
+        },
+        {
+          "type": "start_transaction_statement",
+          "named": true
+        },
+        {
+          "type": "stop_replica_statement",
+          "named": true
+        },
+        {
+          "type": "table_maintenance_statement",
+          "named": true
+        },
+        {
+          "type": "truncate_statement",
+          "named": true
+        },
+        {
+          "type": "uninstall_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_instance_statement",
+          "named": true
+        },
+        {
+          "type": "unlock_tables_statement",
+          "named": true
+        },
+        {
+          "type": "update_statement",
+          "named": true
+        },
+        {
+          "type": "use_statement",
+          "named": true
+        },
+        {
           "type": "while_statement",
+          "named": true
+        },
+        {
+          "type": "xa_statement",
           "named": true
         }
       ]
@@ -17915,6 +22945,14 @@
   },
   {
     "type": "SECONDARY_ENGINE_ATTRIBUTE",
+    "named": false
+  },
+  {
+    "type": "SECONDARY_LOAD",
+    "named": false
+  },
+  {
+    "type": "SECONDARY_UNLOAD",
     "named": false
   },
   {

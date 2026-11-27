@@ -911,7 +911,7 @@ Timestamp precision, ON CONVERSION ERROR, VALIDATE_CONVERSION, postfix intervals
 ================================================================================
 
 SELECT
-  SYSTIMESTAMP(6),
+  SYSTIMESTAMP,
   CURRENT_TIMESTAMP(3),
   LOCALTIMESTAMP(6),
   TO_NUMBER(a DEFAULT 0 ON CONVERSION ERROR, '999'),
@@ -934,8 +934,7 @@ FROM t WHERE XMLEXISTS('/a' PASSING x);
     (select_core
       (select_list
         (select_item
-          (pseudocolumn
-            (numeric_literal)))
+          (pseudocolumn))
         (select_item
           (pseudocolumn
             (numeric_literal)))
@@ -1025,4 +1024,78 @@ SELECT JSON_SERIALIZE(doc RETURNING CLOB PRETTY ORDERED) FROM emp;
       (from_clause
         (table_reference
           (object_name
+            (identifier)))))))
+
+
+================================================================================
+Multiline division, NEW, DB link calls, extended CASE, JSON_TRANSFORM, and ALLOW SCALARS
+:language(oracle)
+================================================================================
+
+SELECT 6
+/
+2, NEW t_obj(1), pkg.f@dblink(1), CASE a WHEN 1, 2 THEN 'low' WHEN > 10, IS NULL THEN 'hi' END, JSON_TRANSFORM(j, SET '$.a' = 1, REMOVE '$.b') FROM a, b WHERE a.id(/*c*/+) = b.id AND j IS JSON ALLOW SCALARS;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (binary_expression
+            (numeric_literal)
+            (numeric_literal)))
+        (select_item
+          (new_expression
+            (object_name
+              (identifier))
+            (function_argument
+              (numeric_literal))))
+        (select_item
+          (function_call
+            (dblink_expression
+              (member_expression
+                (identifier)
+                (identifier))
+              (dblink_name
+                (identifier)))
+            (function_argument
+              (numeric_literal))))
+        (select_item
+          (case_expression
+            (identifier)
+            (when_clause
+              (numeric_literal)
+              (numeric_literal)
+              (string_literal))
+            (when_clause
+              (numeric_literal)
+              (string_literal))))
+        (select_item
+          (json_function_expression
+            (identifier)
+            (string_literal)
+            (numeric_literal)
+            (string_literal))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))
+        (table_reference
+          (object_name
+            (identifier))))
+      (where_clause
+        (binary_expression
+          (binary_expression
+            (outer_join_expression
+              (member_expression
+                (identifier)
+                (identifier))
+              (outer_join_indicator
+                (comment)))
+            (member_expression
+              (identifier)
+              (identifier)))
+          (is_expression
             (identifier)))))))

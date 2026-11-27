@@ -414,3 +414,45 @@ IGNORE 2 ROWS
       (identifier))
     (column_reference
       (identifier))))
+
+
+================================================================================
+INSERT and REPLACE compound queries starting with VALUES ROW
+:language(mysql)
+================================================================================
+
+INSERT INTO t VALUES ROW(1) UNION SELECT 2 INTERSECT VALUES ROW(3);
+REPLACE INTO t VALUES ROW(1) INTERSECT TABLE u;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (compound_query
+        (values_statement
+          (row_constructor
+            (numeric_literal)))
+        (compound_operator)
+        (compound_query
+          (select_core
+            (result_column
+              (numeric_literal)))
+          (compound_operator)
+          (values_statement
+            (row_constructor
+              (numeric_literal)))))))
+  (replace_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (compound_query
+        (values_statement
+          (row_constructor
+            (numeric_literal)))
+        (compound_operator)
+        (table_value_statement
+          (qualified_name
+            (identifier)))))))

@@ -1079,3 +1079,106 @@ ALTER SERVER srv OPTIONS (ADD 'a', SET 'b', DROP 'c', ADD host 'd', DROP port); 
   (alter_role_statement
     (identifier)
     (string_literal)))
+
+
+================================================================================
+Subquery indirection and prefix custom operators in DEFAULT, FDW options, ALTER STATISTICS IF EXISTS, and scoped RESET targets
+:language(postgresql)
+================================================================================
+
+CREATE TABLE defaults_test (a INT DEFAULT (SELECT arr FROM u)[1], b INT DEFAULT (SELECT r FROM u).f, c INT DEFAULT ~ 1 & 3, d INT DEFAULT OPERATOR(pg_catalog.~) 1 & 3); ALTER FOREIGN DATA WRAPPER fdw_pg NO HANDLER VALIDATOR fdw_val OPTIONS (ADD debug 'false'); ALTER FOREIGN DATA WRAPPER fdw_pg OPTIONS (SET debug 'true'); ALTER STATISTICS IF EXISTS st_acc SET STATISTICS 100; ALTER STATISTICS st_acc SET STATISTICS DEFAULT; ALTER ROLE app_role RESET TIME ZONE; ALTER USER app_role RESET TRANSACTION ISOLATION LEVEL; ALTER DATABASE app_db RESET SESSION AUTHORIZATION; CREATE FUNCTION f_reset() RETURNS INT LANGUAGE sql RESET TIME ZONE RETURN 1; ALTER FUNCTION f_reset() RESET TRANSACTION ISOLATION LEVEL;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (subscript_expression
+          (subquery
+            (select_statement
+              (select_core
+                (result_column
+                  (column_reference
+                    (identifier)))
+                (from_clause
+                  (table
+                    (qualified_name
+                      (identifier)))))))
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (field_selection
+          (subquery
+            (select_statement
+              (select_core
+                (result_column
+                  (column_reference
+                    (identifier)))
+                (from_clause
+                  (table
+                    (qualified_name
+                      (identifier)))))))
+          (identifier))))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (binary_expression
+          (unary_expression
+            (custom_operator)
+            (numeric_literal))
+          (custom_operator)
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (binary_expression
+          (unary_expression
+            (operator_invocation
+              (identifier)
+              (custom_operator))
+            (numeric_literal))
+          (custom_operator)
+          (numeric_literal)))))
+  (alter_foreign_data_wrapper_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (string_literal))
+  (alter_foreign_data_wrapper_statement
+    (identifier)
+    (identifier)
+    (string_literal))
+  (alter_statistics_statement
+    (if_exists)
+    (qualified_name
+      (identifier))
+    (numeric_literal))
+  (alter_statistics_statement
+    (qualified_name
+      (identifier)))
+  (alter_role_statement
+    (identifier))
+  (alter_role_statement
+    (identifier))
+  (alter_database_statement
+    (identifier))
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (type_name)
+    (identifier)
+    (sql_function_body
+      (numeric_literal)))
+  (alter_routine_statement
+    (qualified_name
+      (identifier))))

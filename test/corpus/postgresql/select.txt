@@ -767,3 +767,68 @@ SELECT * FROM a LEFT JOIN b JOIN c ON b.x = c.x ON a.x = b.x, ((t JOIN u ON true
       (numeric_literal))
     (offset_clause
       (numeric_literal))))
+
+
+================================================================================
+Empty target list with ALL, empty grouping set, SELECT INTO before UNION, and table named rows
+:language(postgresql)
+================================================================================
+
+SELECT ALL FROM items; SELECT a, count(*) FROM t GROUP BY (); (SELECT 1 INTO TEMP tmp_a) UNION SELECT 2; SELECT * FROM rows, rows AS r JOIN rows s ON true;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (distinct_clause)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))))
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (function_call
+          (identifier)
+          (all_columns)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (group_by_clause
+        (row_expression))))
+  (select_statement
+    (compound_query
+      (select_core
+        (result_column
+          (numeric_literal))
+        (into_clause
+          (temporary)
+          (qualified_name
+            (identifier))))
+      (compound_operator)
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (join_constraint
+          (boolean_literal))))))

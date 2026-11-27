@@ -8,6 +8,7 @@
 
 enum TokenType {
   COMMENT,
+  RECOVERY_COMMENT,
   VERSION_COMMENT_START,
   VERSION_COMMENT_END,
   STRING_SEGMENT,
@@ -23,6 +24,7 @@ enum TokenType {
   STATEMENT_TERMINATOR,
   END_OF_INPUT,
   ILLEGAL_TOKEN,
+  DOT_CONTEXT,
   UNREACHABLE,
 };
 
@@ -79,40 +81,76 @@ static bool is_mysql_charset(const char *word) {
   return false;
 }
 
-static bool scan_line_comment(TSLexer *lexer) {
+static bool scan_line_comment(TSLexer *lexer, enum TokenType ok_symbol) {
   bool has_nul = false;
   while (!at_eof(lexer) && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
     if (lexer->lookahead == 0) has_nul = true;
     advance(lexer);
   }
-  return emit(lexer, has_nul ? ILLEGAL_TOKEN : COMMENT);
+  return emit(lexer, has_nul ? ILLEGAL_TOKEN : ok_symbol);
 }
 
-static bool scan_dash_comment(TSLexer *lexer) {
+static bool scan_dash_comment(TSLexer *lexer, enum TokenType ok_symbol) {
   advance(lexer);
   if (lexer->lookahead != '-') return false;
   advance(lexer);
   if ((lexer->lookahead == 0 && !lexer->eof(lexer)) || at_eof(lexer) || is_dash_comment_follower(lexer->lookahead)) {
-    return scan_line_comment(lexer);
+    return scan_line_comment(lexer, ok_symbol);
   }
   return false;
 }
 
-static bool scan_block_comment_tail(Scanner *scanner, TSLexer *lexer) {
+typedef enum {
+  GUARD_EMPTY_CHECK,
+  GUARD_ACTIVE_BODY,
+  GUARD_INACTIVE,
+} VersionGuard;
+
+static bool try_open_nested_comment(TSLexer *lexer, bool allow_nested, unsigned *depth) {
+  if (!allow_nested || *depth != 1 || lexer->lookahead != '*') return false;
+  advance(lexer);
+  *depth = 2;
+  return true;
+}
+
+static bool step_comment_char(TSLexer *lexer, bool allow_nested, bool *star, unsigned *depth) {
+  int32_t c = lexer->lookahead;
+  advance(lexer);
+  if (*star && c == '/') {
+    *star = false;
+    return --(*depth) == 0;
+  }
+  *star = (c != '/' || !try_open_nested_comment(lexer, allow_nested, depth)) && (c == '*');
+  return false;
+}
+
+static bool scan_comment_tail(Scanner *scanner, TSLexer *lexer, bool allow_nested, enum TokenType ok_symbol) {
   bool has_nul = false;
   bool star = false;
+  unsigned depth = 1;
   while (!at_eof(lexer)) {
-    int32_t c = lexer->lookahead;
-    if (c == 0) has_nul = true;
-    advance(lexer);
-    if (star && c == '/') return emit(lexer, has_nul ? ILLEGAL_TOKEN : COMMENT);
-    star = (c == '*');
+    if (lexer->lookahead == 0) has_nul = true;
+    if (step_comment_char(lexer, allow_nested, &star, &depth)) {
+      return emit(lexer, has_nul ? ILLEGAL_TOKEN : ok_symbol);
+    }
   }
   scanner->in_version_comment = false;
   return emit(lexer, ILLEGAL_TOKEN);
 }
 
-static unsigned parse_version_guard(TSLexer *lexer, uint32_t *ver_out) {
+static VersionGuard check_sixth_version_digit(TSLexer *lexer, uint32_t *ver) {
+  if (!is_digit(lexer->lookahead)) return *ver > 80499 ? GUARD_INACTIVE : GUARD_EMPTY_CHECK;
+  uint32_t d6 = (uint32_t)(lexer->lookahead - '0');
+  advance(lexer);
+  if (is_space(lexer->lookahead)) {
+    *ver = *ver * 10 + d6;
+    lexer->mark_end(lexer);
+    return *ver > 80499 ? GUARD_INACTIVE : GUARD_EMPTY_CHECK;
+  }
+  return *ver > 80499 ? GUARD_INACTIVE : GUARD_ACTIVE_BODY;
+}
+
+static VersionGuard parse_version_guard(TSLexer *lexer) {
   unsigned digits = 0;
   uint32_t ver = 0;
   while (digits < 5 && is_digit(lexer->lookahead)) {
@@ -120,37 +158,24 @@ static unsigned parse_version_guard(TSLexer *lexer, uint32_t *ver_out) {
     advance(lexer);
     digits++;
   }
-  if (digits == 5) {
-    lexer->mark_end(lexer);
-    if (is_digit(lexer->lookahead)) {
-      uint32_t d6 = (uint32_t)(lexer->lookahead - '0');
-      advance(lexer);
-      if (is_space(lexer->lookahead) || lexer->lookahead == '*') {
-        ver = ver * 10 + d6;
-        lexer->mark_end(lexer);
-      }
-    }
-  }
-  *ver_out = ver;
-  return digits;
+  if (digits == 0) return GUARD_EMPTY_CHECK;
+  if (digits < 5) return GUARD_ACTIVE_BODY;
+  lexer->mark_end(lexer);
+  return check_sixth_version_digit(lexer, &ver);
 }
 
-static bool scan_version_comment_open(Scanner *scanner, TSLexer *lexer) {
+static bool scan_version_comment_open(Scanner *scanner, TSLexer *lexer, enum TokenType ok_symbol) {
   lexer->mark_end(lexer);
-  uint32_t ver = 0;
-  unsigned digits = parse_version_guard(lexer, &ver);
-  if (digits > 0 && digits < 5) {
-    scanner->in_version_comment = true;
-    lexer->result_symbol = VERSION_COMMENT_START;
-    return true;
-  }
-  if (digits == 5 && ver > 80499) return scan_block_comment_tail(scanner, lexer);
-  while (is_space(lexer->lookahead)) advance(lexer);
-  if (lexer->lookahead == '*') {
-    advance(lexer);
-    if (lexer->lookahead == '/') {
+  VersionGuard guard = parse_version_guard(lexer);
+  if (guard == GUARD_INACTIVE) return scan_comment_tail(scanner, lexer, true, ok_symbol);
+  if (guard == GUARD_EMPTY_CHECK) {
+    while (is_space(lexer->lookahead)) advance(lexer);
+    if (lexer->lookahead == '*') {
       advance(lexer);
-      return emit(lexer, COMMENT);
+      if (lexer->lookahead == '/') {
+        advance(lexer);
+        return emit(lexer, ok_symbol);
+      }
     }
   }
   scanner->in_version_comment = true;
@@ -158,15 +183,15 @@ static bool scan_version_comment_open(Scanner *scanner, TSLexer *lexer) {
   return true;
 }
 
-static bool scan_slash_comment(Scanner *scanner, TSLexer *lexer) {
+static bool scan_slash_comment(Scanner *scanner, TSLexer *lexer, enum TokenType ok_symbol) {
   advance(lexer);
   if (lexer->lookahead != '*') return false;
   advance(lexer);
   if (!scanner->in_version_comment && lexer->lookahead == '!') {
     advance(lexer);
-    return scan_version_comment_open(scanner, lexer);
+    return scan_version_comment_open(scanner, lexer, ok_symbol);
   }
-  return scan_block_comment_tail(scanner, lexer);
+  return scan_comment_tail(scanner, lexer, false, ok_symbol);
 }
 
 static bool scan_string_escape(TSLexer *lexer, bool *has_nul) {
@@ -201,7 +226,7 @@ static bool scan_delimited(
   while (!at_eof(lexer)) {
     if (!scan_delimited_step(lexer, quote, backslash_escapes, &has_nul, &closed)) return emit(lexer, ILLEGAL_TOKEN);
     if (closed) {
-      bool invalid = has_nul || (!allow_empty && steps == 0);
+      bool invalid = (!backslash_escapes && has_nul) || (!allow_empty && steps == 0);
       return emit(lexer, invalid ? ILLEGAL_TOKEN : target_symbol);
     }
     steps++;
@@ -233,27 +258,6 @@ static bool scan_quoted_hex_or_bit(TSLexer *lexer, bool is_hex, bool symbol_is_v
   return emit(lexer, valid ? (is_hex ? QUOTED_HEX_LITERAL : QUOTED_BIT_LITERAL) : ILLEGAL_TOKEN);
 }
 
-static bool follows_introducer_literal(TSLexer *lexer) {
-  while (is_space(lexer->lookahead)) advance(lexer);
-  int32_t c = lexer->lookahead;
-  if (c == '\'' || c == '"') return true;
-  if (c == 'x' || c == 'X' || c == 'b' || c == 'B') {
-    advance(lexer);
-    return lexer->lookahead == '\'';
-  }
-  if (c != '0') return false;
-  advance(lexer);
-  if (lexer->lookahead == 'x') {
-    advance(lexer);
-    return is_hex_digit(lexer->lookahead);
-  }
-  if (lexer->lookahead == 'b') {
-    advance(lexer);
-    return lexer->lookahead == '0' || lexer->lookahead == '1';
-  }
-  return false;
-}
-
 static unsigned read_charset_word(TSLexer *lexer, char *charset, unsigned capacity) {
   unsigned length = 0;
   while (is_ascii_alpha(lexer->lookahead) || is_digit(lexer->lookahead)) {
@@ -266,20 +270,14 @@ static unsigned read_charset_word(TSLexer *lexer, char *charset, unsigned capaci
   return length;
 }
 
-static bool scan_charset_introducer(TSLexer *lexer) {
+static bool scan_charset_introducer(TSLexer *lexer, bool introducer_valid) {
   advance(lexer);
   char charset[32];
   unsigned length = read_charset_word(lexer, charset, sizeof charset);
-  if (length == 0 || length >= sizeof charset || is_identifier_char(lexer->lookahead)) return false;
-  lexer->mark_end(lexer);
-
-  if (lexer->lookahead == '\'' || lexer->lookahead == '"') {
-    lexer->result_symbol = CHARSET_INTRODUCER;
-    return true;
+  if (length == 0 || length >= sizeof charset || is_identifier_char(lexer->lookahead) || !is_mysql_charset(charset)) {
+    return false;
   }
-  if (!is_space(lexer->lookahead) || !is_mysql_charset(charset) || !follows_introducer_literal(lexer)) return false;
-  lexer->result_symbol = CHARSET_INTRODUCER;
-  return true;
+  return emit(lexer, introducer_valid ? CHARSET_INTRODUCER : ILLEGAL_TOKEN);
 }
 
 static bool scan_backtick_sysvar_segment(TSLexer *lexer) {
@@ -418,8 +416,8 @@ static bool scan_host_charset_introducer(TSLexer *lexer) {
   advance(lexer);
   char charset[32];
   unsigned length = read_charset_word(lexer, charset, sizeof charset);
-  return length > 0 && length < sizeof charset && (lexer->lookahead == '\'' || lexer->lookahead == '"') &&
-         emit(lexer, CHARSET_INTRODUCER);
+  return length > 0 && length < sizeof charset && is_mysql_charset(charset) &&
+         (lexer->lookahead == '\'' || lexer->lookahead == '"') && emit(lexer, CHARSET_INTRODUCER);
 }
 
 static bool scan_host_name(TSLexer *lexer, const bool *valid_symbols) {
@@ -471,13 +469,14 @@ static bool scan_top_level_semicolon(Scanner *scanner, TSLexer *lexer) {
 
 static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
   int32_t c = lexer->lookahead;
+  enum TokenType comment_symbol = valid_symbols[RECOVERY_COMMENT] ? RECOVERY_COMMENT : COMMENT;
   switch (c) {
     case '#':
-      return scan_line_comment(lexer);
+      return scan_line_comment(lexer, comment_symbol);
     case '-':
-      return scan_dash_comment(lexer);
+      return scan_dash_comment(lexer, comment_symbol);
     case '/':
-      return scan_slash_comment(scanner, lexer);
+      return scan_slash_comment(scanner, lexer, comment_symbol);
     case '\'':
     case '"':
       return scan_string_token(lexer, c, valid_symbols[STRING_SEGMENT] ? STRING_SEGMENT : ILLEGAL_TOKEN);
@@ -493,7 +492,8 @@ static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *va
     case '@':
       return scan_at_variable(lexer, valid_symbols);
     case '_':
-      return valid_symbols[CHARSET_INTRODUCER] && !valid_symbols[UNREACHABLE] && scan_charset_introducer(lexer);
+      return !valid_symbols[DOT_CONTEXT] && !valid_symbols[UNREACHABLE] &&
+             scan_charset_introducer(lexer, valid_symbols[CHARSET_INTRODUCER]);
     default:
       return (is_digit(c) || c == '.') && !valid_symbols[UNREACHABLE] &&
              scan_digit_or_float(lexer, valid_symbols[USER_VARIABLE], valid_symbols[DIGIT_IDENTIFIER]);

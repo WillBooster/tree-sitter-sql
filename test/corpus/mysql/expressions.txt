@@ -517,8 +517,7 @@ SELECT IF(a > 0, 'yes', 'no'),
       (result_column
         (function_call
           (identifier)
-          (column_reference
-            (identifier))
+          (interval_unit)
           (column_reference
             (identifier))))
       (result_column
@@ -919,3 +918,54 @@ SELECT app_db.calc_tax(100, 0.08), app_db.`select`(1);
           (identifier)
           (quoted_identifier)
           (numeric_literal))))))
+
+================================================================================
+Typed temporal literals, ODBC escapes, unparenthesized MATCH, and dot-qualified charset names
+:language(mysql)
+================================================================================
+
+SELECT DATE '2020-01-01', TIME '12:30:00', TIMESTAMP '2020-01-01 12:30:00', {d '2020-01-01'}, date, t._utf8mb4, _bogus
+FROM orders t
+WHERE MATCH title, t.body AGAINST ('db' IN BOOLEAN MODE);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (temporal_literal
+          (string_literal)))
+      (result_column
+        (temporal_literal
+          (string_literal)))
+      (result_column
+        (temporal_literal
+          (string_literal)))
+      (result_column
+        (odbc_escape_expression
+          (identifier)
+          (string_literal)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier)))
+      (where_clause
+        (match_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)
+            (identifier))
+          (string_literal))))))

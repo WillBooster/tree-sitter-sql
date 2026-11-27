@@ -192,7 +192,7 @@ FROM JSON_TABLE(
   doc,
   '$.items[*]' COLUMNS (
     rowid FOR ORDINALITY,
-    id INT PATH '$.id' DEFAULT 0 ON EMPTY NULL ON ERROR,
+    id INT PATH '$.id' DEFAULT '0' ON EMPTY NULL ON ERROR,
     active INT EXISTS PATH '$.active',
     NESTED PATH '$.tags[*]' COLUMNS (tag VARCHAR(32) PATH '$')
   )
@@ -216,7 +216,7 @@ FROM JSON_TABLE(
             (identifier)
             (data_type)
             (string_literal)
-            (numeric_literal))
+            (string_literal))
           (json_table_column
             (identifier)
             (data_type)
@@ -695,3 +695,41 @@ SELECT full.id FROM t full JOIN u ON full.id = u.id;
             (column_reference
               (identifier)
               (identifier))))))))
+
+
+================================================================================
+Compound SELECT INTO on final block, JSON_TABLE reversed handlers, and max uint64 LIMIT
+:language(mysql)
+================================================================================
+
+SELECT 1 UNION SELECT 2 INTO @out_v;
+SELECT * FROM JSON_TABLE('[1]', '$[*]' COLUMNS (x INT PATH '$' ERROR ON ERROR NULL ON EMPTY)) AS j LIMIT 18446744073709551615;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (compound_query
+      (select_core
+        (result_column
+          (numeric_literal)))
+      (compound_operator)
+      (select_core
+        (result_column
+          (numeric_literal))
+        (into_clause
+          (user_variable)))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (json_table
+          (string_literal)
+          (string_literal)
+          (json_table_column
+            (identifier)
+            (data_type)
+            (string_literal))
+          (identifier))))
+    (limit_clause
+      (numeric_literal))))

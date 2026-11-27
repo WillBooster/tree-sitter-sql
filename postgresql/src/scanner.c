@@ -61,16 +61,16 @@ static bool emit_result(TSLexer *lexer, const bool *valid_symbols, enum TokenTyp
   return true;
 }
 
-static bool scan_line_comment_body(TSLexer *lexer) {
+static bool scan_line_comment_body(TSLexer *lexer, bool skip) {
   bool has_nul = false;
   while (!at_eof(lexer) && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
     if (lexer->lookahead == 0) has_nul = true;
-    advance(lexer);
+    lexer->advance(lexer, skip && !has_nul);
   }
   return !has_nul;
 }
 
-static void step_block_comment(TSLexer *lexer, unsigned *depth, bool *has_nul) {
+static void step_block_comment(TSLexer *lexer, unsigned *depth, bool *has_nul, bool skip_close) {
   int32_t c = lexer->lookahead;
   advance(lexer);
   if (c == 0) *has_nul = true;
@@ -78,15 +78,15 @@ static void step_block_comment(TSLexer *lexer, unsigned *depth, bool *has_nul) {
     advance(lexer);
     (*depth)++;
   } else if (c == '*' && !at_eof(lexer) && lexer->lookahead == '/') {
-    advance(lexer);
     (*depth)--;
+    lexer->advance(lexer, skip_close && *depth == 0 && !*has_nul);
   }
 }
 
-static bool scan_block_comment_body(TSLexer *lexer) {
+static bool scan_block_comment_body(TSLexer *lexer, bool skip_close) {
   unsigned depth = 1;
   bool has_nul = false;
-  while (!at_eof(lexer) && depth > 0) step_block_comment(lexer, &depth, &has_nul);
+  while (!at_eof(lexer) && depth > 0) step_block_comment(lexer, &depth, &has_nul, skip_close);
   return depth == 0 && !has_nul;
 }
 
@@ -102,7 +102,7 @@ static bool scan_quote_continuation(TSLexer *lexer) {
       advance(lexer);
     } else if (c == '-') {
       advance(lexer);
-      if (lexer->lookahead != '-' || !scan_line_comment_body(lexer)) return false;
+      if (lexer->lookahead != '-' || !scan_line_comment_body(lexer, false)) return false;
     } else {
       return saw_newline && c == '\'';
     }
@@ -224,8 +224,8 @@ static bool scan_double_quoted(TSLexer *lexer, CharArray *out) {
 
 static bool skip_one_comment(TSLexer *lexer, int32_t first) {
   advance(lexer);
-  if (first == '-') return lexer->lookahead == '-' && (advance(lexer), scan_line_comment_body(lexer));
-  return lexer->lookahead == '*' && (advance(lexer), scan_block_comment_body(lexer));
+  if (first == '-') return lexer->lookahead == '-' && (advance(lexer), scan_line_comment_body(lexer, false));
+  return lexer->lookahead == '*' && (advance(lexer), scan_block_comment_body(lexer, false));
 }
 
 static bool skip_spaces_and_comments(TSLexer *lexer) {
@@ -497,7 +497,12 @@ static bool scan_custom_operator_tail(Scanner *scanner, TSLexer *lexer, const bo
       pm_run_end);
 }
 
-static bool scan_operator_or_comment(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, uint32_t start) {
+static bool is_error_recovery(const bool *valid_symbols) {
+  return valid_symbols[UNREACHABLE] && valid_symbols[BIT_STRING_LITERAL];
+}
+
+static bool scan_operator_or_comment(
+    Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, uint32_t start, bool *skipped_comment) {
   int32_t first = lexer->lookahead;
   if ((first == '+' || first == '-') && start < scanner->pure_pm_end) {
     if (!emit_pm_token(scanner, lexer, valid_symbols, first, scanner->pure_pm_end)) return false;
@@ -507,8 +512,13 @@ static bool scan_operator_or_comment(Scanner *scanner, TSLexer *lexer, const boo
   }
   advance(lexer);
   if (is_comment_start(first, lexer->lookahead)) {
-    advance(lexer);
-    bool ok = first == '-' ? scan_line_comment_body(lexer) : scan_block_comment_body(lexer);
+    bool skip = is_error_recovery(valid_symbols);
+    lexer->advance(lexer, first == '-' && skip);
+    bool ok = first == '-' ? scan_line_comment_body(lexer, skip) : scan_block_comment_body(lexer, skip);
+    if (ok && skip) {
+      *skipped_comment = true;
+      return false;
+    }
     lexer->mark_end(lexer);
     return emit_result(lexer, valid_symbols, COMMENT, ok);
   }
@@ -561,21 +571,29 @@ static bool scan_nul_run(TSLexer *lexer, const bool *valid_symbols) {
   return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
 }
 
-bool tree_sitter_postgresql_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
-  Scanner *scanner = (Scanner *)payload;
-  while (is_space(lexer->lookahead)) lexer->advance(lexer, true);
-  if (at_eof(lexer)) return false;
-  uint32_t start = current_byte(lexer);
-  int32_t c = lexer->lookahead;
-  if (is_op_char(c)) {
-    if (start >= scanner->pure_pm_end) scanner->pure_pm_end = 0;
-    return scan_operator_or_comment(scanner, lexer, valid_symbols, start);
-  }
-  scanner->pure_pm_end = 0;
+static bool scan_non_op_token(TSLexer *lexer, const bool *valid_symbols, int32_t c) {
   if (c == 0) return scan_nul_run(lexer, valid_symbols);
   if (c == '\'') return emit_result(lexer, valid_symbols, STRING_LITERAL, scan_string_segments(lexer, false, NULL));
   if (c == '"') return emit_result(lexer, valid_symbols, QUOTED_IDENTIFIER, scan_double_quoted(lexer, NULL));
   if (c > 0 && c < 0x80 && strchr("eEnNbBxXuU", c) != NULL) return scan_prefixed_literal(lexer, valid_symbols, c);
   if (c == '$') return scan_dollar(lexer, valid_symbols);
   return (c == '.' || is_digit(c)) && scan_illegal_number(lexer, valid_symbols, c == '.');
+}
+
+bool tree_sitter_postgresql_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
+  Scanner *scanner = (Scanner *)payload;
+  for (;;) {
+    while (is_space(lexer->lookahead)) lexer->advance(lexer, true);
+    if (at_eof(lexer)) return false;
+    uint32_t start = current_byte(lexer);
+    int32_t c = lexer->lookahead;
+    if (!is_op_char(c)) {
+      scanner->pure_pm_end = 0;
+      return scan_non_op_token(lexer, valid_symbols, c);
+    }
+    if (start >= scanner->pure_pm_end) scanner->pure_pm_end = 0;
+    bool skipped_comment = false;
+    bool ok = scan_operator_or_comment(scanner, lexer, valid_symbols, start, &skipped_comment);
+    if (!skipped_comment) return ok;
+  }
 }

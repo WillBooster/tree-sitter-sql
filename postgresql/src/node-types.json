@@ -1943,6 +1943,10 @@
           "named": true
         },
         {
+          "type": "if_exists",
+          "named": true
+        },
+        {
           "type": "numeric_literal",
           "named": true
         },
@@ -10974,6 +10978,10 @@
           },
           {
             "type": "positional_parameter",
+            "named": true
+          },
+          {
+            "type": "subquery",
             "named": true
           },
           {
@@ -20610,6 +20618,10 @@
             "named": true
           },
           {
+            "type": "subquery",
+            "named": true
+          },
+          {
             "type": "subscript_expression",
             "named": true
           }
@@ -22446,7 +22458,7 @@
         ]
       },
       "operator": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
