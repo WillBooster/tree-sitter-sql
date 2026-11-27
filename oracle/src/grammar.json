@@ -13010,6 +13010,19 @@
       ]
     },
     "_rel_table_element": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_capture_name"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_rel_table_element_body"
+        }
+      ]
+    },
+    "_rel_table_element_body": {
       "type": "CHOICE",
       "members": [
         {
@@ -13102,28 +13115,444 @@
       ]
     },
     "table_domain_clause": {
-      "type": "SEQ",
+      "type": "PREC",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Dd][Oo][Mm][Aa][Ii][Nn]"
+            },
+            "named": false,
+            "value": "DOMAIN"
+          },
+          {
+            "type": "FIELD",
+            "name": "domain",
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_domain_object_name"
+              },
+              "named": true,
+              "value": "object_name"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "column_list"
+          }
+        ]
+      }
+    },
+    "_domain_object_name": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_domain_head_name"
+            }
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "."
+                },
+                {
+                  "type": "FIELD",
+                  "name": "member",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_member_name"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "@"
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "dblink",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "dblink_name"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "_domain_head_name": {
+      "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_name"
+        },
         {
           "type": "ALIAS",
           "content": {
-            "type": "PATTERN",
-            "value": "[Dd][Oo][Mm][Aa][Ii][Nn]"
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Bb][Ff][Ii][Ll][Ee]"
+            },
+            "named": false,
+            "value": "BFILE"
           },
-          "named": false,
-          "value": "DOMAIN"
+          "named": true,
+          "value": "identifier"
         },
         {
-          "type": "FIELD",
-          "name": "domain",
+          "type": "ALIAS",
           "content": {
-            "type": "SYMBOL",
-            "name": "object_name"
-          }
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Bb][Ii][Nn][Aa][Rr][Yy]_[Dd][Oo][Uu][Bb][Ll][Ee]"
+            },
+            "named": false,
+            "value": "BINARY_DOUBLE"
+          },
+          "named": true,
+          "value": "identifier"
         },
         {
-          "type": "SYMBOL",
-          "name": "column_list"
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Bb][Ii][Nn][Aa][Rr][Yy]_[Ff][Ll][Oo][Aa][Tt]"
+            },
+            "named": false,
+            "value": "BINARY_FLOAT"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Bb][Ii][Nn][Aa][Rr][Yy]_[Ii][Nn][Tt][Ee][Gg][Ee][Rr]"
+            },
+            "named": false,
+            "value": "BINARY_INTEGER"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Bb][Ll][Oo][Bb]"
+            },
+            "named": false,
+            "value": "BLOB"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Bb][Oo][Oo][Ll]"
+            },
+            "named": false,
+            "value": "BOOL"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Bb][Oo][Oo][Ll][Ee][Aa][Nn]"
+            },
+            "named": false,
+            "value": "BOOLEAN"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Cc][Hh][Aa][Rr][Aa][Cc][Tt][Ee][Rr]"
+            },
+            "named": false,
+            "value": "CHARACTER"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Cc][Ll][Oo][Bb]"
+            },
+            "named": false,
+            "value": "CLOB"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Dd][Ee][Cc]"
+            },
+            "named": false,
+            "value": "DEC"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Jj][Ss][Oo][Nn]"
+            },
+            "named": false,
+            "value": "JSON"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Nn][Aa][Tt][Ii][Oo][Nn][Aa][Ll]"
+            },
+            "named": false,
+            "value": "NATIONAL"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Nn][Cc][Hh][Aa][Rr]"
+            },
+            "named": false,
+            "value": "NCHAR"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Nn][Cc][Ll][Oo][Bb]"
+            },
+            "named": false,
+            "value": "NCLOB"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Nn][Uu][Mm][Ee][Rr][Ii][Cc]"
+            },
+            "named": false,
+            "value": "NUMERIC"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Nn][Vv][Aa][Rr][Cc][Hh][Aa][Rr]2"
+            },
+            "named": false,
+            "value": "NVARCHAR2"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Pp][Ll][Ss]_[Ii][Nn][Tt][Ee][Gg][Ee][Rr]"
+            },
+            "named": false,
+            "value": "PLS_INTEGER"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Rr][Ee][Aa][Ll]"
+            },
+            "named": false,
+            "value": "REAL"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Rr][Ee][Ff]"
+            },
+            "named": false,
+            "value": "REF"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Ss][Ii][Mm][Pp][Ll][Ee]_[Ii][Nn][Tt][Ee][Gg][Ee][Rr]"
+            },
+            "named": false,
+            "value": "SIMPLE_INTEGER"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp]"
+            },
+            "named": false,
+            "value": "TIMESTAMP"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Uu][Rr][Oo][Ww][Ii][Dd]"
+            },
+            "named": false,
+            "value": "UROWID"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Vv][Ee][Cc][Tt][Oo][Rr]"
+            },
+            "named": false,
+            "value": "VECTOR"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Xx][Mm][Ll][Tt][Yy][Pp][Ee]"
+            },
+            "named": false,
+            "value": "XMLTYPE"
+          },
+          "named": true,
+          "value": "identifier"
         }
       ]
     },
@@ -13804,7 +14233,7 @@
             "name": "name",
             "content": {
               "type": "SYMBOL",
-              "name": "_rel_column_name"
+              "name": "_column_name"
             }
           },
           {
@@ -13853,10 +14282,6 @@
                       "type": "SYMBOL",
                       "name": "_column_attribute"
                     }
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "_rel_col_has_type"
                   }
                 ]
               },
@@ -13895,15 +14320,12 @@
                               "type": "SYMBOL",
                               "name": "_column_attribute"
                             }
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "_rel_col_has_type"
                           }
                         ]
                       },
                       {
-                        "type": "BLANK"
+                        "type": "SYMBOL",
+                        "name": "_commit_typeless_col"
                       }
                     ]
                   }
@@ -13913,37 +14335,6 @@
           }
         ]
       }
-    },
-    "_rel_column_name": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_rel_col_ident"
-          },
-          "named": true,
-          "value": "identifier"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_rel_col_quoted"
-          },
-          "named": true,
-          "value": "quoted_identifier"
-        },
-        {
-          "type": "PREC",
-          "value": 1,
-          "content": {
-            "type": "SYMBOL",
-            "name": "_illegal"
-          }
-        }
-      ]
     },
     "_modify_column_definition": {
       "type": "PREC_RIGHT",
@@ -15879,8 +16270,21 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "_fk_column_name"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_capture_name"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_name"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_commit_fk_col"
+                }
+              ]
             },
             {
               "type": "REPEAT",
@@ -15892,8 +16296,21 @@
                     "value": ","
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "_fk_column_name"
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_capture_name"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "_name"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "_commit_fk_col"
+                      }
+                    ]
                   }
                 ]
               }
@@ -15903,37 +16320,6 @@
         {
           "type": "STRING",
           "value": ")"
-        }
-      ]
-    },
-    "_fk_column_name": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_fk_col_ident"
-          },
-          "named": true,
-          "value": "identifier"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_fk_col_quoted"
-          },
-          "named": true,
-          "value": "quoted_identifier"
-        },
-        {
-          "type": "PREC",
-          "value": 1,
-          "content": {
-            "type": "SYMBOL",
-            "name": "_illegal"
-          }
         }
       ]
     },
@@ -78848,10 +79234,6 @@
     [
       "_object_privilege",
       "_system_privilege_or_role"
-    ],
-    [
-      "table_domain_clause",
-      "_column_name"
     ]
   ],
   "precedences": [],
@@ -78906,23 +79288,15 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_rel_col_ident"
+      "name": "_capture_name"
     },
     {
       "type": "SYMBOL",
-      "name": "_rel_col_quoted"
+      "name": "_commit_typeless_col"
     },
     {
       "type": "SYMBOL",
-      "name": "_rel_col_has_type"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_fk_col_ident"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_fk_col_quoted"
+      "name": "_commit_fk_col"
     },
     {
       "type": "SYMBOL",

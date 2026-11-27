@@ -1403,11 +1403,9 @@ export default grammar({
     $.bind_variable,
     $._slash_terminator,
     $._rel_table_open,
-    $._rel_col_ident,
-    $._rel_col_quoted,
-    $._rel_col_has_type,
-    $._fk_col_ident,
-    $._fk_col_quoted,
+    $._capture_name,
+    $._commit_typeless_col,
+    $._commit_fk_col,
     $._rel_table_close_resolved,
     $._rel_table_close_unresolved,
   ],
@@ -1449,7 +1447,6 @@ export default grammar({
     [$.error_logging_clause],
     [$._error_logging_tail],
     [$._object_privilege, $._system_privilege_or_role],
-    [$.table_domain_clause, $._column_name],
   ],
 
   rules: {
@@ -2651,7 +2648,9 @@ export default grammar({
         choice(keyword('METADATA'), keyword('DATA'), keywords('EXTENDED DATA'), keyword('NONE'))
       ),
 
-    _rel_table_element: ($) =>
+    _rel_table_element: ($) => seq($._capture_name, $._rel_table_element_body),
+
+    _rel_table_element_body: ($) =>
       choice(
         alias($._rel_column_definition, $.column_definition),
         $.period_definition,
@@ -2672,7 +2671,41 @@ export default grammar({
         $.table_domain_clause
       ),
 
-    table_domain_clause: ($) => seq(keyword('DOMAIN'), field('domain', $.object_name), $.column_list),
+    table_domain_clause: ($) =>
+      prec(1, seq(keyword('DOMAIN'), field('domain', alias($._domain_object_name, $.object_name)), $.column_list)),
+
+    _domain_object_name: ($) => qualifiedObjectName($, $._domain_head_name),
+
+    _domain_head_name: ($) =>
+      choice(
+        $._name,
+        ...[
+          'BFILE',
+          'BINARY_DOUBLE',
+          'BINARY_FLOAT',
+          'BINARY_INTEGER',
+          'BLOB',
+          'BOOL',
+          'BOOLEAN',
+          'CHARACTER',
+          'CLOB',
+          'DEC',
+          'JSON',
+          'NATIONAL',
+          'NCHAR',
+          'NCLOB',
+          'NUMERIC',
+          'NVARCHAR2',
+          'PLS_INTEGER',
+          'REAL',
+          'REF',
+          'SIMPLE_INTEGER',
+          'TIMESTAMP',
+          'UROWID',
+          'VECTOR',
+          'XMLTYPE',
+        ].map((word) => alias(keyword(word), $.identifier))
+      ),
 
     _object_table_element: ($) =>
       choice($.table_constraint, seq(field('name', $._name), repeat1(choice($.default_clause, $._column_constraint)))),
@@ -2730,29 +2763,22 @@ export default grammar({
     _rel_column_definition: ($) =>
       prec.right(
         seq(
-          field('name', $._rel_column_name),
+          field('name', $._column_name),
           choice(
             seq(
               choice(seq(field('type', $.type_name), optional($.column_domain_clause)), $.column_domain_clause),
-              repeat($._column_attribute),
-              $._rel_col_has_type
+              repeat($._column_attribute)
             ),
             seq(
               repeat($._non_ref_column_attribute),
-              optional(
-                seq(
-                  choice($.virtual_column_clause, $._inline_references_constraint),
-                  repeat($._column_attribute),
-                  $._rel_col_has_type
-                )
+              choice(
+                seq(choice($.virtual_column_clause, $._inline_references_constraint), repeat($._column_attribute)),
+                $._commit_typeless_col
               )
             )
           )
         )
       ),
-
-    _rel_column_name: ($) =>
-      choice(alias($._rel_col_ident, $.identifier), alias($._rel_col_quoted, $.quoted_identifier), prec(1, $._illegal)),
 
     _modify_column_definition: ($) =>
       prec.right(
@@ -2949,10 +2975,7 @@ export default grammar({
         )
       ),
 
-    _fk_column_list: ($) => seq('(', commaSep1($._fk_column_name), ')'),
-
-    _fk_column_name: ($) =>
-      choice(alias($._fk_col_ident, $.identifier), alias($._fk_col_quoted, $.quoted_identifier), prec(1, $._illegal)),
+    _fk_column_list: ($) => seq('(', commaSep1(seq($._capture_name, $._name, $._commit_fk_col)), ')'),
 
     _non_fk_table_constraint: ($) =>
       prec.right(seq(optional($.constraint_name), $._non_fk_table_constraint_kind, repeat($._constraint_state))),
