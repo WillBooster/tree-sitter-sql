@@ -941,7 +941,7 @@ function buildJsonExpressionRules(k, ref, pub, def, baseIdentifier) {
           ref($, '_expression'),
           optional(keywords('FORMAT JSON')),
           ',',
-          ref($, '_expression'),
+          $.string_literal,
           repeat(ref($, '_json_path_option'))
         ),
     ],
@@ -1062,17 +1062,12 @@ function buildJsonExpressionRules(k, ref, pub, def, baseIdentifier) {
       k('_json_transform_op'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
         choice(
-          seq(
-            optional($._json_transform_assign_verb),
-            ref($, '_scalar_expression'),
-            '=',
-            ref($, '_json_transform_assign_tail')
-          ),
-          seq(keyword('REMOVE'), ref($, '_expression'), repeat(ref($, '_json_transform_handler'))),
+          seq(optional($._json_transform_assign_verb), $.string_literal, '=', ref($, '_json_transform_assign_tail')),
+          seq(keyword('REMOVE'), $.string_literal, repeat(ref($, '_json_transform_handler'))),
           seq(keyword('KEEP'), commaSep1($.string_literal), repeat(ref($, '_json_transform_handler'))),
           seq(
             keyword('SORT'),
-            ref($, '_expression'),
+            $.string_literal,
             repeat(
               choice(
                 keyword('REVERSE'),
@@ -1868,7 +1863,7 @@ export default grammar({
       seq(
         field('source', $._expression),
         optional(seq(optional(keyword('FORMAT')), keyword('JSON'))),
-        optional(seq(',', field('path', $._expression))),
+        optional(seq(',', field('path', $.string_literal))),
         repeat($._json_passing_or_behavior),
         $.json_table_columns_clause
       ),
@@ -1877,12 +1872,7 @@ export default grammar({
 
     json_table_column: ($) =>
       choice(
-        seq(
-          keyword('NESTED'),
-          optional(keyword('PATH')),
-          optional(field('path', $._expression)),
-          $.json_table_columns_clause
-        ),
+        seq(keyword('NESTED'), optional(keyword('PATH')), field('path', $.string_literal), $.json_table_columns_clause),
         seq(field('name', $._name), keywords('FOR ORDINALITY')),
         seq(
           field('name', $._name),
@@ -1894,7 +1884,7 @@ export default grammar({
               seq(keyword('DISALLOW'), keywords('SCALARS')),
               keyword('EXISTS'),
               keyword('TRUNCATE'),
-              seq(keyword('PATH'), field('path', $._expression)),
+              seq(keyword('PATH'), field('path', $.string_literal)),
               $._json_wrapper_clause,
               $._json_on_error_or_empty
             )

@@ -4088,7 +4088,7 @@
                   "name": "path",
                   "content": {
                     "type": "SYMBOL",
-                    "name": "_expression"
+                    "name": "string_literal"
                   }
                 }
               ]
@@ -4191,20 +4191,12 @@
               ]
             },
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "FIELD",
-                  "name": "path",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "_expression"
-                  }
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
+              "type": "FIELD",
+              "name": "path",
+              "content": {
+                "type": "SYMBOL",
+                "name": "string_literal"
+              }
             },
             {
               "type": "SYMBOL",
@@ -4398,7 +4390,7 @@
                         "name": "path",
                         "content": {
                           "type": "SYMBOL",
-                          "name": "_expression"
+                          "name": "string_literal"
                         }
                       }
                     ]
@@ -63477,7 +63469,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_expression"
+          "name": "string_literal"
         },
         {
           "type": "REPEAT",
@@ -64499,7 +64491,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_scalar_expression"
+              "name": "string_literal"
             },
             {
               "type": "STRING",
@@ -64525,7 +64517,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "string_literal"
             },
             {
               "type": "REPEAT",
@@ -64596,7 +64588,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "string_literal"
             },
             {
               "type": "REPEAT",
@@ -69657,7 +69649,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_plsql_expression"
+          "name": "string_literal"
         },
         {
           "type": "REPEAT",
@@ -70699,7 +70691,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_plsql_scalar_expression"
+              "name": "string_literal"
             },
             {
               "type": "STRING",
@@ -70725,7 +70717,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_plsql_expression"
+              "name": "string_literal"
             },
             {
               "type": "REPEAT",
@@ -70796,7 +70788,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_plsql_expression"
+              "name": "string_literal"
             },
             {
               "type": "REPEAT",
