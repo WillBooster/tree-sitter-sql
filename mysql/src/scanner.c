@@ -95,7 +95,7 @@ static bool scan_dash_comment(TSLexer *lexer) {
   return false;
 }
 
-static bool scan_block_comment_tail(TSLexer *lexer) {
+static bool scan_block_comment_tail(Scanner *scanner, TSLexer *lexer) {
   bool has_nul = false;
   bool star = false;
   while (!at_eof(lexer)) {
@@ -105,6 +105,7 @@ static bool scan_block_comment_tail(TSLexer *lexer) {
     if (star && c == '/') return emit(lexer, has_nul ? ILLEGAL_TOKEN : COMMENT);
     star = (c == '*');
   }
+  scanner->in_version_comment = false;
   return emit(lexer, ILLEGAL_TOKEN);
 }
 
@@ -140,7 +141,7 @@ static bool scan_version_comment_open(Scanner *scanner, TSLexer *lexer) {
     lexer->result_symbol = VERSION_COMMENT_START;
     return true;
   }
-  if (digits == 5 && ver > 80499) return scan_block_comment_tail(lexer);
+  if (digits == 5 && ver > 80499) return scan_block_comment_tail(scanner, lexer);
   while (is_space(lexer->lookahead)) advance(lexer);
   if (lexer->lookahead == '*') {
     advance(lexer);
@@ -158,20 +159,11 @@ static bool scan_slash_comment(Scanner *scanner, TSLexer *lexer) {
   advance(lexer);
   if (lexer->lookahead != '*') return false;
   advance(lexer);
-
-  if (scanner->in_version_comment) {
-    if (lexer->lookahead == '!') {
-      advance(lexer);
-      for (unsigned i = 0; i < 6 && is_digit(lexer->lookahead); i++) advance(lexer);
-    }
-    return emit(lexer, ILLEGAL_TOKEN);
-  }
-
-  if (lexer->lookahead == '!') {
+  if (!scanner->in_version_comment && lexer->lookahead == '!') {
     advance(lexer);
     return scan_version_comment_open(scanner, lexer);
   }
-  return scan_block_comment_tail(lexer);
+  return scan_block_comment_tail(scanner, lexer);
 }
 
 static bool scan_string_escape(TSLexer *lexer, bool *has_nul) {
