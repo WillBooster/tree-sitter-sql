@@ -31235,7 +31235,7 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "_expression"
+                      "name": "_trigger_func_arg"
                     },
                     {
                       "type": "REPEAT",
@@ -31248,7 +31248,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "_expression"
+                            "name": "_trigger_func_arg"
                           }
                         ]
                       }
@@ -31265,6 +31265,23 @@
               "value": ")"
             }
           ]
+        }
+      ]
+    },
+    "_trigger_func_arg": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "numeric_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "string_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_col_label"
         }
       ]
     },
@@ -67972,6 +67989,114 @@
               },
               "named": false,
               "value": "XMLTABLE"
+            },
+            "named": true,
+            "value": "identifier"
+          }
+        },
+        {
+          "type": "PREC",
+          "value": -1,
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Cc][Uu][Rr][Rr][Ee][Nn][Tt]"
+              },
+              "named": false,
+              "value": "CURRENT"
+            },
+            "named": true,
+            "value": "identifier"
+          }
+        },
+        {
+          "type": "PREC",
+          "value": -1,
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Dd][Oo][Uu][Bb][Ll][Ee]"
+              },
+              "named": false,
+              "value": "DOUBLE"
+            },
+            "named": true,
+            "value": "identifier"
+          }
+        },
+        {
+          "type": "PREC",
+          "value": -1,
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Ee][Xx][Cc][Ll][Uu][Dd][Ee]"
+              },
+              "named": false,
+              "value": "EXCLUDE"
+            },
+            "named": true,
+            "value": "identifier"
+          }
+        },
+        {
+          "type": "PREC",
+          "value": -1,
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Ii][Ff]"
+              },
+              "named": false,
+              "value": "IF"
+            },
+            "named": true,
+            "value": "identifier"
+          }
+        },
+        {
+          "type": "PREC",
+          "value": -1,
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Oo][Pp][Ee][Rr][Aa][Tt][Oo][Rr]"
+              },
+              "named": false,
+              "value": "OPERATOR"
+            },
+            "named": true,
+            "value": "identifier"
+          }
+        },
+        {
+          "type": "PREC",
+          "value": -1,
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Rr][Oo][Ww][Ss]"
+              },
+              "named": false,
+              "value": "ROWS"
             },
             "named": true,
             "value": "identifier"

@@ -2173,8 +2173,10 @@ export default grammar({
         keyword('EXECUTE'),
         choice(keyword('FUNCTION'), keyword('PROCEDURE')),
         alias($._func_qualified_name, $.qualified_name),
-        parens(commaSep($._expression))
+        parens(commaSep($._trigger_func_arg))
       ),
+
+    _trigger_func_arg: ($) => choice($.numeric_literal, $.string_literal, $._col_label),
 
     _trigger_events: ($) => seq($._trigger_one_event, repeat(seq(keyword('OR'), $._trigger_one_event))),
 
@@ -4708,7 +4710,9 @@ export default grammar({
       choice(
         $.identifier,
         $.quoted_identifier,
-        ...FUNC_RESERVED_KEYWORDS.map((word) => prec(-1, alias(keyword(word), $.identifier)))
+        ...[...FUNC_RESERVED_KEYWORDS, ...UNRESERVED_STARTER_KEYWORDS].map((word) =>
+          prec(-1, alias(keyword(word), $.identifier))
+        )
       ),
 
     _bare_col_label: ($) =>

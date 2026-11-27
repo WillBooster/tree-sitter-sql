@@ -1129,3 +1129,13 @@ ALTER TABLE ENABLE TRIGGER without target
 ALTER TABLE t ENABLE TRIGGER;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Computed expression in CREATE TRIGGER function argument
+:error
+:language(postgresql)
+================================================================================
+
+CREATE TRIGGER tr AFTER INSERT ON t EXECUTE FUNCTION f(1 + 2);
+
+--------------------------------------------------------------------------------
