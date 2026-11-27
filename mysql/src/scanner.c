@@ -1,3 +1,4 @@
+// code-gauge-allow-file fileNcss -- tree-sitter compiles one scanner.c covering MySQL comments, versioned comments, strings, charsets, variables, hostnames, and digit identifiers
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/parser.h"
 
@@ -18,6 +19,7 @@ enum TokenType {
   SYSTEM_VARIABLE,
   QUOTED_IDENTIFIER,
   DIGIT_IDENTIFIER,
+  HOST_NAME,
   STATEMENT_TERMINATOR,
   END_OF_INPUT,
   ILLEGAL_TOKEN,
@@ -252,20 +254,23 @@ static bool follows_introducer_literal(TSLexer *lexer) {
   return false;
 }
 
-static bool scan_charset_introducer(TSLexer *lexer) {
-  advance(lexer);
-  char charset[32];
+static unsigned read_charset_word(TSLexer *lexer, char *charset, unsigned capacity) {
   unsigned length = 0;
   while (is_ascii_alpha(lexer->lookahead) || is_digit(lexer->lookahead)) {
     int32_t c = lexer->lookahead;
-    if (length + 1 < sizeof charset) {
-      charset[length] = (c >= 'A' && c <= 'Z') ? (char)(c - 'A' + 'a') : (char)c;
-    }
+    if (length + 1 < capacity) charset[length] = (c >= 'A' && c <= 'Z') ? (char)(c - 'A' + 'a') : (char)c;
     length++;
     advance(lexer);
   }
+  charset[length < capacity ? length : capacity - 1] = 0;
+  return length;
+}
+
+static bool scan_charset_introducer(TSLexer *lexer) {
+  advance(lexer);
+  char charset[32];
+  unsigned length = read_charset_word(lexer, charset, sizeof charset);
   if (length == 0 || length >= sizeof charset || is_identifier_char(lexer->lookahead)) return false;
-  charset[length] = 0;
   lexer->mark_end(lexer);
 
   if (lexer->lookahead == '\'' || lexer->lookahead == '"') {
@@ -409,6 +414,28 @@ static bool scan_prefixed_literal(TSLexer *lexer, int32_t c, const bool *valid_s
   return scan_quoted_hex_or_bit(lexer, is_hex, valid_symbols[is_hex ? QUOTED_HEX_LITERAL : QUOTED_BIT_LITERAL]);
 }
 
+static bool scan_host_charset_introducer(TSLexer *lexer) {
+  advance(lexer);
+  char charset[32];
+  unsigned length = read_charset_word(lexer, charset, sizeof charset);
+  return length > 0 && length < sizeof charset && (lexer->lookahead == '\'' || lexer->lookahead == '"') &&
+         emit(lexer, CHARSET_INTRODUCER);
+}
+
+static bool scan_host_name(TSLexer *lexer, const bool *valid_symbols) {
+  int32_t c = lexer->lookahead;
+  if (!is_user_var_char(c)) return false;
+  if (c == '_' && valid_symbols[CHARSET_INTRODUCER]) {
+    if (scan_host_charset_introducer(lexer)) return true;
+  } else if (c == 'n' || c == 'N' || c == 'x' || c == 'X' || c == 'b' || c == 'B') {
+    if (scan_prefixed_literal(lexer, c, valid_symbols)) return true;
+  } else {
+    advance(lexer);
+  }
+  while (is_user_var_char(lexer->lookahead)) advance(lexer);
+  return emit(lexer, HOST_NAME);
+}
+
 void *tree_sitter_mysql_external_scanner_create(void) { return ts_calloc(1, sizeof(Scanner)); }
 
 void tree_sitter_mysql_external_scanner_destroy(void *payload) { ts_free(payload); }
@@ -493,6 +520,9 @@ bool tree_sitter_mysql_external_scanner_scan(void *payload, TSLexer *lexer, cons
   if (scanner->in_version_comment && lexer->lookahead == '*') return scan_version_comment_end(scanner, lexer);
   if (lexer->lookahead == ';' && valid_symbols[STATEMENT_TERMINATOR] && !valid_symbols[UNREACHABLE]) {
     return scan_top_level_semicolon(scanner, lexer);
+  }
+  if (valid_symbols[HOST_NAME] && !valid_symbols[UNREACHABLE] && scan_host_name(lexer, valid_symbols)) {
+    return true;
   }
 
   return scan_token_by_start(scanner, lexer, valid_symbols);

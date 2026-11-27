@@ -20935,8 +20935,26 @@
                       "type": "FIELD",
                       "name": "host",
                       "content": {
-                        "type": "SYMBOL",
-                        "name": "_identifier_or_string"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "string_literal"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "quoted_identifier"
+                          },
+                          {
+                            "type": "ALIAS",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "_host_name"
+                            },
+                            "named": true,
+                            "value": "identifier"
+                          }
+                        ]
                       }
                     }
                   ]
@@ -30254,6 +30272,10 @@
     {
       "type": "SYMBOL",
       "name": "_digit_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_host_name"
     },
     {
       "type": "SYMBOL",

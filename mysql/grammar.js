@@ -403,6 +403,7 @@ export default grammar({
     $.system_variable,
     $.quoted_identifier,
     $._digit_identifier,
+    $._host_name,
     $._statement_terminator,
     $._end_of_input,
     $._illegal_token,
@@ -2216,7 +2217,12 @@ export default grammar({
     account_name: ($) =>
       choice(
         seq(keyword('CURRENT_USER'), optional(seq('(', ')'))),
-        seq(field('user', $._identifier_or_string), optional(seq('@', field('host', $._identifier_or_string))))
+        seq(
+          field('user', $._identifier_or_string),
+          optional(
+            seq('@', field('host', choice($.string_literal, $.quoted_identifier, alias($._host_name, $.identifier))))
+          )
+        )
       ),
 
     create_user_statement: ($) =>
