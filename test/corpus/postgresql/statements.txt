@@ -447,3 +447,36 @@ EXPLAIN CREATE TEMP TABLE IF NOT EXISTS q_exp AS EXECUTE p; EXPLAIN CREATE MATER
   (reindex_statement
     (qualified_name
       (identifier))))
+
+================================================================================
+SET TIME ZONE zone_value forms and CREATE ROLE UESCAPE string forms
+:language(postgresql)
+================================================================================
+
+SET TIME ZONE 'UTC'; SET TIME ZONE utc; SET TIME ZONE "action"; SET TIME ZONE -5.5; SET TIME ZONE INTERVAL '02:00' HOUR TO MINUTE; SET TIME ZONE INTERVAL (0) '02:00'; SET TIME ZONE DEFAULT; SET TIME ZONE LOCAL; CREATE ROLE r1 U&"!006cogin" UESCAPE E'\x21'; CREATE ROLE r2 U&"!006cogin" UESCAPE $$!$$;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (set_statement
+    (string_literal))
+  (set_statement
+    (identifier))
+  (set_statement
+    (quoted_identifier))
+  (set_statement
+    (unary_expression
+      (numeric_literal)))
+  (set_statement
+    (string_literal))
+  (set_statement
+    (numeric_literal)
+    (string_literal))
+  (set_statement)
+  (set_statement)
+  (create_role_statement
+    (identifier)
+    (quoted_identifier))
+  (create_role_statement
+    (identifier)
+    (quoted_identifier)))

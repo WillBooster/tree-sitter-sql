@@ -6,7 +6,7 @@ INSERT VALUES with row alias and ON DUPLICATE KEY UPDATE
 INSERT HIGH_PRIORITY IGNORE INTO users PARTITION (p0) (id, name, visits)
 VALUES (1, 'Alice', DEFAULT), (2, 'Bob', 1) AS incoming (id, name, visits)
 ON DUPLICATE KEY UPDATE name = incoming.name, visits = visits + VALUES(visits);
-INSERT INTO users VALUES ROW(1, 'Alice', DEFAULT), ROW(2, 'Bob', 1) AS incoming (id, name, visits);
+INSERT INTO users VALUES ROW(1, 'Alice', DEFAULT), ROW(2, 'Bob', 1);
 
 --------------------------------------------------------------------------------
 
@@ -54,18 +54,15 @@ INSERT INTO users VALUES ROW(1, 'Alice', DEFAULT), ROW(2, 'Bob', 1) AS incoming 
   (insert_statement
     (qualified_name
       (identifier))
-    (row_constructor
-      (numeric_literal)
-      (string_literal))
-    (row_constructor
-      (numeric_literal)
-      (string_literal)
-      (numeric_literal))
-    (identifier)
-    (column_list
-      (identifier)
-      (identifier)
-      (identifier))))
+    (select_statement
+      (values_statement
+        (row_constructor
+          (numeric_literal)
+          (string_literal))
+        (row_constructor
+          (numeric_literal)
+          (string_literal)
+          (numeric_literal))))))
 
 ================================================================================
 INSERT SET, INSERT SELECT, INSERT TABLE, and empty VALUES
@@ -456,3 +453,50 @@ REPLACE INTO t VALUES ROW(1) INTERSECT TABLE u;
         (table_value_statement
           (qualified_name
             (identifier)))))))
+
+
+================================================================================
+Parenthesized single-table UPDATE with ORDER BY and LIMIT
+:language(mysql)
+================================================================================
+
+UPDATE (a PARTITION(p0) AS b) SET b.x = 1 ORDER BY b.id LIMIT 1;
+UPDATE ((a)) SET x = 1 LIMIT 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (join_table
+      (table
+        (qualified_name
+          (identifier))
+        (partition_names_clause
+          (identifier))
+        (identifier)))
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier)
+          (identifier))
+        (numeric_literal)))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier)
+          (identifier))))
+    (limit_clause
+      (numeric_literal)))
+  (update_statement
+    (join_table
+      (join_table
+        (table
+          (qualified_name
+            (identifier)))))
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier))
+        (numeric_literal)))
+    (limit_clause
+      (numeric_literal))))

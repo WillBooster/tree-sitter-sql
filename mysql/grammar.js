@@ -609,7 +609,7 @@ function buildScopedSelectRules(sp) {
         scopedHid($, sp, '_query_body_no_into'),
         optional($.order_by_clause),
         optional(scopedVis($, sp, 'limit_clause')),
-        repeat($.locking_clause)
+        optional(scopedHid($, sp, '_locking_clauses'))
       ),
     [k('_select_with_into')]: ($) =>
       choice(
@@ -618,16 +618,26 @@ function buildScopedSelectRules(sp) {
           scopedHid($, sp, '_query_body_with_into'),
           optional($.order_by_clause),
           optional(scopedVis($, sp, 'limit_clause')),
-          repeat($.locking_clause)
+          optional(scopedHid($, sp, '_locking_clauses'))
         ),
+        scopedHid($, sp, '_select_trailing_into')
+      ),
+    [k('_select_trailing_into')]: ($) =>
+      choice(
         seq(
           optional(scopedVis($, sp, 'with_clause')),
           scopedHid($, sp, '_query_body_no_into'),
           optional($.order_by_clause),
           optional(scopedVis($, sp, 'limit_clause')),
-          choice(seq($.into_clause, repeat($.locking_clause)), seq(repeat1($.locking_clause), $.into_clause))
-        )
+          choice(
+            seq($.into_clause, optional(scopedHid($, sp, '_locking_clauses'))),
+            seq(scopedHid($, sp, '_locking_clauses'), $.into_clause)
+          )
+        ),
+        alias(scopedHid($, sp, '_parenthesized_select_trailing_into'), $.parenthesized_query)
       ),
+    [k('_parenthesized_select_trailing_into')]: ($) => seq('(', scopedHid($, sp, '_select_trailing_into'), ')'),
+    [k('_locking_clauses')]: ($) => repeat1($.locking_clause),
     [k('_subquery_select')]: ($) => scopedHid($, sp, '_select_no_into'),
     [k('with_clause')]: ($) =>
       seq(keyword('WITH'), optional(keyword('RECURSIVE')), commaSep1(scopedVis($, sp, 'common_table_expression'))),
@@ -723,25 +733,14 @@ function buildScopedCompoundQueryRules(sp) {
         alias(scopedHid($, sp, '_parenthesized_query_with_into'), $.parenthesized_query)
       ),
     [k('_parenthesized_query_with_into')]: ($) =>
-      choice(
-        seq(
-          '(',
-          optional(scopedVis($, sp, 'with_clause')),
-          scopedHid($, sp, '_query_body_with_into'),
-          optional($.order_by_clause),
-          optional(scopedVis($, sp, 'limit_clause')),
-          repeat($.locking_clause),
-          ')'
-        ),
-        seq(
-          '(',
-          optional(scopedVis($, sp, 'with_clause')),
-          scopedHid($, sp, '_query_body_no_into'),
-          optional($.order_by_clause),
-          optional(scopedVis($, sp, 'limit_clause')),
-          choice(seq($.into_clause, repeat($.locking_clause)), seq(repeat1($.locking_clause), $.into_clause)),
-          ')'
-        )
+      seq(
+        '(',
+        optional(scopedVis($, sp, 'with_clause')),
+        scopedHid($, sp, '_query_body_with_into'),
+        optional($.order_by_clause),
+        optional(scopedVis($, sp, 'limit_clause')),
+        optional(scopedHid($, sp, '_locking_clauses')),
+        ')'
       ),
     [k('parenthesized_query')]: ($) =>
       seq(
@@ -750,7 +749,7 @@ function buildScopedCompoundQueryRules(sp) {
         scopedHid($, sp, '_query_body_no_into'),
         optional($.order_by_clause),
         optional(scopedVis($, sp, 'limit_clause')),
-        repeat($.locking_clause),
+        optional(scopedHid($, sp, '_locking_clauses')),
         ')'
       ),
   };
@@ -810,7 +809,7 @@ function buildScopedFromRules(sp) {
         $._table_alias,
         optional($.column_list)
       ),
-    [k('join_table')]: ($) => seq('(', scopedHid($, sp, '_table_references'), ')'),
+    [k('join_table')]: ($) => choice(scopedHid($, sp, '_single_table_parens'), scopedHid($, sp, '_multi_table_parens')),
     [k('_joined_table')]: ($) =>
       choice(
         prec.right(
@@ -856,6 +855,9 @@ function buildScopedFromRules(sp) {
           )
         )
       ),
+    [k('_single_table_parens')]: ($) =>
+      seq('(', choice($.table, alias(scopedHid($, sp, '_single_table_parens'), $.join_table)), ')'),
+    [k('_multi_table_parens')]: ($) => seq('(', scopedHid($, sp, '_multi_table_references'), ')'),
     [k('_multi_table_references')]: ($) =>
       choice(
         seq(scopedHid($, sp, '_table_reference'), ',', commaSep1(scopedHid($, sp, '_table_reference'))),
@@ -863,7 +865,7 @@ function buildScopedFromRules(sp) {
         seq('{', keyword('OJ'), scopedHid($, sp, '_table_reference'), '}'),
         scopedVis($, sp, 'subquery_table'),
         $.json_table,
-        scopedVis($, sp, 'join_table')
+        alias(scopedHid($, sp, '_multi_table_parens'), $.join_table)
       ),
   };
 }
@@ -888,10 +890,7 @@ function buildScopedDmlRules(sp) {
             optional($._insert_column_list),
             choice(
               seq(
-                choice(
-                  seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
-                  $._values_clause
-                ),
+                seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
                 optional($._insert_row_alias)
               ),
               alias(scopedHid($, sp, '_insert_query'), $.select_statement)
@@ -913,7 +912,6 @@ function buildScopedDmlRules(sp) {
             optional($._insert_column_list),
             choice(
               seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
-              $._values_clause,
               alias(scopedHid($, sp, '_insert_query'), $.select_statement)
             )
           ),
@@ -927,11 +925,12 @@ function buildScopedDmlRules(sp) {
           scopedHid($, sp, '_query_body_no_into'),
           optional($.order_by_clause),
           optional(scopedVis($, sp, 'limit_clause')),
-          repeat($.locking_clause)
+          optional(scopedHid($, sp, '_locking_clauses'))
         ),
         seq(
           choice(
             scopedVis($, sp, 'select_core'),
+            $.values_statement,
             $.table_value_statement,
             scopedVis($, sp, 'parenthesized_query'),
             scopedVis($, sp, 'compound_query'),
@@ -939,15 +938,7 @@ function buildScopedDmlRules(sp) {
           ),
           optional($.order_by_clause),
           optional(scopedVis($, sp, 'limit_clause')),
-          repeat($.locking_clause)
-        ),
-        seq(
-          $.values_statement,
-          choice(
-            seq($.order_by_clause, optional(scopedVis($, sp, 'limit_clause')), repeat($.locking_clause)),
-            seq(scopedVis($, sp, 'limit_clause'), repeat($.locking_clause)),
-            repeat1($.locking_clause)
-          )
+          optional(scopedHid($, sp, '_locking_clauses'))
         )
       ),
     [k('update_statement')]: ($) =>
@@ -958,7 +949,7 @@ function buildScopedDmlRules(sp) {
         optional(keyword('IGNORE')),
         choice(
           seq(
-            $.table,
+            choice($.table, alias(scopedHid($, sp, '_single_table_parens'), $.join_table)),
             $.set_clause,
             optional($.where_clause),
             optional($.order_by_clause),
@@ -1138,6 +1129,7 @@ export default grammar({
     $._national_string_segment,
     $.charset_introducer,
     $._quoted_hex_literal,
+    $._nonzero_quoted_hex_literal,
     $._quoted_bit_literal,
     $.user_variable,
     $.system_variable,
@@ -1209,9 +1201,7 @@ export default grammar({
 
     _intersect_operator: ($) => seq(keyword('INTERSECT'), optional(choice(keyword('ALL'), $._distinct_keyword))),
 
-    values_statement: ($) => $._values_clause,
-
-    _values_clause: ($) => seq(keyword('VALUES'), commaSep1(alias($._values_row_constructor, $.row_constructor))),
+    values_statement: ($) => seq(keyword('VALUES'), commaSep1(alias($._values_row_constructor, $.row_constructor))),
 
     _values_row_constructor: ($) => seq(keyword('ROW'), '(', commaSep(choice($._expression, keyword('DEFAULT'))), ')'),
 
@@ -1334,7 +1324,18 @@ export default grammar({
     _json_table_on_error: ($) => seq($._json_table_on_response, keywords('ON ERROR')),
 
     _json_table_on_response: ($) =>
-      choice(keyword('NULL'), keyword('ERROR'), seq(keyword('DEFAULT'), $.string_literal)),
+      choice(
+        keyword('NULL'),
+        keyword('ERROR'),
+        seq(
+          keyword('DEFAULT'),
+          choice(
+            $.string_literal,
+            alias($._introduced_hex_literal, $.hex_literal),
+            alias($._introduced_bit_literal, $.bit_literal)
+          )
+        )
+      ),
 
     _json_on_empty: ($) => seq($._json_on_response, keywords('ON EMPTY')),
 
@@ -4019,11 +4020,45 @@ export default grammar({
           $._expression,
           optional(
             choice(
-              seq(keyword('AS'), choice(keyword('CHAR'), keyword('BINARY')), '(', $._uint_length_literal, ')'),
+              seq(keyword('AS'), choice(keyword('CHAR'), keyword('BINARY')), '(', $._ws_num_codepoints, ')'),
               seq(',', $.numeric_literal, ',', $.numeric_literal, ',', $.numeric_literal)
             )
           ),
           ')'
+        ),
+        seq(
+          field('name', alias(keyword('GROUP_CONCAT'), $.identifier)),
+          '(',
+          optional($._distinct_keyword),
+          commaSep1($._expression),
+          optional($.order_by_clause),
+          optional(
+            seq(
+              keyword('SEPARATOR'),
+              choice(
+                alias($._string_segment, $.string_literal),
+                alias($._bare_hex_literal, $.hex_literal),
+                alias($._bare_bit_literal, $.bit_literal)
+              )
+            )
+          ),
+          ')'
+        )
+      ),
+
+    _ws_num_codepoints: ($) =>
+      choice(
+        alias($._nonzero_uint64_literal, $.numeric_literal),
+        alias($._nonzero_bare_hex_literal, $.hex_literal),
+        seq(
+          choice(
+            $._zero_int_literal,
+            token(prec(1, /0x0+/)),
+            $._overflow_int_literal,
+            $._decimal_literal,
+            $._float_literal
+          ),
+          $._unreachable
         )
       ),
 
@@ -4063,15 +4098,6 @@ export default grammar({
           ',',
           optional(keyword('ALL')),
           $._expression,
-          ')'
-        ),
-        seq(
-          field('name', alias(keyword('GROUP_CONCAT'), $.identifier)),
-          '(',
-          optional($._distinct_keyword),
-          commaSep1($._expression),
-          optional($.order_by_clause),
-          optional(seq(keyword('SEPARATOR'), $.string_literal)),
           ')'
         )
       ),
@@ -4363,9 +4389,18 @@ export default grammar({
 
     hex_literal: ($) => seq(optional($.charset_introducer), $._bare_hex_literal),
 
+    _introduced_hex_literal: ($) => seq($.charset_introducer, $._bare_hex_literal),
+
     _bare_hex_literal: ($) => choice($._quoted_hex_literal, token(prec(1, /0x[0-9a-fA-F]+/))),
 
-    bit_literal: ($) => seq(optional($.charset_introducer), choice($._quoted_bit_literal, token(prec(1, /0b[01]+/)))),
+    _nonzero_bare_hex_literal: ($) =>
+      choice($._nonzero_quoted_hex_literal, token(prec(1, /0x0*[1-9a-fA-F][0-9a-fA-F]*/))),
+
+    bit_literal: ($) => seq(optional($.charset_introducer), $._bare_bit_literal),
+
+    _introduced_bit_literal: ($) => seq($.charset_introducer, $._bare_bit_literal),
+
+    _bare_bit_literal: ($) => choice($._quoted_bit_literal, token(prec(1, /0b[01]+/))),
 
     placeholder: () => '?',
 

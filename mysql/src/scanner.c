@@ -15,6 +15,7 @@ enum TokenType {
   NATIONAL_STRING_SEGMENT,
   CHARSET_INTRODUCER,
   QUOTED_HEX_LITERAL,
+  NONZERO_QUOTED_HEX_LITERAL,
   QUOTED_BIT_LITERAL,
   USER_VARIABLE,
   SYSTEM_VARIABLE,
@@ -252,20 +253,34 @@ static bool scan_backtick_body(TSLexer *lexer, bool allow_empty, enum TokenType 
   return scan_delimited(lexer, '`', false, allow_empty, target_symbol);
 }
 
-static bool scan_quoted_hex_or_bit(TSLexer *lexer, bool is_hex, bool symbol_is_valid) {
+static enum TokenType quoted_hex_or_bit_symbol(bool is_hex, const bool *valid_symbols, bool *require_nonzero) {
+  *require_nonzero = false;
+  if (!is_hex) return QUOTED_BIT_LITERAL;
+  if (valid_symbols[NONZERO_QUOTED_HEX_LITERAL] && !valid_symbols[QUOTED_HEX_LITERAL]) {
+    *require_nonzero = true;
+    return NONZERO_QUOTED_HEX_LITERAL;
+  }
+  return QUOTED_HEX_LITERAL;
+}
+
+static bool scan_quoted_hex_or_bit(TSLexer *lexer, bool is_hex, const bool *valid_symbols) {
   advance(lexer);
   unsigned digits = 0;
   bool valid_chars = true;
+  bool has_nonzero = false;
   while (!at_eof(lexer) && lexer->lookahead != '\'') {
     int32_t c = lexer->lookahead;
     if (is_hex ? !is_hex_digit(c) : (c != '0' && c != '1')) valid_chars = false;
+    if (c != '0') has_nonzero = true;
     advance(lexer);
     digits++;
   }
   if (lexer->lookahead != '\'') return emit(lexer, ILLEGAL_TOKEN);
   advance(lexer);
-  bool valid = valid_chars && (!is_hex || digits % 2 == 0) && symbol_is_valid;
-  return emit(lexer, valid ? (is_hex ? QUOTED_HEX_LITERAL : QUOTED_BIT_LITERAL) : ILLEGAL_TOKEN);
+  bool require_nonzero = false;
+  enum TokenType sym = quoted_hex_or_bit_symbol(is_hex, valid_symbols, &require_nonzero);
+  bool valid = valid_chars && (!is_hex || digits % 2 == 0) && (!require_nonzero || has_nonzero) && valid_symbols[sym];
+  return emit(lexer, valid ? sym : ILLEGAL_TOKEN);
 }
 
 static unsigned read_charset_word(TSLexer *lexer, char *charset, unsigned capacity) {
@@ -419,7 +434,7 @@ static bool scan_prefixed_literal(TSLexer *lexer, int32_t c, const bool *valid_s
     );
   }
   bool is_hex = (c == 'x' || c == 'X');
-  return scan_quoted_hex_or_bit(lexer, is_hex, valid_symbols[is_hex ? QUOTED_HEX_LITERAL : QUOTED_BIT_LITERAL]);
+  return scan_quoted_hex_or_bit(lexer, is_hex, valid_symbols);
 }
 
 static bool scan_host_name(TSLexer *lexer) {

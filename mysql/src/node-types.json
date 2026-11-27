@@ -12234,10 +12234,6 @@
           "named": true
         },
         {
-          "type": "row_constructor",
-          "named": true
-        },
-        {
           "type": "select_statement",
           "named": true
         },
@@ -13374,7 +13370,15 @@
       "required": false,
       "types": [
         {
+          "type": "bit_literal",
+          "named": true
+        },
+        {
           "type": "data_type",
+          "named": true
+        },
+        {
+          "type": "hex_literal",
           "named": true
         },
         {
@@ -17498,10 +17502,6 @@
         },
         {
           "type": "partition_names_clause",
-          "named": true
-        },
-        {
-          "type": "row_constructor",
           "named": true
         },
         {

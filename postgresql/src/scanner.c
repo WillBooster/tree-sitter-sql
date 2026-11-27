@@ -122,11 +122,16 @@ static bool scan_quote_continuation(TSLexer *lexer) {
 
 typedef struct {
   CharArray *out;
+  unsigned max_out;
   bool c_escapes;
   bool done;
   bool expecting_low;
   bool invalid;
 } QuotedState;
+
+static void push_bounded_char(CharArray *out, unsigned max_out, int32_t c) {
+  if (out != NULL && (max_out == 0 || out->size < max_out)) array_push(out, c);
+}
 
 static bool step_codepoint(uint32_t cp, bool *expecting_low) {
   if (cp == 0 || cp > 0x10FFFF) return false;
@@ -150,28 +155,47 @@ static bool scan_unicode_c_escape(TSLexer *lexer, QuotedState *s, unsigned digit
     cp = (cp << 4) | (uint32_t)hex_value(lexer->lookahead);
     advance(lexer);
   }
-  if (!step_codepoint(cp, &s->expecting_low)) fail_quote(s);
+  bool prev_high = s->expecting_low;
+  if (!step_codepoint(cp, &s->expecting_low)) {
+    fail_quote(s);
+    return true;
+  }
+  if (!s->expecting_low) push_bounded_char(s->out, s->max_out, prev_high ? 0x10000 : (int32_t)cp);
   return true;
 }
 
-static bool scan_hex_byte_escape(TSLexer *lexer) {
+static bool scan_hex_byte_escape(TSLexer *lexer, int32_t *decoded) {
   advance(lexer);
-  if (!is_hex_digit(lexer->lookahead)) return true;
+  if (!is_hex_digit(lexer->lookahead)) {
+    *decoded = 'x';
+    return true;
+  }
   uint32_t byte = 0;
   for (unsigned i = 0; i < 2 && is_hex_digit(lexer->lookahead); i++) {
     byte = (byte << 4) | (uint32_t)hex_value(lexer->lookahead);
     advance(lexer);
   }
+  *decoded = (int32_t)byte;
   return byte != 0;
 }
 
-static bool scan_oct_byte_escape(TSLexer *lexer) {
+static bool scan_oct_byte_escape(TSLexer *lexer, int32_t *decoded) {
   uint32_t byte = 0;
   for (unsigned i = 0; i < 3 && is_oct_digit(lexer->lookahead); i++) {
     byte = (byte << 3) | (uint32_t)(lexer->lookahead - '0');
     advance(lexer);
   }
+  *decoded = (int32_t)(byte & 0xFF);
   return (byte & 0xFF) != 0;
+}
+
+static int32_t decode_simple_c_escape(int32_t c) {
+  if (c == 'b') return '\b';
+  if (c == 'f') return '\f';
+  if (c == 'n') return '\n';
+  if (c == 'r') return '\r';
+  if (c == 't') return '\t';
+  return c;
 }
 
 static bool scan_c_escape(TSLexer *lexer, QuotedState *s) {
@@ -179,9 +203,12 @@ static bool scan_c_escape(TSLexer *lexer, QuotedState *s) {
   int32_t c = lexer->lookahead;
   if (c == 'u' || c == 'U') return scan_unicode_c_escape(lexer, s, c == 'u' ? 4 : 8);
   if (s->expecting_low || c == 0) fail_quote(s);
-  bool ok =
-      c == 'x' ? scan_hex_byte_escape(lexer) : (is_oct_digit(c) ? scan_oct_byte_escape(lexer) : (advance(lexer), true));
+  int32_t decoded = 0;
+  bool ok = c == 'x' ? scan_hex_byte_escape(lexer, &decoded)
+                     : (is_oct_digit(c) ? scan_oct_byte_escape(lexer, &decoded)
+                                        : (advance(lexer), decoded = decode_simple_c_escape(c), true));
   if (!ok) fail_quote(s);
+  push_bounded_char(s->out, s->max_out, decoded);
   return true;
 }
 
@@ -200,13 +227,14 @@ static bool step_quoted_char(TSLexer *lexer, int32_t quote, QuotedState *s) {
     return scan_c_escape(lexer, s);
   }
   if (s->expecting_low) fail_quote(s);
-  if (s->out != NULL) array_push(s->out, c);
+  push_bounded_char(s->out, s->max_out, c);
   return true;
 }
 
-static bool scan_quoted_segment(TSLexer *lexer, int32_t quote, bool c_escapes, CharArray *out, unsigned *count) {
+static bool scan_quoted_segment(
+    TSLexer *lexer, int32_t quote, bool c_escapes, CharArray *out, unsigned max_out, unsigned *count) {
   advance(lexer);
-  QuotedState s = {.out = out, .c_escapes = c_escapes};
+  QuotedState s = {.out = out, .max_out = max_out, .c_escapes = c_escapes};
   while (!at_eof(lexer) && !s.done) {
     if (!step_quoted_char(lexer, quote, &s)) return false;
     if (!s.done) (*count)++;
@@ -214,10 +242,10 @@ static bool scan_quoted_segment(TSLexer *lexer, int32_t quote, bool c_escapes, C
   return s.done && !s.invalid;
 }
 
-static bool scan_string_segments(TSLexer *lexer, bool c_escapes, CharArray *out) {
+static bool scan_string_segments(TSLexer *lexer, bool c_escapes, CharArray *out, unsigned max_out) {
   unsigned count = 0;
   for (;;) {
-    if (!scan_quoted_segment(lexer, '\'', c_escapes, out, &count)) {
+    if (!scan_quoted_segment(lexer, '\'', c_escapes, out, max_out, &count)) {
       lexer->mark_end(lexer);
       return false;
     }
@@ -228,7 +256,7 @@ static bool scan_string_segments(TSLexer *lexer, bool c_escapes, CharArray *out)
 
 static bool scan_double_quoted(TSLexer *lexer, CharArray *out) {
   unsigned count = 0;
-  bool ok = scan_quoted_segment(lexer, '"', false, out, &count) && count > 0;
+  bool ok = scan_quoted_segment(lexer, '"', false, out, 0, &count) && count > 0;
   lexer->mark_end(lexer);
   return ok;
 }
@@ -335,14 +363,77 @@ static bool decode_unicode_escapes(const CharArray *buf, int32_t esc, CharArray 
   return !expecting_low;
 }
 
+static bool scan_dollar_body(TSLexer *lexer, const CharArray *tag, CharArray *out, unsigned max_out) {
+  bool has_nul = false;
+  while (!at_eof(lexer)) {
+    int32_t c = lexer->lookahead;
+    advance(lexer);
+    if (c == 0) has_nul = true;
+    if (c != '$') {
+      push_bounded_char(out, max_out, c);
+      continue;
+    }
+    unsigned matched = 0;
+    while (matched < tag->size && lexer->lookahead == tag->contents[matched]) {
+      advance(lexer);
+      matched++;
+    }
+    if (matched == tag->size && lexer->lookahead == '$') {
+      advance(lexer);
+      lexer->mark_end(lexer);
+      return !has_nul;
+    }
+    push_bounded_char(out, max_out, '$');
+    for (unsigned i = 0; i < matched; i++) push_bounded_char(out, max_out, tag->contents[i]);
+  }
+  lexer->mark_end(lexer);
+  return false;
+}
+
+static bool scan_dollar_string(TSLexer *lexer, CharArray *out, unsigned max_out) {
+  if (lexer->lookahead != '$' && !is_ident_start(lexer->lookahead)) {
+    lexer->mark_end(lexer);
+    return false;
+  }
+  CharArray tag = array_new();
+  while (lexer->lookahead != '$' && is_ident_cont(lexer->lookahead)) {
+    array_push(&tag, lexer->lookahead);
+    advance(lexer);
+  }
+  if (lexer->lookahead != '$') {
+    array_delete(&tag);
+    lexer->mark_end(lexer);
+    return false;
+  }
+  advance(lexer);
+  bool ok = scan_dollar_body(lexer, &tag, out, max_out);
+  array_delete(&tag);
+  return ok;
+}
+
+static bool scan_uescape_sconst(TSLexer *lexer, CharArray *esc_buf) {
+  if (lexer->lookahead == '\'') return scan_string_segments(lexer, false, esc_buf, 2);
+  if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
+    advance(lexer);
+    if (lexer->lookahead == '\'') return scan_string_segments(lexer, true, esc_buf, 2);
+    lexer->mark_end(lexer);
+    return false;
+  }
+  if (lexer->lookahead == '$') {
+    advance(lexer);
+    if (!is_digit(lexer->lookahead)) return scan_dollar_string(lexer, esc_buf, 2);
+  }
+  lexer->mark_end(lexer);
+  return false;
+}
+
 static bool scan_uescape_clause(TSLexer *lexer, int32_t *esc_out) {
-  if (!skip_spaces_and_comments(lexer) || lexer->lookahead != '\'') {
+  if (!skip_spaces_and_comments(lexer)) {
     lexer->mark_end(lexer);
     return false;
   }
   CharArray esc_buf = array_new();
-  bool ok =
-      scan_string_segments(lexer, false, &esc_buf) && esc_buf.size == 1 && is_valid_uescape_char(esc_buf.contents[0]);
+  bool ok = scan_uescape_sconst(lexer, &esc_buf) && esc_buf.size == 1 && is_valid_uescape_char(esc_buf.contents[0]);
   if (ok) *esc_out = esc_buf.contents[0];
   array_delete(&esc_buf);
   return ok;
@@ -350,7 +441,7 @@ static bool scan_uescape_clause(TSLexer *lexer, int32_t *esc_out) {
 
 static bool scan_unicode_literal(TSLexer *lexer, const bool *valid_symbols, bool is_ident) {
   CharArray body = array_new();
-  bool closed = is_ident ? scan_double_quoted(lexer, &body) : scan_string_segments(lexer, false, &body);
+  bool closed = is_ident ? scan_double_quoted(lexer, &body) : scan_string_segments(lexer, false, &body, 0);
   if (!closed) {
     array_delete(&body);
     return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
@@ -369,28 +460,6 @@ static bool scan_unicode_literal(TSLexer *lexer, const bool *valid_symbols, bool
   array_delete(&decoded);
   array_delete(&body);
   return emit_result(lexer, valid_symbols, sym, valid);
-}
-
-static bool scan_dollar_body(TSLexer *lexer, const CharArray *tag) {
-  bool has_nul = false;
-  while (!at_eof(lexer)) {
-    int32_t c = lexer->lookahead;
-    advance(lexer);
-    if (c == 0) has_nul = true;
-    if (c != '$') continue;
-    unsigned matched = 0;
-    while (matched < tag->size && lexer->lookahead == tag->contents[matched]) {
-      advance(lexer);
-      matched++;
-    }
-    if (matched == tag->size && lexer->lookahead == '$') {
-      advance(lexer);
-      lexer->mark_end(lexer);
-      return !has_nul;
-    }
-  }
-  lexer->mark_end(lexer);
-  return false;
 }
 
 static bool scan_positional_param(TSLexer *lexer, const bool *valid_symbols) {
@@ -412,24 +481,7 @@ static bool scan_positional_param(TSLexer *lexer, const bool *valid_symbols) {
 static bool scan_dollar(TSLexer *lexer, const bool *valid_symbols) {
   advance(lexer);
   if (is_digit(lexer->lookahead)) return scan_positional_param(lexer, valid_symbols);
-  if (lexer->lookahead != '$' && !is_ident_start(lexer->lookahead)) {
-    lexer->mark_end(lexer);
-    return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
-  }
-  CharArray tag = array_new();
-  while (lexer->lookahead != '$' && is_ident_cont(lexer->lookahead)) {
-    array_push(&tag, lexer->lookahead);
-    advance(lexer);
-  }
-  if (lexer->lookahead != '$') {
-    array_delete(&tag);
-    lexer->mark_end(lexer);
-    return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
-  }
-  advance(lexer);
-  bool ok = scan_dollar_body(lexer, &tag);
-  array_delete(&tag);
-  return emit_result(lexer, valid_symbols, STRING_LITERAL, ok);
+  return emit_result(lexer, valid_symbols, STRING_LITERAL, scan_dollar_string(lexer, NULL, 0));
 }
 
 static bool scan_digits_accum(
@@ -627,7 +679,7 @@ static bool scan_prefixed_literal(TSLexer *lexer, const bool *valid_symbols, int
   if (lexer->lookahead != '\'') return false;
   bool is_bit = prefix == 'b' || prefix == 'B' || prefix == 'x' || prefix == 'X';
   return emit_result(lexer, valid_symbols, is_bit ? BIT_STRING_LITERAL : STRING_LITERAL,
-                     scan_string_segments(lexer, prefix == 'e' || prefix == 'E', NULL));
+                     scan_string_segments(lexer, prefix == 'e' || prefix == 'E', NULL, 0));
 }
 
 static bool scan_number_or_iconst(TSLexer *lexer, const bool *valid_symbols, bool leading_dot) {
@@ -680,7 +732,7 @@ static bool scan_nul_run(TSLexer *lexer, const bool *valid_symbols) {
 
 static bool scan_non_op_token(TSLexer *lexer, const bool *valid_symbols, int32_t c) {
   if (c == 0) return scan_nul_run(lexer, valid_symbols);
-  if (c == '\'') return emit_result(lexer, valid_symbols, STRING_LITERAL, scan_string_segments(lexer, false, NULL));
+  if (c == '\'') return emit_result(lexer, valid_symbols, STRING_LITERAL, scan_string_segments(lexer, false, NULL, 0));
   if (c == '"') return scan_double_quoted_token(lexer, valid_symbols);
   if (c > 0 && c < 0x80 && strchr("eEnNbBxXuU", c) != NULL) return scan_prefixed_literal(lexer, valid_symbols, c);
   if (c == '$') return scan_dollar(lexer, valid_symbols);

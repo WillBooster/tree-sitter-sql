@@ -1047,3 +1047,42 @@ SELECT CONVERT('a' USING binary), CONVERT('a' USING 'latin1');
         (convert_expression
           (string_literal)
           (string_literal))))))
+
+================================================================================
+GROUP_CONCAT hex and bit separators and WEIGHT_STRING hex counts
+:language(mysql)
+================================================================================
+
+SELECT GROUP_CONCAT(x SEPARATOR X'2C'), GROUP_CONCAT(x SEPARATOR 0b101100), WEIGHT_STRING('x' AS CHAR(0x02)), WEIGHT_STRING('x' AS BINARY(X'02')) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (hex_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (bit_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (string_literal)
+          (hex_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (string_literal)
+          (hex_literal)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))

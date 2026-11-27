@@ -1148,3 +1148,35 @@ CREATE TABLE child_long_fk (
           (identifier))
         (column_list
           (identifier))))))
+
+================================================================================
+Non-ASCII case-insensitive unquoted and exact quoted FOREIGN KEY column inference
+:language(oracle)
+================================================================================
+
+CREATE TABLE child_accented (
+  é,
+  "É_exact",
+  FOREIGN KEY (É, "É_exact") REFERENCES parent_items(id1, id2)
+);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (object_name
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (quoted_identifier))
+    (table_constraint
+      (column_list
+        (identifier)
+        (quoted_identifier))
+      (references_clause
+        (object_name
+          (identifier))
+        (column_list
+          (identifier)
+          (identifier))))))

@@ -255,6 +255,397 @@ const BARE_LABEL_RESERVED_KEYWORDS = [...new Set([...GLOBAL_RESERVED_KEYWORDS, .
 const BARE_LABEL_EXTRA_KEYWORDS = GLOBAL_RESERVED_KEYWORDS.filter((word) => !NON_BARE_LABEL_SET.has(word));
 const UNRESERVED_STARTER_KEYWORDS = ['CURRENT', 'DOUBLE', 'EXCLUDE', 'IF', 'OPERATOR', 'ROWS'];
 
+const UNRESERVED_PG_KEYWORDS = [
+  'ABORT',
+  'ABSENT',
+  'ABSOLUTE',
+  'ACCESS',
+  'ACTION',
+  'ADD',
+  'ADMIN',
+  'AFTER',
+  'AGGREGATE',
+  'ALSO',
+  'ALTER',
+  'ALWAYS',
+  'ASENSITIVE',
+  'ASSIGNMENT',
+  'AT',
+  'ATOMIC',
+  'ATTACH',
+  'ATTRIBUTE',
+  'BACKWARD',
+  'BEFORE',
+  'BEGIN',
+  'BREADTH',
+  'BY',
+  'CACHE',
+  'CALL',
+  'CALLED',
+  'CASCADE',
+  'CASCADED',
+  'CHAIN',
+  'CHARACTERISTICS',
+  'CHECKPOINT',
+  'CLASS',
+  'CLOSE',
+  'CLUSTER',
+  'COLUMNS',
+  'COMMENT',
+  'COMMENTS',
+  'COMMIT',
+  'COMMITTED',
+  'COMPRESSION',
+  'CONDITIONAL',
+  'CONFIGURATION',
+  'CONFLICT',
+  'CONNECTION',
+  'CONSTRAINTS',
+  'CONTENT',
+  'CONTINUE',
+  'CONVERSION',
+  'COPY',
+  'COST',
+  'CSV',
+  'CUBE',
+  'CURRENT',
+  'CURSOR',
+  'CYCLE',
+  'DATA',
+  'DATABASE',
+  'DAY',
+  'DEALLOCATE',
+  'DECLARE',
+  'DEFAULTS',
+  'DEFERRED',
+  'DEFINER',
+  'DELETE',
+  'DELIMITER',
+  'DELIMITERS',
+  'DEPENDS',
+  'DEPTH',
+  'DETACH',
+  'DICTIONARY',
+  'DISABLE',
+  'DISCARD',
+  'DOCUMENT',
+  'DOMAIN',
+  'DOUBLE',
+  'DROP',
+  'EACH',
+  'EMPTY',
+  'ENABLE',
+  'ENCODING',
+  'ENCRYPTED',
+  'ENFORCED',
+  'ENUM',
+  'ERROR',
+  'ESCAPE',
+  'EVENT',
+  'EXCLUDE',
+  'EXCLUDING',
+  'EXCLUSIVE',
+  'EXECUTE',
+  'EXPLAIN',
+  'EXPRESSION',
+  'EXTENSION',
+  'EXTERNAL',
+  'FAMILY',
+  'FILTER',
+  'FINALIZE',
+  'FIRST',
+  'FOLLOWING',
+  'FORCE',
+  'FORMAT',
+  'FORWARD',
+  'FUNCTION',
+  'FUNCTIONS',
+  'GENERATED',
+  'GLOBAL',
+  'GRANTED',
+  'GROUPS',
+  'HANDLER',
+  'HEADER',
+  'HOLD',
+  'HOUR',
+  'IDENTITY',
+  'IF',
+  'IMMEDIATE',
+  'IMMUTABLE',
+  'IMPLICIT',
+  'IMPORT',
+  'INCLUDE',
+  'INCLUDING',
+  'INCREMENT',
+  'INDENT',
+  'INDEX',
+  'INDEXES',
+  'INHERIT',
+  'INHERITS',
+  'INLINE',
+  'INPUT',
+  'INSENSITIVE',
+  'INSERT',
+  'INSTEAD',
+  'INVOKER',
+  'ISOLATION',
+  'KEEP',
+  'KEY',
+  'KEYS',
+  'LABEL',
+  'LANGUAGE',
+  'LARGE',
+  'LAST',
+  'LEAKPROOF',
+  'LEVEL',
+  'LISTEN',
+  'LOAD',
+  'LOCAL',
+  'LOCATION',
+  'LOCK',
+  'LOCKED',
+  'LOGGED',
+  'MAPPING',
+  'MATCH',
+  'MATCHED',
+  'MATERIALIZED',
+  'MAXVALUE',
+  'MERGE',
+  'METHOD',
+  'MINUTE',
+  'MINVALUE',
+  'MODE',
+  'MONTH',
+  'MOVE',
+  'NAME',
+  'NAMES',
+  'NESTED',
+  'NEW',
+  'NEXT',
+  'NFC',
+  'NFD',
+  'NFKC',
+  'NFKD',
+  'NO',
+  'NORMALIZED',
+  'NOTHING',
+  'NOTIFY',
+  'NOWAIT',
+  'NULLS',
+  'OBJECT',
+  'OBJECTS',
+  'OF',
+  'OFF',
+  'OIDS',
+  'OLD',
+  'OMIT',
+  'OPERATOR',
+  'OPTION',
+  'OPTIONS',
+  'ORDINALITY',
+  'OTHERS',
+  'OVER',
+  'OVERRIDING',
+  'OWNED',
+  'OWNER',
+  'PARALLEL',
+  'PARAMETER',
+  'PARSER',
+  'PARTIAL',
+  'PARTITION',
+  'PASSING',
+  'PASSWORD',
+  'PATH',
+  'PERIOD',
+  'PLANS',
+  'POLICY',
+  'PRECEDING',
+  'PREPARE',
+  'PREPARED',
+  'PRESERVE',
+  'PRIOR',
+  'PRIVILEGES',
+  'PROCEDURAL',
+  'PROCEDURE',
+  'PROCEDURES',
+  'PROGRAM',
+  'PUBLICATION',
+  'QUOTE',
+  'QUOTES',
+  'RANGE',
+  'READ',
+  'REASSIGN',
+  'RECURSIVE',
+  'REF',
+  'REFERENCING',
+  'REFRESH',
+  'REINDEX',
+  'RELATIVE',
+  'RELEASE',
+  'RENAME',
+  'REPEATABLE',
+  'REPLACE',
+  'REPLICA',
+  'RESET',
+  'RESTART',
+  'RESTRICT',
+  'RETURN',
+  'RETURNS',
+  'REVOKE',
+  'ROLE',
+  'ROLLBACK',
+  'ROLLUP',
+  'ROUTINE',
+  'ROUTINES',
+  'ROWS',
+  'RULE',
+  'SAVEPOINT',
+  'SCALAR',
+  'SCHEMA',
+  'SCHEMAS',
+  'SCROLL',
+  'SEARCH',
+  'SECOND',
+  'SECURITY',
+  'SEQUENCE',
+  'SEQUENCES',
+  'SERIALIZABLE',
+  'SERVER',
+  'SESSION',
+  'SET',
+  'SETS',
+  'SHARE',
+  'SHOW',
+  'SIMPLE',
+  'SKIP',
+  'SNAPSHOT',
+  'SOURCE',
+  'SQL',
+  'STABLE',
+  'STANDALONE',
+  'START',
+  'STATEMENT',
+  'STATISTICS',
+  'STDIN',
+  'STDOUT',
+  'STORAGE',
+  'STORED',
+  'STRICT',
+  'STRING',
+  'STRIP',
+  'SUBSCRIPTION',
+  'SUPPORT',
+  'SYSID',
+  'SYSTEM',
+  'TABLES',
+  'TABLESPACE',
+  'TARGET',
+  'TEMP',
+  'TEMPLATE',
+  'TEMPORARY',
+  'TEXT',
+  'TIES',
+  'TRANSACTION',
+  'TRANSFORM',
+  'TRIGGER',
+  'TRUNCATE',
+  'TRUSTED',
+  'TYPE',
+  'TYPES',
+  'UNBOUNDED',
+  'UNCOMMITTED',
+  'UNCONDITIONAL',
+  'UNKNOWN',
+  'UNLISTEN',
+  'UNLOGGED',
+  'UNTIL',
+  'UPDATE',
+  'VACUUM',
+  'VALID',
+  'VALIDATE',
+  'VALIDATOR',
+  'VALUE',
+  'VARYING',
+  'VERSION',
+  'VIEW',
+  'VIRTUAL',
+  'VOLATILE',
+  'WHITESPACE',
+  'WITHIN',
+  'WITHOUT',
+  'WORK',
+  'WRAPPER',
+  'WRITE',
+  'XML',
+  'YEAR',
+  'YES',
+  'ZONE',
+];
+
+const PG_IDENT_RESERVED_KEYWORDS = [...FUNC_RESERVED_KEYWORDS, ...UNRESERVED_PG_KEYWORDS];
+
+const PG_SCALAR_TYPE_NAMES = [
+  'aclitem',
+  'bool',
+  'box',
+  'bpchar',
+  'bytea',
+  'cid',
+  'cidr',
+  'circle',
+  'date',
+  'datemultirange',
+  'daterange',
+  'float4',
+  'float8',
+  'gtsvector',
+  'inet',
+  'int2',
+  'int4',
+  'int4multirange',
+  'int4range',
+  'int8',
+  'int8multirange',
+  'int8range',
+  'jsonpath',
+  'line',
+  'lseg',
+  'macaddr',
+  'macaddr8',
+  'money',
+  'nummultirange',
+  'numrange',
+  'oid',
+  'point',
+  'polygon',
+  'refcursor',
+  'regclass',
+  'regcollation',
+  'regconfig',
+  'regdictionary',
+  'regnamespace',
+  'regoper',
+  'regoperator',
+  'regproc',
+  'regprocedure',
+  'regrole',
+  'regtype',
+  'tid',
+  'timestamptz',
+  'timetz',
+  'tsmultirange',
+  'tsquery',
+  'tsrange',
+  'tstzmultirange',
+  'tstzrange',
+  'tsvector',
+  'txid_snapshot',
+  'uuid',
+  'varbit',
+  'xid',
+  'xid8',
+];
+
 const DIGITS = '[0-9](_?[0-9])*';
 const HEX_DIGITS = '[0-9a-fA-F](_?[0-9a-fA-F])*';
 const OCT_DIGITS = '[0-7](_?[0-7])*';
@@ -412,6 +803,7 @@ export default grammar({
     global: () => GLOBAL_RESERVED_KEYWORDS.map(keywordPattern),
     func_id: () => FUNC_RESERVED_KEYWORDS.map(keywordPattern),
     bare_label: () => BARE_LABEL_RESERVED_KEYWORDS.map(keywordPattern),
+    ident: () => PG_IDENT_RESERVED_KEYWORDS.map(keywordPattern),
   },
 
   supertypes: ($) => [$._statement],
@@ -422,7 +814,7 @@ export default grammar({
     [$._percent_type, $._func_name],
     [$._percent_type, $._func_name, $._any_operator],
     [$._column_identifier, $._func_identifier],
-    [$._non_interval_simple_type],
+    [$._scalar_keyword_simple_type],
     [$.table_function],
     [$.rows_from_table],
     [$._transaction_mode_list],
@@ -3369,7 +3761,7 @@ export default grammar({
         keyword('SET'),
         optional(choice(keyword('SESSION'), keyword('LOCAL'))),
         choice(
-          seq(keywords('TIME ZONE'), choice($._expression, keyword('LOCAL'), keyword('DEFAULT'))),
+          seq(keywords('TIME ZONE'), $._zone_value),
           seq(keywords('TRANSACTION SNAPSHOT'), $.string_literal),
           seq(
             choice(keyword('TRANSACTION'), keywords('SESSION CHARACTERISTICS AS TRANSACTION')),
@@ -3386,6 +3778,26 @@ export default grammar({
           seq(keyword('SCHEMA'), $.string_literal),
           seq(keywords('XML OPTION'), choice(keyword('DOCUMENT'), keyword('CONTENT'))),
           $._generic_set
+        )
+      ),
+
+    _zone_value: ($) =>
+      choice(
+        $.string_literal,
+        reserved('ident', $.identifier),
+        $.quoted_identifier,
+        $._signed_integer,
+        seq(
+          keyword('INTERVAL'),
+          $.string_literal,
+          optional(choice(keyword('HOUR'), keyword('MINUTE'), keywords('HOUR TO MINUTE')))
+        ),
+        seq(keyword('INTERVAL'), parens($._iconst_literal), $.string_literal),
+        keyword('DEFAULT'),
+        keyword('LOCAL'),
+        seq(
+          token(choice(...['ASSERTION', 'CATALOG', 'PLAN', 'UESCAPE', 'UNENCRYPTED', 'VIEWS'].map(keywordPattern))),
+          $._unreachable
         )
       ),
 
@@ -3693,23 +4105,19 @@ export default grammar({
     _percent_type: ($) =>
       seq(choice($._column_identifier, $._func_identifier), repeat1(seq('.', $._col_label)), '%', keyword('TYPE')),
 
-    type_name: ($) =>
-      prec.right(
-        PREC.POSTFIX + 1,
-        seq(
-          $._simple_type,
-          optional(
-            choice(
-              repeat1(seq('[', optional($._iconst_literal), ']')),
-              seq(keyword('ARRAY'), optional(seq('[', $._iconst_literal, ']')))
-            )
-          )
-        )
+    _array_bounds: ($) =>
+      choice(
+        repeat1(seq('[', optional($._iconst_literal), ']')),
+        seq(keyword('ARRAY'), optional(seq('[', $._iconst_literal, ']')))
       ),
+
+    type_name: ($) => prec.right(PREC.POSTFIX + 1, seq($._simple_type, optional($._array_bounds))),
 
     _simple_type: ($) => choice($._non_interval_simple_type, seq(keyword('INTERVAL'), optional($._interval_qualifier))),
 
-    _non_interval_simple_type: ($) =>
+    _non_interval_simple_type: ($) => choice($._scalar_keyword_simple_type, keyword('JSON'), $._qualified_type_name),
+
+    _scalar_keyword_simple_type: ($) =>
       choice(
         keyword('SMALLINT'),
         keyword('INTEGER'),
@@ -3741,9 +4149,7 @@ export default grammar({
           choice(keyword('TIMESTAMP'), keyword('TIME')),
           optional(parens($._iconst_literal)),
           optional(seq(choice(keyword('WITH'), keyword('WITHOUT')), keywords('TIME ZONE')))
-        ),
-        keyword('JSON'),
-        $._qualified_type_name
+        )
       ),
 
     _qualified_type_name: ($) => seq($._func_name, optional($._type_modifiers)),
@@ -4262,8 +4668,7 @@ export default grammar({
               $._expression,
               optional($._json_passing),
               optional($._json_returning),
-              optional($._json_wrapper),
-              optional($._json_quotes),
+              optional($._json_wrapper_and_quotes),
               optional($._json_query_behaviors)
             )
           )
@@ -4304,18 +4709,28 @@ export default grammar({
 
     _json_passing: ($) => seq(keyword('PASSING'), commaSep1(seq($._expression, keyword('AS'), $._identifier))),
 
-    _json_wrapper: () =>
+    _json_without_wrapper: () => seq(keyword('WITHOUT'), optional(keyword('ARRAY')), keyword('WRAPPER')),
+
+    _json_with_wrapper: () =>
       seq(
-        choice(
-          keyword('WITHOUT'),
-          seq(keyword('WITH'), optional(choice(keyword('CONDITIONAL'), keyword('UNCONDITIONAL'))))
-        ),
+        keyword('WITH'),
+        optional(choice(keyword('CONDITIONAL'), keyword('UNCONDITIONAL'))),
         optional(keyword('ARRAY')),
         keyword('WRAPPER')
       ),
 
-    _json_quotes: () =>
-      seq(choice(keyword('KEEP'), keyword('OMIT')), keyword('QUOTES'), optional(keywords('ON SCALAR STRING'))),
+    _json_keep_quotes: () => seq(keyword('KEEP'), keyword('QUOTES'), optional(keywords('ON SCALAR STRING'))),
+
+    _json_omit_quotes: () => seq(keyword('OMIT'), keyword('QUOTES'), optional(keywords('ON SCALAR STRING'))),
+
+    _json_quotes: ($) => choice($._json_keep_quotes, $._json_omit_quotes),
+
+    _json_wrapper_and_quotes: ($) =>
+      choice(
+        seq($._json_without_wrapper, optional($._json_quotes)),
+        seq($._json_with_wrapper, optional($._json_keep_quotes)),
+        $._json_quotes
+      ),
 
     _json_value_behavior: ($) => choice(keyword('ERROR'), keyword('NULL'), seq(keyword('DEFAULT'), $._expression)),
 
@@ -4363,24 +4778,95 @@ export default grammar({
         optional($._table_alias)
       ),
 
+    _pg_catalog_ident: ($) => alias(token(keywordPattern('PG_CATALOG')), $.identifier),
+
+    _pg_scalar_type_ident: ($) =>
+      choice(
+        alias(keyword('NAME'), $.identifier),
+        alias(keyword('PATH'), $.identifier),
+        alias(keyword('TEXT'), $.identifier),
+        alias(keyword('XML'), $.identifier),
+        alias(token(choice(...PG_SCALAR_TYPE_NAMES.map(keywordPattern))), $.identifier)
+      ),
+
+    _json_table_scalar_simple_type: ($) =>
+      choice(
+        $._scalar_keyword_simple_type,
+        seq(keyword('INTERVAL'), optional($._interval_qualifier)),
+        seq(optional(seq($._pg_catalog_ident, '.')), $._pg_scalar_type_ident, optional($._type_modifiers))
+      ),
+
+    _json_table_scalar_array_type: ($) => seq($._json_table_scalar_simple_type, $._array_bounds),
+
+    _json_table_other_type: ($) =>
+      prec.right(
+        PREC.POSTFIX + 1,
+        seq(
+          choice(
+            keyword('JSON'),
+            seq(
+              choice(
+                $._func_identifier,
+                $._pg_catalog_ident,
+                seq($._pg_catalog_ident, '.', $._col_label),
+                seq($._pg_catalog_ident, '.', choice($._col_label, $._pg_scalar_type_ident), '.', $._col_label),
+                seq(
+                  choice($._column_identifier, $._pg_scalar_type_ident),
+                  '.',
+                  $._col_label,
+                  optional(seq('.', $._col_label))
+                )
+              ),
+              optional($._type_modifiers)
+            )
+          ),
+          optional($._array_bounds)
+        )
+      ),
+
     _json_table_column: ($) =>
       choice(
         seq($._identifier, keywords('FOR ORDINALITY')),
         seq(
           $._identifier,
-          $.type_name,
-          optional($._json_format),
-          optional(seq(keyword('PATH'), $.string_literal)),
-          optional($._json_wrapper),
-          optional($._json_quotes),
-          optional($._json_query_behaviors)
+          alias($._json_table_scalar_simple_type, $.type_name),
+          choice(
+            seq(
+              $._json_format,
+              optional(seq(keyword('PATH'), $.string_literal)),
+              optional($._json_wrapper_and_quotes),
+              optional($._json_query_behaviors)
+            ),
+            seq(
+              optional(seq(keyword('PATH'), $.string_literal)),
+              choice(
+                seq($._json_wrapper_and_quotes, optional($._json_query_behaviors)),
+                optional($._json_value_behaviors)
+              )
+            ),
+            seq(
+              keyword('EXISTS'),
+              optional(seq(keyword('PATH'), $.string_literal)),
+              optional(seq($._json_exists_behavior, keywords('ON ERROR')))
+            )
+          )
         ),
         seq(
           $._identifier,
-          $.type_name,
-          keyword('EXISTS'),
-          optional(seq(keyword('PATH'), $.string_literal)),
-          optional(seq($._json_exists_behavior, keywords('ON ERROR')))
+          choice(alias($._json_table_scalar_array_type, $.type_name), alias($._json_table_other_type, $.type_name)),
+          choice(
+            seq(
+              optional($._json_format),
+              optional(seq(keyword('PATH'), $.string_literal)),
+              optional($._json_wrapper_and_quotes),
+              optional($._json_query_behaviors)
+            ),
+            seq(
+              keyword('EXISTS'),
+              optional(seq(keyword('PATH'), $.string_literal)),
+              optional(seq($._json_exists_behavior, keywords('ON ERROR')))
+            )
+          )
         ),
         seq(
           keyword('NESTED'),
