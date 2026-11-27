@@ -1602,13 +1602,7 @@ export default grammar({
 
     common_table_expression: ($) => seq($._cte_head, '(', $._cte_body, ')', optional($._cte_tail)),
 
-    _cte_head: ($) =>
-      seq(
-        field('name', $._name),
-        optional($.column_list),
-        keyword('AS'),
-        optional(choice(keyword('MATERIALIZED'), keywords('NOT MATERIALIZED')))
-      ),
+    _cte_head: ($) => seq(field('name', $._name), optional($.column_list), keyword('AS')),
 
     _cte_body: ($) => choice(alias($._subquery_statement, $.select_statement), $.values_clause),
 
