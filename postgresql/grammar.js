@@ -4073,9 +4073,9 @@ export default grammar({
     numeric_literal: () =>
       token(
         choice(
-          new RegExp(`0[xX]${HEX_DIGITS}`),
-          new RegExp(`0[oO]${OCT_DIGITS}`),
-          new RegExp(`0[bB]${BIN_DIGITS}`),
+          new RegExp(`0[xX]_?${HEX_DIGITS}`),
+          new RegExp(`0[oO]_?${OCT_DIGITS}`),
+          new RegExp(`0[bB]_?${BIN_DIGITS}`),
           new RegExp(`(${DIGITS}(\\.(${DIGITS})?)?|\\.${DIGITS})([eE][+-]?${DIGITS})?`)
         )
       ),

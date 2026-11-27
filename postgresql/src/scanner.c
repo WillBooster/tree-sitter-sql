@@ -393,6 +393,7 @@ static bool scan_decimal_number(TSLexer *lexer, bool after_digit) {
 
 static bool scan_radix_number(TSLexer *lexer, bool (*valid_digit)(int32_t)) {
   advance(lexer);
+  if (lexer->lookahead == '_') advance(lexer);
   if (!valid_digit(lexer->lookahead)) return finish_number(lexer, false);
   return finish_number(lexer, scan_digits(lexer, valid_digit, false));
 }
@@ -438,6 +439,10 @@ static bool finish_operator_tail(
   return true;
 }
 
+static bool is_comment_start(int32_t c, int32_t next) {
+  return (c == '-' && next == '-') || (c == '/' && next == '*');
+}
+
 static bool scan_custom_operator_tail(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, int32_t first) {
   lexer->mark_end(lexer);
   bool has_qualifying = is_qualifying_op_char(first);
@@ -450,7 +455,7 @@ static bool scan_custom_operator_tail(Scanner *scanner, TSLexer *lexer, const bo
     uint32_t before_c = current_byte(lexer);
     int32_t c = lexer->lookahead;
     advance(lexer);
-    if ((c == '-' && lexer->lookahead == '-') || (c == '/' && lexer->lookahead == '*')) {
+    if (is_comment_start(c, lexer->lookahead)) {
       pm_run_end = before_c;
       break;
     }
@@ -478,7 +483,7 @@ static bool scan_operator_or_comment(Scanner *scanner, TSLexer *lexer, const boo
     return true;
   }
   advance(lexer);
-  if ((first == '-' && lexer->lookahead == '-') || (first == '/' && lexer->lookahead == '*')) {
+  if (is_comment_start(first, lexer->lookahead)) {
     advance(lexer);
     bool ok = first == '-' ? scan_line_comment_body(lexer) : scan_block_comment_body(lexer);
     lexer->mark_end(lexer);

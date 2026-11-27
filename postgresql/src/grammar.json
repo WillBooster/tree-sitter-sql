@@ -52498,15 +52498,15 @@
         "members": [
           {
             "type": "PATTERN",
-            "value": "0[xX][0-9a-fA-F](_?[0-9a-fA-F])*"
+            "value": "0[xX]_?[0-9a-fA-F](_?[0-9a-fA-F])*"
           },
           {
             "type": "PATTERN",
-            "value": "0[oO][0-7](_?[0-7])*"
+            "value": "0[oO]_?[0-7](_?[0-7])*"
           },
           {
             "type": "PATTERN",
-            "value": "0[bB][01](_?[01])*"
+            "value": "0[bB]_?[01](_?[01])*"
           },
           {
             "type": "PATTERN",
