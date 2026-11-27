@@ -495,7 +495,7 @@ Top-level VALUES and TABLE queries
 :language(postgresql)
 ================================================================================
 
-VALUES (1, 'a'), (2, DEFAULT) ORDER BY 1 LIMIT 1; TABLE ONLY my_table ORDER BY 1; TABLE my_table * LIMIT 5;
+VALUES (1, 'a'), (2, 'b') ORDER BY 1 LIMIT 1; TABLE ONLY my_table ORDER BY 1; TABLE my_table * LIMIT 5;
 
 --------------------------------------------------------------------------------
 
@@ -506,7 +506,8 @@ VALUES (1, 'a'), (2, DEFAULT) ORDER BY 1 LIMIT 1; TABLE ONLY my_table ORDER BY 1
         (numeric_literal)
         (string_literal))
       (row
-        (numeric_literal)))
+        (numeric_literal)
+        (string_literal)))
     (order_by_clause
       (ordering_term
         (numeric_literal)))

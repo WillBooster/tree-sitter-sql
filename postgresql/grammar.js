@@ -1098,9 +1098,33 @@ export default grammar({
 
     table_query: ($) => seq(keyword('TABLE'), $._relation_expr),
 
-    values_clause: ($) => seq(keyword('VALUES'), commaSep1($.row)),
+    values_clause: ($) => seq(keyword('VALUES'), $._values_row_list),
 
-    row: ($) => parens(commaSep1(choice($._expression, keyword('DEFAULT')))),
+    _values_row_list: ($) => choice($.row, seq($._values_row_list, ',', $.row)),
+
+    _default_values_clause: ($) =>
+      seq(
+        keyword('VALUES'),
+        optional(seq($._values_row_list, ',')),
+        alias($._default_row, $.row),
+        repeat(seq(',', choice($.row, alias($._default_row, $.row))))
+      ),
+
+    _insert_default_select: ($) =>
+      choice(alias($._default_values_clause, $.values_clause), parens($._insert_default_select)),
+
+    row: ($) => parens($._row_expr_list),
+
+    _row_expr_list: ($) => choice($._expression, seq($._row_expr_list, ',', $._expression)),
+
+    _default_row: ($) =>
+      parens(
+        seq(
+          optional(seq($._row_expr_list, ',')),
+          keyword('DEFAULT'),
+          repeat(seq(',', choice($._expression, keyword('DEFAULT'))))
+        )
+      ),
 
     with_clause: ($) => seq(keyword('WITH'), optional(keyword('RECURSIVE')), commaSep1($.common_table_expression)),
 
@@ -1389,7 +1413,7 @@ export default grammar({
         optional(seq(keyword('AS'), field('alias', $._identifier))),
         optional(alias($._insert_column_list, $.column_list)),
         optional($.overriding_clause),
-        choice($.select_statement, keywords('DEFAULT VALUES')),
+        choice($.select_statement, alias($._insert_default_select, $.select_statement), keywords('DEFAULT VALUES')),
         optional($.on_conflict_clause),
         optional($.returning_clause)
       ),
@@ -1499,7 +1523,7 @@ export default grammar({
                 keyword('INSERT'),
                 optional(alias($._insert_column_list, $.column_list)),
                 optional($.overriding_clause),
-                choice(seq(keyword('VALUES'), $.row), keywords('DEFAULT VALUES'))
+                choice(seq(keyword('VALUES'), choice($.row, alias($._default_row, $.row))), keywords('DEFAULT VALUES'))
               ),
               keywords('DO NOTHING')
             )
