@@ -38,6 +38,7 @@ const DialectSuites: Record<string, DialectChecks> = {
     errorLine: 'SELECT a FROM WHERE b;\n',
     readVolumeCases: [
       ['unclosed nested block comment', (lines) => 'SELECT /* /* a\n'.repeat(lines), 'comment'],
+      ['plus-minus operator run', (lines) => `SELECT ${'+-'.repeat(lines)}`, 'custom_operator'],
       [
         'unclosed dollar-quoted string',
         (lines) => Array.from({ length: lines }, (_, index) => `SELECT $tag${index}$ a\n`).join(''),

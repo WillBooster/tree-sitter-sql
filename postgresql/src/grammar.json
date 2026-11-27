@@ -52652,6 +52652,14 @@
       "name": "custom_operator"
     },
     {
+      "type": "STRING",
+      "value": "+"
+    },
+    {
+      "type": "STRING",
+      "value": "-"
+    },
+    {
       "type": "SYMBOL",
       "name": "_illegal_token"
     },

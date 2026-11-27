@@ -1,4 +1,5 @@
 // code-gauge-allow-file fileNcss -- tree-sitter compiles one scanner.c covering PostgreSQL comments, literals, numbers, parameters, and custom operators
+#include "tree_sitter/alloc.h"
 #include "tree_sitter/array.h"
 #include "tree_sitter/parser.h"
 
@@ -13,9 +14,15 @@ enum TokenType {
   QUOTED_IDENTIFIER,
   POSITIONAL_PARAMETER,
   CUSTOM_OPERATOR,
+  PLUS,
+  MINUS,
   ILLEGAL_TOKEN,
   UNREACHABLE,
 };
+
+typedef struct {
+  uint32_t pure_pm_end;
+} Scanner;
 
 typedef Array(int32_t) CharArray;
 
@@ -400,6 +407,12 @@ static bool scan_number(TSLexer *lexer) {
   return scan_decimal_number(lexer, true);
 }
 
+static uint32_t current_byte(TSLexer *lexer) {
+  TSLexerPosition pos;
+  lexer->get_position(lexer, &pos);
+  return pos.bytes;
+}
+
 static bool is_builtin_operator(int32_t first, int32_t second, unsigned len) {
   if (len == 1) return first == '%' || first == '^' || !is_qualifying_op_char(first);
   if (len != 2) return false;
@@ -407,29 +420,63 @@ static bool is_builtin_operator(int32_t first, int32_t second, unsigned len) {
          (first == '!' && second == '=') || (first == '=' && second == '>');
 }
 
-static bool scan_custom_operator_tail(TSLexer *lexer, const bool *valid_symbols, int32_t first) {
+static bool emit_pm_token(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, int32_t c, uint32_t pm_end) {
+  enum TokenType sym = c == '+' ? PLUS : MINUS;
+  if (!valid_symbols[sym]) return false;
+  scanner->pure_pm_end = pm_end;
+  lexer->result_symbol = sym;
+  return true;
+}
+
+static bool finish_operator_tail(
+    Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, int32_t single_op, bool builtin, uint32_t pm_run_end) {
+  if (single_op == '+' || single_op == '-') {
+    return emit_pm_token(scanner, lexer, valid_symbols, single_op, pm_run_end);
+  }
+  if (builtin || !emit_result(lexer, valid_symbols, CUSTOM_OPERATOR, true)) return false;
+  scanner->pure_pm_end = pm_run_end;
+  return true;
+}
+
+static bool scan_custom_operator_tail(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, int32_t first) {
   lexer->mark_end(lexer);
   bool has_qualifying = is_qualifying_op_char(first);
   unsigned total_len = 1;
   unsigned confirmed_len = 1;
   int32_t second = 0;
+  uint32_t pm_run_end = 0;
 
   while (is_op_char(lexer->lookahead)) {
+    uint32_t before_c = current_byte(lexer);
     int32_t c = lexer->lookahead;
     advance(lexer);
-    if ((c == '-' && lexer->lookahead == '-') || (c == '/' && lexer->lookahead == '*')) break;
+    if ((c == '-' && lexer->lookahead == '-') || (c == '/' && lexer->lookahead == '*')) {
+      pm_run_end = before_c;
+      break;
+    }
     if (++total_len == 2) second = c;
     if (is_qualifying_op_char(c)) has_qualifying = true;
     if (has_qualifying || (c != '+' && c != '-')) {
       confirmed_len = total_len;
       lexer->mark_end(lexer);
+      pm_run_end = 0;
+    } else {
+      pm_run_end = current_byte(lexer);
     }
   }
-  return !is_builtin_operator(first, second, confirmed_len) && emit_result(lexer, valid_symbols, CUSTOM_OPERATOR, true);
+  return finish_operator_tail(
+      scanner, lexer, valid_symbols, confirmed_len == 1 ? first : 0, is_builtin_operator(first, second, confirmed_len),
+      pm_run_end);
 }
 
-static bool scan_operator_or_comment(TSLexer *lexer, const bool *valid_symbols) {
+static bool scan_operator_or_comment(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, uint32_t start) {
   int32_t first = lexer->lookahead;
+  if ((first == '+' || first == '-') && start < scanner->pure_pm_end) {
+    if (!emit_pm_token(scanner, lexer, valid_symbols, first, scanner->pure_pm_end)) return false;
+    advance(lexer);
+    lexer->mark_end(lexer);
+    return true;
+  }
   advance(lexer);
   if ((first == '-' && lexer->lookahead == '-') || (first == '/' && lexer->lookahead == '*')) {
     advance(lexer);
@@ -437,7 +484,9 @@ static bool scan_operator_or_comment(TSLexer *lexer, const bool *valid_symbols) 
     lexer->mark_end(lexer);
     return emit_result(lexer, valid_symbols, COMMENT, ok);
   }
-  return scan_custom_operator_tail(lexer, valid_symbols, first);
+  bool any_op_valid =
+      valid_symbols[CUSTOM_OPERATOR] || valid_symbols[PLUS] || valid_symbols[MINUS] || valid_symbols[ILLEGAL_TOKEN];
+  return any_op_valid && scan_custom_operator_tail(scanner, lexer, valid_symbols, first);
 }
 
 static bool scan_prefixed_literal(TSLexer *lexer, const bool *valid_symbols, int32_t prefix) {
@@ -462,25 +511,43 @@ static bool scan_illegal_number(TSLexer *lexer, const bool *valid_symbols, bool 
   return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
 }
 
-void *tree_sitter_postgresql_external_scanner_create(void) { return NULL; }
-void tree_sitter_postgresql_external_scanner_destroy(void *p) { (void)p; }
-unsigned tree_sitter_postgresql_external_scanner_serialize(void *p, char *b) { return (void)p, (void)b, 0; }
-void tree_sitter_postgresql_external_scanner_deserialize(void *p, const char *b, unsigned n) { (void)p, (void)b, (void)n; }
+void *tree_sitter_postgresql_external_scanner_create(void) { return ts_calloc(1, sizeof(Scanner)); }
+void tree_sitter_postgresql_external_scanner_destroy(void *p) { ts_free(p); }
+
+unsigned tree_sitter_postgresql_external_scanner_serialize(void *p, char *b) {
+  const Scanner *s = (const Scanner *)p;
+  if (s->pure_pm_end == 0) return 0;
+  memcpy(b, &s->pure_pm_end, sizeof s->pure_pm_end);
+  return sizeof s->pure_pm_end;
+}
+
+void tree_sitter_postgresql_external_scanner_deserialize(void *p, const char *b, unsigned n) {
+  Scanner *s = (Scanner *)p;
+  s->pure_pm_end = 0;
+  if (n == sizeof s->pure_pm_end) memcpy(&s->pure_pm_end, b, sizeof s->pure_pm_end);
+}
+
+static bool scan_nul_run(TSLexer *lexer, const bool *valid_symbols) {
+  while (!at_eof(lexer) && lexer->lookahead == 0) advance(lexer);
+  lexer->mark_end(lexer);
+  return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
+}
 
 bool tree_sitter_postgresql_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
-  (void)payload;
+  Scanner *scanner = (Scanner *)payload;
   while (is_space(lexer->lookahead)) lexer->advance(lexer, true);
   if (at_eof(lexer)) return false;
+  uint32_t start = current_byte(lexer);
   int32_t c = lexer->lookahead;
-  if (c == 0) {
-    while (!at_eof(lexer) && lexer->lookahead == 0) advance(lexer);
-    lexer->mark_end(lexer);
-    return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
+  if (is_op_char(c)) {
+    if (start >= scanner->pure_pm_end) scanner->pure_pm_end = 0;
+    return scan_operator_or_comment(scanner, lexer, valid_symbols, start);
   }
+  scanner->pure_pm_end = 0;
+  if (c == 0) return scan_nul_run(lexer, valid_symbols);
   if (c == '\'') return emit_result(lexer, valid_symbols, STRING_LITERAL, scan_string_segments(lexer, false, NULL));
   if (c == '"') return emit_result(lexer, valid_symbols, QUOTED_IDENTIFIER, scan_double_quoted(lexer, NULL));
   if (c > 0 && c < 0x80 && strchr("eEnNbBxXuU", c) != NULL) return scan_prefixed_literal(lexer, valid_symbols, c);
   if (c == '$') return scan_dollar(lexer, valid_symbols);
-  if (c == '.' || is_digit(c)) return scan_illegal_number(lexer, valid_symbols, c == '.');
-  return is_op_char(c) && scan_operator_or_comment(lexer, valid_symbols);
+  return (c == '.' || is_digit(c)) && scan_illegal_number(lexer, valid_symbols, c == '.');
 }

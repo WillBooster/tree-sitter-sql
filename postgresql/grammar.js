@@ -282,6 +282,8 @@ export default grammar({
     $.quoted_identifier,
     $.positional_parameter,
     $.custom_operator,
+    '+',
+    '-',
     $._illegal_token,
     $._unreachable,
   ],
