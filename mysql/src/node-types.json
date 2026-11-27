@@ -1230,6 +1230,10 @@
           "named": true
         },
         {
+          "type": "hex_literal",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },

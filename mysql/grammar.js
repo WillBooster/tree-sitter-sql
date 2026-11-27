@@ -2712,7 +2712,16 @@ export default grammar({
             seq(optional(keyword('COLUMN')), $.column_definition, optional($._column_position)),
             seq(optional(keyword('COLUMN')), '(', commaSep1($._create_definition), ')'),
             $.table_constraint,
-            seq(keyword('PARTITION'), '(', commaSep1($.partition_definition), ')')
+            seq(
+              keyword('PARTITION'),
+              optional(choice(keyword('NO_WRITE_TO_BINLOG'), keyword('LOCAL'))),
+              optional(
+                choice(
+                  seq('(', commaSep1($.partition_definition), ')'),
+                  seq(keyword('PARTITIONS'), $._ws_num_codepoints)
+                )
+              )
+            )
           )
         ),
         seq(keyword('MODIFY'), optional(keyword('COLUMN')), $.column_definition, optional($._column_position)),
@@ -2769,7 +2778,11 @@ export default grammar({
             seq(keywords('FOREIGN KEY'), field('constraint', $._identifier)),
             seq(choice(keyword('CHECK'), keyword('CONSTRAINT')), field('constraint', $._identifier)),
             seq(keyword('PARTITION'), commaSep1($._identifier)),
-            seq(optional(keyword('COLUMN')), field('column', $._identifier))
+            seq(
+              optional(keyword('COLUMN')),
+              field('column', $._identifier),
+              optional(choice(keyword('RESTRICT'), keyword('CASCADE')))
+            )
           )
         ),
         seq(keywords('CONVERT TO'), $._charset_clause, optional(seq(keyword('COLLATE'), $._identifier_or_string))),

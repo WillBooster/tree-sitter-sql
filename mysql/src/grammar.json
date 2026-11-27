@@ -33447,37 +33447,104 @@
                       "value": "PARTITION"
                     },
                     {
-                      "type": "STRING",
-                      "value": "("
-                    },
-                    {
-                      "type": "SEQ",
+                      "type": "CHOICE",
                       "members": [
                         {
-                          "type": "SYMBOL",
-                          "name": "partition_definition"
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Nn][Oo]_[Ww][Rr][Ii][Tt][Ee]_[Tt][Oo]_[Bb][Ii][Nn][Ll][Oo][Gg]"
+                              },
+                              "named": false,
+                              "value": "NO_WRITE_TO_BINLOG"
+                            },
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Ll][Oo][Cc][Aa][Ll]"
+                              },
+                              "named": false,
+                              "value": "LOCAL"
+                            }
+                          ]
                         },
                         {
-                          "type": "REPEAT",
-                          "content": {
-                            "type": "SEQ",
-                            "members": [
-                              {
-                                "type": "STRING",
-                                "value": ","
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "partition_definition"
-                              }
-                            ]
-                          }
+                          "type": "BLANK"
                         }
                       ]
                     },
                     {
-                      "type": "STRING",
-                      "value": ")"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "STRING",
+                                  "value": "("
+                                },
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "partition_definition"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SEQ",
+                                        "members": [
+                                          {
+                                            "type": "STRING",
+                                            "value": ","
+                                          },
+                                          {
+                                            "type": "SYMBOL",
+                                            "name": "partition_definition"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "STRING",
+                                  "value": ")"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "ALIAS",
+                                  "content": {
+                                    "type": "PATTERN",
+                                    "value": "[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn][Ss]"
+                                  },
+                                  "named": false,
+                                  "value": "PARTITIONS"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "_ws_num_codepoints"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
                     }
                   ]
                 }
@@ -34207,6 +34274,37 @@
                         "type": "SYMBOL",
                         "name": "_identifier"
                       }
+                    },
+                    {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Rr][Ee][Ss][Tt][Rr][Ii][Cc][Tt]"
+                              },
+                              "named": false,
+                              "value": "RESTRICT"
+                            },
+                            {
+                              "type": "ALIAS",
+                              "content": {
+                                "type": "PATTERN",
+                                "value": "[Cc][Aa][Ss][Cc][Aa][Dd][Ee]"
+                              },
+                              "named": false,
+                              "value": "CASCADE"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
                     }
                   ]
                 }
