@@ -1345,22 +1345,22 @@ function sqlOnlyExpressionRules() {
 /** @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
 function buildJsonSerializeModifierRules() {
   const mods = ['PRETTY', 'ascii', 'ORDERED', 'TRUNCATE'];
-  /** @type {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
-  const out = {};
-  for (let mask = 1; mask < 1 << mods.length; mask++) {
-    out[`_json_ser_mods_${mask}`] = ($) => {
-      /** @type {RuleOrLiteral[]} */
-      const alts = [];
-      for (let i = 0; i < mods.length; i++) {
-        if (!(mask & (1 << i))) continue;
-        const rem = mask & ~(1 << i);
-        const kw = keyword(mods[i]);
-        alts.push(rem === 0 ? kw : seq(kw, optional($[`_json_ser_mods_${rem}`])));
-      }
-      return alts.length === 1 ? alts[0] : choice(...alts);
-    };
-  }
-  return out;
+  return Object.fromEntries(
+    Array.from({ length: (1 << mods.length) - 1 }, (_, index) => {
+      const mask = index + 1;
+      return [
+        `_json_ser_mods_${mask}`,
+        (/** @type {GrammarSymbols<string>} */ $) => {
+          const alts = mods.flatMap((mod, bit) => {
+            if (!(mask & (1 << bit))) return [];
+            const rem = mask & ~(1 << bit);
+            return [rem === 0 ? keyword(mod) : seq(keyword(mod), optional($[`_json_ser_mods_${rem}`]))];
+          });
+          return alts.length === 1 ? alts[0] : choice(...alts);
+        },
+      ];
+    })
+  );
 }
 
 export default grammar({
@@ -2569,11 +2569,16 @@ export default grammar({
           seq(
             '(',
             $._rel_table_open,
-            commaSep1($._rel_table_element),
-            ')',
             choice(
-              seq($._rel_table_close_resolved, optional($._table_props_opt_as)),
-              seq($._rel_table_close_unresolved, $._table_props_req_as)
+              seq($._typed_rel_element_list, ')', $._rel_table_close_resolved, repeat($._table_property)),
+              seq(
+                $._typeless_rel_element_list,
+                ')',
+                choice(
+                  seq($._rel_table_close_resolved, optional($._table_props_opt_as)),
+                  seq($._rel_table_close_unresolved, $._table_props_req_as)
+                )
+              )
             )
           ),
           seq(
@@ -2621,16 +2626,31 @@ export default grammar({
         choice(keyword('METADATA'), keyword('DATA'), keywords('EXTENDED DATA'), keyword('NONE'))
       ),
 
-    _rel_table_element: ($) => seq($._capture_name, $._rel_table_element_body),
-
-    _rel_table_element_body: ($) =>
+    _typed_rel_element_list: ($) =>
       choice(
-        alias($._rel_column_definition, $.column_definition),
-        $.period_definition,
-        alias($._non_fk_table_constraint, $.table_constraint),
-        alias($._rel_fk_table_constraint, $.table_constraint),
-        $.supplemental_log_clause,
-        $.table_domain_clause
+        $._typed_rel_table_element,
+        seq($._typeless_rel_element_list, ',', $._typed_rel_table_element),
+        seq($._typed_rel_element_list, ',', $._rel_table_element)
+      ),
+
+    _typeless_rel_element_list: ($) =>
+      choice($._typeless_rel_table_element, seq($._typeless_rel_element_list, ',', $._typeless_rel_table_element)),
+
+    _rel_table_element: ($) => choice($._typed_rel_table_element, $._typeless_rel_table_element),
+
+    _typed_rel_table_element: ($) => seq($._capture_name, alias($._typed_rel_column_definition, $.column_definition)),
+
+    _typeless_rel_table_element: ($) =>
+      seq(
+        $._capture_name,
+        choice(
+          alias($._typeless_rel_column_definition, $.column_definition),
+          $.period_definition,
+          alias($._non_fk_table_constraint, $.table_constraint),
+          alias($._rel_fk_table_constraint, $.table_constraint),
+          $.supplemental_log_clause,
+          $.table_domain_clause
+        )
       ),
 
     _table_element: ($) => choice($._plain_table_element, alias($._fk_table_constraint, $.table_constraint)),
@@ -2733,15 +2753,22 @@ export default grammar({
         )
       ),
 
-    _rel_column_definition: ($) =>
+    _typed_rel_column_definition: ($) =>
+      prec.right(
+        seq(
+          field('name', $._column_name),
+          field('type', $.type_name),
+          optional($.column_domain_clause),
+          repeat($._column_attribute)
+        )
+      ),
+
+    _typeless_rel_column_definition: ($) =>
       prec.right(
         seq(
           field('name', $._column_name),
           choice(
-            seq(
-              choice(seq(field('type', $.type_name), optional($.column_domain_clause)), $.column_domain_clause),
-              repeat($._column_attribute)
-            ),
+            seq($.column_domain_clause, repeat($._column_attribute)),
             seq(
               repeat($._non_ref_column_attribute),
               choice(

@@ -664,3 +664,13 @@ JSON_SERIALIZE with unsupported FORMAT JSON input clause
 SELECT JSON_SERIALIZE(doc FORMAT JSON) FROM t;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+CREATE TABLE AS SELECT with explicit column datatype
+:error
+:language(oracle)
+================================================================================
+
+CREATE TABLE copied (id NUMBER) AS SELECT 1 FROM dual;
+
+--------------------------------------------------------------------------------
