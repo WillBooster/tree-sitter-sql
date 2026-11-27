@@ -643,7 +643,15 @@ function buildScopedSelectRules(sp) {
       ),
     [k('_parenthesized_select_trailing_into')]: ($) => seq('(', scopedHid($, sp, '_select_trailing_into'), ')'),
     [k('_locking_clauses')]: ($) => repeat1($.locking_clause),
-    [k('_subquery_select')]: ($) => scopedHid($, sp, '_select_no_into'),
+    [k('_inner_select_no_into')]: ($) =>
+      seq(
+        optional(scopedVis($, sp, 'with_clause')),
+        scopedHid($, sp, '_inner_query_body_no_into'),
+        optional(scopedVis($, sp, 'order_by_clause')),
+        optional(scopedVis($, sp, 'limit_clause')),
+        optional(scopedHid($, sp, '_locking_clauses'))
+      ),
+    [k('_subquery_select')]: ($) => scopedHid($, sp, '_inner_select_no_into'),
     [k('with_clause')]: ($) =>
       seq(keyword('WITH'), optional(keyword('RECURSIVE')), commaSep1(scopedVis($, sp, 'common_table_expression'))),
     [k('common_table_expression')]: ($) =>
@@ -688,7 +696,7 @@ function buildScopedCompoundQueryRules(sp) {
         seq(
           field('left', scopedHid($, sp, '_query_body_no_into')),
           field('operator', alias($._union_or_except_operator, $.compound_operator)),
-          field('right', scopedHid($, sp, '_query_term_no_into'))
+          field('right', scopedHid($, sp, '_inner_query_term_no_into'))
         )
       ),
     [k('_compound_query_with_into')]: ($) =>
@@ -696,7 +704,7 @@ function buildScopedCompoundQueryRules(sp) {
         seq(
           field('left', scopedHid($, sp, '_query_body_no_into')),
           field('operator', alias($._union_or_except_operator, $.compound_operator)),
-          field('right', scopedHid($, sp, '_query_term_with_into'))
+          field('right', scopedHid($, sp, '_inner_query_term_with_into'))
         )
       ),
     [k('_query_term_no_into')]: ($) =>
@@ -714,7 +722,7 @@ function buildScopedCompoundQueryRules(sp) {
         seq(
           field('left', scopedHid($, sp, '_query_term_no_into')),
           field('operator', alias($._intersect_operator, $.compound_operator)),
-          field('right', scopedHid($, sp, '_query_primary_no_into'))
+          field('right', scopedHid($, sp, '_inner_query_primary_no_into'))
         )
       ),
     [k('_intersect_query_with_into')]: ($) =>
@@ -722,7 +730,7 @@ function buildScopedCompoundQueryRules(sp) {
         seq(
           field('left', scopedHid($, sp, '_query_term_no_into')),
           field('operator', alias($._intersect_operator, $.compound_operator)),
-          field('right', scopedHid($, sp, '_query_primary_with_into'))
+          field('right', scopedHid($, sp, '_inner_query_primary_with_into'))
         )
       ),
     [k('_query_primary_no_into')]: ($) =>
@@ -757,6 +765,90 @@ function buildScopedCompoundQueryRules(sp) {
         optional(scopedHid($, sp, '_locking_clauses')),
         ')'
       ),
+    [k('_inner_query_body_no_into')]: ($) =>
+      choice(
+        scopedHid($, sp, '_inner_query_term_no_into'),
+        alias(scopedHid($, sp, '_inner_compound_query'), $.compound_query)
+      ),
+    [k('_inner_query_body_with_into')]: ($) =>
+      choice(
+        scopedHid($, sp, '_inner_query_term_with_into'),
+        alias(scopedHid($, sp, '_inner_compound_query_with_into'), $.compound_query)
+      ),
+    [k('_inner_compound_query')]: ($) =>
+      prec.left(
+        seq(
+          field('left', scopedHid($, sp, '_inner_query_body_no_into')),
+          field('operator', alias($._union_or_except_operator, $.compound_operator)),
+          field('right', scopedHid($, sp, '_inner_query_term_no_into'))
+        )
+      ),
+    [k('_inner_compound_query_with_into')]: ($) =>
+      prec.left(
+        seq(
+          field('left', scopedHid($, sp, '_inner_query_body_no_into')),
+          field('operator', alias($._union_or_except_operator, $.compound_operator)),
+          field('right', scopedHid($, sp, '_inner_query_term_with_into'))
+        )
+      ),
+    [k('_inner_query_term_no_into')]: ($) =>
+      choice(
+        scopedHid($, sp, '_inner_query_primary_no_into'),
+        alias(scopedHid($, sp, '_inner_intersect_query_no_into'), $.compound_query)
+      ),
+    [k('_inner_query_term_with_into')]: ($) =>
+      choice(
+        scopedHid($, sp, '_inner_query_primary_with_into'),
+        alias(scopedHid($, sp, '_inner_intersect_query_with_into'), $.compound_query)
+      ),
+    [k('_inner_intersect_query_no_into')]: ($) =>
+      prec.left(
+        seq(
+          field('left', scopedHid($, sp, '_inner_query_term_no_into')),
+          field('operator', alias($._intersect_operator, $.compound_operator)),
+          field('right', scopedHid($, sp, '_inner_query_primary_no_into'))
+        )
+      ),
+    [k('_inner_intersect_query_with_into')]: ($) =>
+      prec.left(
+        seq(
+          field('left', scopedHid($, sp, '_inner_query_term_no_into')),
+          field('operator', alias($._intersect_operator, $.compound_operator)),
+          field('right', scopedHid($, sp, '_inner_query_primary_with_into'))
+        )
+      ),
+    [k('_inner_query_primary_no_into')]: ($) =>
+      choice(
+        alias(scopedHid($, sp, '_inner_select_core'), $.select_core),
+        scopedVis($, sp, 'values_statement'),
+        $.table_value_statement,
+        alias(scopedHid($, sp, '_inner_parenthesized_query'), $.parenthesized_query)
+      ),
+    [k('_inner_query_primary_with_into')]: ($) =>
+      choice(
+        alias(scopedHid($, sp, '_inner_select_core_with_into'), $.select_core),
+        alias(scopedHid($, sp, '_inner_parenthesized_query_with_into'), $.parenthesized_query)
+      ),
+    [k('_inner_parenthesized_query_with_into')]: ($) =>
+      seq(
+        '(',
+        optional(scopedVis($, sp, 'with_clause')),
+        scopedHid($, sp, '_inner_query_body_with_into'),
+        optional(scopedVis($, sp, 'order_by_clause')),
+        optional(scopedVis($, sp, 'limit_clause')),
+        optional(scopedHid($, sp, '_locking_clauses')),
+        ')'
+      ),
+    [k('_inner_parenthesized_query')]: ($) =>
+      seq(
+        '(',
+        optional(scopedVis($, sp, 'with_clause')),
+        scopedHid($, sp, '_inner_query_body_no_into'),
+        optional(scopedVis($, sp, 'order_by_clause')),
+        optional(scopedVis($, sp, 'limit_clause')),
+        optional(scopedHid($, sp, '_locking_clauses')),
+        ')'
+      ),
   };
 }
 
@@ -771,7 +863,20 @@ function buildScopedFromRules(sp) {
       prec.right(
         seq(
           keyword('SELECT'),
-          repeat($._select_modifier),
+          optional($._outer_select_modifiers),
+          commaSep1(choice(scopedVis($, sp, 'result_column'), alias('*', $.all_columns), $.table_columns)),
+          optional(scopedVis($, sp, 'from_clause')),
+          optional(scopedVis($, sp, 'where_clause')),
+          optional(scopedVis($, sp, 'group_by_clause')),
+          optional(scopedVis($, sp, 'having_clause')),
+          optional(scopedVis($, sp, 'window_clause'))
+        )
+      ),
+    [k('_inner_select_core')]: ($) =>
+      prec.right(
+        seq(
+          keyword('SELECT'),
+          optional($._inner_select_modifiers),
           commaSep1(choice(scopedVis($, sp, 'result_column'), alias('*', $.all_columns), $.table_columns)),
           optional(scopedVis($, sp, 'from_clause')),
           optional(scopedVis($, sp, 'where_clause')),
@@ -785,7 +890,22 @@ function buildScopedFromRules(sp) {
         1,
         seq(
           keyword('SELECT'),
-          repeat($._select_modifier),
+          optional($._outer_select_modifiers),
+          commaSep1(choice(scopedVis($, sp, 'result_column'), alias('*', $.all_columns), $.table_columns)),
+          $.into_clause,
+          optional(scopedVis($, sp, 'from_clause')),
+          optional(scopedVis($, sp, 'where_clause')),
+          optional(scopedVis($, sp, 'group_by_clause')),
+          optional(scopedVis($, sp, 'having_clause')),
+          optional(scopedVis($, sp, 'window_clause'))
+        )
+      ),
+    [k('_inner_select_core_with_into')]: ($) =>
+      prec.right(
+        1,
+        seq(
+          keyword('SELECT'),
+          optional($._inner_select_modifiers),
           commaSep1(choice(scopedVis($, sp, 'result_column'), alias('*', $.all_columns), $.table_columns)),
           $.into_clause,
           optional(scopedVis($, sp, 'from_clause')),
@@ -1044,7 +1164,7 @@ function buildScopedUtilityRules(sp) {
       seq(
         optional(choice(keyword('IGNORE'), keyword('REPLACE'))),
         optional(keyword('AS')),
-        alias(scopedHid($, sp, '_subquery_select'), $.select_statement)
+        alias(scopedHid($, sp, '_select_no_into'), $.select_statement)
       ),
     [k('show_statement')]: ($) =>
       seq(
@@ -2068,6 +2188,8 @@ export default grammar({
     [$.check_constraint_body],
     [$._select_no_into, $.parenthesized_query],
     [$._sp_select_no_into, $._sp_parenthesized_query],
+    [$._inner_select_no_into, $._inner_parenthesized_query],
+    [$._sp_inner_select_no_into, $._sp_inner_parenthesized_query],
   ],
 
   rules: {
@@ -2101,19 +2223,45 @@ export default grammar({
 
     table_value_statement: ($) => seq(keyword('TABLE'), field('table', $.qualified_name)),
 
-    _select_modifier: () =>
+    _inner_select_option: () =>
+      choice(keyword('STRAIGHT_JOIN'), keyword('SQL_SMALL_RESULT'), keyword('SQL_BIG_RESULT'), keyword('SQL_NO_CACHE')),
+
+    _outer_only_select_option: () =>
+      choice(keyword('HIGH_PRIORITY'), keyword('SQL_BUFFER_RESULT'), keyword('SQL_CALC_FOUND_ROWS')),
+
+    _outer_select_option: ($) => choice($._inner_select_option, $._outer_only_select_option),
+
+    _inner_base_opts: ($) => choice($._inner_select_option, seq($._inner_base_opts, $._inner_select_option)),
+
+    _inner_all_modifiers: ($) =>
       choice(
-        keyword('ALL'),
-        keyword('DISTINCT'),
-        keyword('DISTINCTROW'),
-        keyword('HIGH_PRIORITY'),
-        keyword('STRAIGHT_JOIN'),
-        keyword('SQL_SMALL_RESULT'),
-        keyword('SQL_BIG_RESULT'),
-        keyword('SQL_BUFFER_RESULT'),
-        keyword('SQL_NO_CACHE'),
-        keyword('SQL_CALC_FOUND_ROWS')
+        seq(optional($._inner_base_opts), keyword('ALL')),
+        seq($._inner_all_modifiers, choice($._inner_select_option, keyword('ALL')))
       ),
+
+    _inner_distinct_modifiers: ($) =>
+      choice(
+        seq(optional($._inner_base_opts), $._distinct_keyword),
+        seq($._inner_distinct_modifiers, choice($._inner_select_option, $._distinct_keyword))
+      ),
+
+    _inner_select_modifiers: ($) => choice($._inner_base_opts, $._inner_all_modifiers, $._inner_distinct_modifiers),
+
+    _outer_base_opts: ($) => choice($._outer_select_option, seq($._outer_base_opts, $._outer_select_option)),
+
+    _outer_all_modifiers: ($) =>
+      choice(
+        seq(optional($._outer_base_opts), keyword('ALL')),
+        seq($._outer_all_modifiers, choice($._outer_select_option, keyword('ALL')))
+      ),
+
+    _outer_distinct_modifiers: ($) =>
+      choice(
+        seq(optional($._outer_base_opts), $._distinct_keyword),
+        seq($._outer_distinct_modifiers, choice($._outer_select_option, $._distinct_keyword))
+      ),
+
+    _outer_select_modifiers: ($) => choice($._outer_base_opts, $._outer_all_modifiers, $._outer_distinct_modifiers),
 
     table_columns: ($) =>
       seq(
@@ -2932,7 +3080,7 @@ export default grammar({
         field('name', $.qualified_name),
         optional($.column_list),
         keyword('AS'),
-        alias($._subquery_select, $.select_statement),
+        alias($._select_no_into, $.select_statement),
         optional($._view_check_option)
       ),
 
@@ -2946,7 +3094,7 @@ export default grammar({
         field('name', $.qualified_name),
         optional($.column_list),
         keyword('AS'),
-        alias($._subquery_select, $.select_statement),
+        alias($._select_no_into, $.select_statement),
         optional($._view_check_option)
       ),
 
@@ -3367,7 +3515,7 @@ export default grammar({
             keywords('CONDITION FOR'),
             choice($._sqlstate_clause, $._sp_condition_number)
           ),
-          seq(field('cursor', $._identifier), keywords('CURSOR FOR'), alias($._sp_subquery_select, $.select_statement)),
+          seq(field('cursor', $._identifier), keywords('CURSOR FOR'), alias($._sp_select_no_into, $.select_statement)),
           seq(
             choice(keyword('CONTINUE'), keyword('EXIT')),
             keywords('HANDLER FOR'),
