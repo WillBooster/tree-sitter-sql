@@ -33,7 +33,12 @@
             "type": "SEQ",
             "members": [
               {
-                "type": "STRING",
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_statement_terminator"
+                },
+                "named": false,
                 "value": ";"
               },
               {
@@ -30249,6 +30254,10 @@
     {
       "type": "SYMBOL",
       "name": "_digit_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_statement_terminator"
     },
     {
       "type": "SYMBOL",

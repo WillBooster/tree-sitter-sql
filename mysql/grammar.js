@@ -403,6 +403,7 @@ export default grammar({
     $.system_variable,
     $.quoted_identifier,
     $._digit_identifier,
+    $._statement_terminator,
     $._end_of_input,
     $._illegal_token,
     $._unreachable,
@@ -435,7 +436,7 @@ export default grammar({
     source_file: ($) =>
       seq(
         optional(choice($._statement, $._reserved_only)),
-        repeat(seq(';', optional(choice($._statement, $._reserved_only)))),
+        repeat(seq(alias($._statement_terminator, ';'), optional(choice($._statement, $._reserved_only)))),
         $._end_of_input
       ),
 

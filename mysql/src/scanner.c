@@ -18,6 +18,7 @@ enum TokenType {
   SYSTEM_VARIABLE,
   QUOTED_IDENTIFIER,
   DIGIT_IDENTIFIER,
+  STATEMENT_TERMINATOR,
   END_OF_INPUT,
   ILLEGAL_TOKEN,
   UNREACHABLE,
@@ -424,17 +425,21 @@ void tree_sitter_mysql_external_scanner_deserialize(void *payload, const char *b
   scanner->in_version_comment = (length > 0 && buffer[0] != 0);
 }
 
-static bool scan_version_comment_delimiter(Scanner *scanner, TSLexer *lexer) {
-  int32_t c = lexer->lookahead;
+static bool scan_version_comment_end(Scanner *scanner, TSLexer *lexer) {
   advance(lexer);
-  if (c == ';') {
-    scanner->in_version_comment = false;
-    return emit(lexer, ILLEGAL_TOKEN);
-  }
   if (lexer->lookahead != '/') return false;
   advance(lexer);
   scanner->in_version_comment = false;
   return emit(lexer, VERSION_COMMENT_END);
+}
+
+static bool scan_top_level_semicolon(Scanner *scanner, TSLexer *lexer) {
+  advance(lexer);
+  if (scanner->in_version_comment) {
+    scanner->in_version_comment = false;
+    return emit(lexer, ILLEGAL_TOKEN);
+  }
+  return emit(lexer, STATEMENT_TERMINATOR);
 }
 
 static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
@@ -485,8 +490,9 @@ bool tree_sitter_mysql_external_scanner_scan(void *payload, TSLexer *lexer, cons
     return emit(lexer, ILLEGAL_TOKEN);
   }
 
-  if (scanner->in_version_comment && (lexer->lookahead == ';' || lexer->lookahead == '*')) {
-    return scan_version_comment_delimiter(scanner, lexer);
+  if (scanner->in_version_comment && lexer->lookahead == '*') return scan_version_comment_end(scanner, lexer);
+  if (lexer->lookahead == ';' && valid_symbols[STATEMENT_TERMINATOR] && !valid_symbols[UNREACHABLE]) {
+    return scan_top_level_semicolon(scanner, lexer);
   }
 
   return scan_token_by_start(scanner, lexer, valid_symbols);
