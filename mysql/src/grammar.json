@@ -12351,7 +12351,77 @@
                     },
                     "named": false,
                     "value": "FLOAT4"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_float_options"
                   },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "[Ss][Ii][Gg][Nn][Ee][Dd]"
+                        },
+                        "named": false,
+                        "value": "SIGNED"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "[Uu][Nn][Ss][Ii][Gg][Nn][Ee][Dd]"
+                        },
+                        "named": false,
+                        "value": "UNSIGNED"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[Zz][Ee][Rr][Oo][Ff][Ii][Ll][Ll]"
+                    },
+                    "named": false,
+                    "value": "ZEROFILL"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
                   {
                     "type": "ALIAS",
                     "content": {
@@ -12408,7 +12478,7 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "_float_options"
+                    "name": "_real_precision"
                   },
                   {
                     "type": "BLANK"
@@ -13317,6 +13387,31 @@
         }
       ]
     },
+    "_real_precision": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_uint_length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ","
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_uint_length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
     "_float_options": {
       "type": "CHOICE",
       "members": [
@@ -13325,29 +13420,8 @@
           "name": "_field_length"
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "("
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_uint_length_literal"
-            },
-            {
-              "type": "STRING",
-              "value": ","
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_uint_length_literal"
-            },
-            {
-              "type": "STRING",
-              "value": ")"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_real_precision"
         }
       ]
     },

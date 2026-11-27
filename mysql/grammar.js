@@ -1722,12 +1722,15 @@ export default grammar({
               keyword('NUMERIC'),
               keyword('FIXED'),
               keyword('FLOAT'),
-              keyword('FLOAT4'),
-              keyword('FLOAT8'),
-              seq(keyword('DOUBLE'), optional(keyword('PRECISION'))),
-              keyword('REAL')
+              keyword('FLOAT4')
             ),
             optional($._float_options),
+            optional(choice(keyword('SIGNED'), keyword('UNSIGNED'))),
+            optional(keyword('ZEROFILL'))
+          ),
+          seq(
+            choice(keyword('FLOAT8'), seq(keyword('DOUBLE'), optional(keyword('PRECISION'))), keyword('REAL')),
+            optional($._real_precision),
             optional(choice(keyword('SIGNED'), keyword('UNSIGNED'))),
             optional(keyword('ZEROFILL'))
           ),
@@ -1819,7 +1822,9 @@ export default grammar({
         seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
       ),
 
-    _float_options: ($) => choice($._field_length, seq('(', $._uint_length_literal, ',', $._uint_length_literal, ')')),
+    _real_precision: ($) => seq('(', $._uint_length_literal, ',', $._uint_length_literal, ')'),
+
+    _float_options: ($) => choice($._field_length, $._real_precision),
 
     _string_type_modifier: ($) =>
       choice(
