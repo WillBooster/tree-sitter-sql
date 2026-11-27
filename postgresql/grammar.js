@@ -1613,7 +1613,7 @@ export default grammar({
           choice(keyword('DISABLE'), keyword('ENABLE')),
           optional(choice(keyword('REPLICA'), keyword('ALWAYS'))),
           choice(
-            seq(keyword('TRIGGER'), optional(choice($._identifier, keyword('ALL'), keyword('USER')))),
+            seq(keyword('TRIGGER'), choice($._identifier, keyword('ALL'), keyword('USER'))),
             seq(keyword('RULE'), $._identifier)
           )
         ),

@@ -1119,3 +1119,13 @@ Misplaced DEFERRABLE attribute on column without eligible constraint
 CREATE TABLE t (x int DEFAULT 1 DEFERRABLE);
 
 --------------------------------------------------------------------------------
+
+================================================================================
+ALTER TABLE ENABLE TRIGGER without target
+:error
+:language(postgresql)
+================================================================================
+
+ALTER TABLE t ENABLE TRIGGER;
+
+--------------------------------------------------------------------------------

@@ -23195,34 +23195,26 @@
                       "type": "CHOICE",
                       "members": [
                         {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "_identifier"
-                            },
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "PATTERN",
-                                "value": "[Aa][Ll][Ll]"
-                              },
-                              "named": false,
-                              "value": "ALL"
-                            },
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "PATTERN",
-                                "value": "[Uu][Ss][Ee][Rr]"
-                              },
-                              "named": false,
-                              "value": "USER"
-                            }
-                          ]
+                          "type": "SYMBOL",
+                          "name": "_identifier"
                         },
                         {
-                          "type": "BLANK"
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "PATTERN",
+                            "value": "[Aa][Ll][Ll]"
+                          },
+                          "named": false,
+                          "value": "ALL"
+                        },
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "PATTERN",
+                            "value": "[Uu][Ss][Ee][Rr]"
+                          },
+                          "named": false,
+                          "value": "USER"
                         }
                       ]
                     }
