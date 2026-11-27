@@ -15714,6 +15714,10 @@
           "named": true
         },
         {
+          "type": "into_clause",
+          "named": true
+        },
+        {
           "type": "limit_clause",
           "named": true
         },

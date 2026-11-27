@@ -698,7 +698,6 @@ export default grammar({
 
     _select_with_into: ($) =>
       choice(
-        seq('(', $._select_with_into, ')'),
         seq(
           optional($.with_clause),
           $._query_body_with_into,
@@ -754,7 +753,7 @@ export default grammar({
     _query_term_no_into: ($) => choice($._query_primary_no_into, alias($._intersect_query_no_into, $.compound_query)),
 
     _query_term_with_into: ($) =>
-      choice(alias($._select_core_with_into, $.select_core), alias($._intersect_query_with_into, $.compound_query)),
+      choice($._query_primary_with_into, alias($._intersect_query_with_into, $.compound_query)),
 
     _intersect_query_no_into: ($) =>
       prec.left(
@@ -770,7 +769,7 @@ export default grammar({
         seq(
           field('left', $._query_term_no_into),
           field('operator', alias($._intersect_operator, $.compound_operator)),
-          field('right', alias($._select_core_with_into, $.select_core))
+          field('right', $._query_primary_with_into)
         )
       ),
 
@@ -781,6 +780,34 @@ export default grammar({
 
     _query_primary_no_into: ($) =>
       choice($.select_core, $.values_statement, $.table_value_statement, $.parenthesized_query),
+
+    _query_primary_with_into: ($) =>
+      choice(
+        alias($._select_core_with_into, $.select_core),
+        alias($._parenthesized_query_with_into, $.parenthesized_query)
+      ),
+
+    _parenthesized_query_with_into: ($) =>
+      choice(
+        seq(
+          '(',
+          optional($.with_clause),
+          $._query_body_with_into,
+          optional($.order_by_clause),
+          optional($.limit_clause),
+          repeat($.locking_clause),
+          ')'
+        ),
+        seq(
+          '(',
+          optional($.with_clause),
+          $._query_body_no_into,
+          optional($.order_by_clause),
+          optional($.limit_clause),
+          choice(seq($.into_clause, repeat($.locking_clause)), seq(repeat1($.locking_clause), $.into_clause)),
+          ')'
+        )
+      ),
 
     parenthesized_query: ($) =>
       seq(

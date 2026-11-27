@@ -703,6 +703,7 @@ Compound SELECT INTO on final block, JSON_TABLE reversed handlers, and max uint6
 ================================================================================
 
 SELECT 1 UNION SELECT 2 INTO @out_v;
+(SELECT 1) UNION (SELECT 1 INTO @var);
 SELECT * FROM JSON_TABLE('[1]', '$[*]' COLUMNS (x INT PATH '$' ERROR ON ERROR NULL ON EMPTY)) AS j LIMIT 18446744073709551615;
 
 --------------------------------------------------------------------------------
@@ -719,6 +720,19 @@ SELECT * FROM JSON_TABLE('[1]', '$[*]' COLUMNS (x INT PATH '$' ERROR ON ERROR NU
           (numeric_literal))
         (into_clause
           (user_variable)))))
+  (select_statement
+    (compound_query
+      (parenthesized_query
+        (select_core
+          (result_column
+            (numeric_literal))))
+      (compound_operator)
+      (parenthesized_query
+        (select_core
+          (result_column
+            (numeric_literal))
+          (into_clause
+            (user_variable))))))
   (select_statement
     (select_core
       (all_columns)
