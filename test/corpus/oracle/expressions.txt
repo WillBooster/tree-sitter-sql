@@ -1118,3 +1118,57 @@ SELECT 6
               (identifier)))
           (is_expression
             (identifier)))))))
+
+
+================================================================================
+Multiline division before non-reserved statement-keyword operands and operators
+:language(oracle)
+================================================================================
+
+SELECT 6
+/
+merge / 2,
+6
+/
+merge || 'x',
+6
+/
+commit + 1,
+6
+/
+savepoint alias_col
+FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (binary_expression
+            (binary_expression
+              (numeric_literal)
+              (identifier))
+            (numeric_literal)))
+        (select_item
+          (binary_expression
+            (binary_expression
+              (numeric_literal)
+              (identifier))
+            (string_literal)))
+        (select_item
+          (binary_expression
+            (binary_expression
+              (numeric_literal)
+              (identifier))
+            (numeric_literal)))
+        (select_item
+          (binary_expression
+            (numeric_literal)
+            (identifier))
+          (identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
