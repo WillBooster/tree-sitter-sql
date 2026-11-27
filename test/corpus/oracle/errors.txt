@@ -674,3 +674,13 @@ CREATE TABLE AS SELECT with explicit column datatype
 CREATE TABLE copied (id NUMBER) AS SELECT 1 FROM dual;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+XMLSERIALIZE with duplicate or conflicting options
+:error
+:language(oracle)
+================================================================================
+
+SELECT XMLSERIALIZE(CONTENT x AS CLOB AS VARCHAR2(10)) FROM t;
+
+--------------------------------------------------------------------------------

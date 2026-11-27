@@ -1170,19 +1170,16 @@ function buildXmlExpressionRules(k, ref, pub, def) {
         seq(
           choice(keyword('DOCUMENT'), keyword('CONTENT')),
           field('value', ref($, '_expression')),
-          repeat(ref($, '_xmlserialize_option'))
-        ),
-    ],
-    [
-      k('_xmlserialize_option'),
-      /** @param {GrammarSymbols<string>} $ */ ($) =>
-        choice(
-          seq(keyword('AS'), field('type', $.type_name)),
-          seq(keyword('ENCODING'), ref($, '_expression')),
-          seq(keyword('VERSION'), ref($, '_expression')),
-          keywords('NO INDENT'),
-          prec.right(seq(keyword('INDENT'), optional(seq(keyword('SIZE'), '=', ref($, '_expression'))))),
-          $._xmlserialize_tail_defaults
+          optional(seq(keyword('AS'), field('type', $.type_name))),
+          optional(seq(keyword('ENCODING'), ref($, '_expression'))),
+          optional(seq(keyword('VERSION'), ref($, '_expression'))),
+          optional(
+            choice(
+              keywords('NO INDENT'),
+              prec.right(seq(keyword('INDENT'), optional(seq(keyword('SIZE'), '=', ref($, '_expression')))))
+            )
+          ),
+          optional($._xmlserialize_tail_defaults)
         ),
     ],
     [

@@ -43342,7 +43342,7 @@
     "named": true,
     "fields": {
       "type": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
