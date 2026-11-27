@@ -1,8 +1,8 @@
 //! This crate provides SQL language support for the [tree-sitter] parsing library: the SQL dialects of SQLite,
 //! PostgreSQL, MySQL, and Oracle Database.
 //!
-//! Typically, you will use one of the `LANGUAGE_*` constants (such as [`LANGUAGE_SQLITE`], [`LANGUAGE_POSTGRESQL`],
-//! [`LANGUAGE_MYSQL`], or [`LANGUAGE_ORACLE`]) to add a dialect to a tree-sitter [`Parser`], and then use the parser to
+//! Typically, you will use one of the `LANGUAGE_*` constants (such as `LANGUAGE_SQLITE`, `LANGUAGE_POSTGRESQL`,
+//! `LANGUAGE_MYSQL`, or `LANGUAGE_ORACLE`) to add a dialect to a tree-sitter [`Parser`], and then use the parser to
 //! parse some code:
 //!
 //! ```
