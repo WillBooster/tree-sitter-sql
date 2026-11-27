@@ -4232,14 +4232,14 @@ export default grammar({
             )
           )
         ),
+        seq(keyword('JSON'), parens(seq($._expression, optional($._json_format), optional($._json_unique_keys)))),
+        seq(keyword('JSON_SCALAR'), parens($._expression)),
         seq(
-          choice(keyword('JSON'), keyword('JSON_SCALAR'), keyword('JSON_SERIALIZE')),
-          parens(
-            seq($._expression, optional($._json_format), optional($._json_unique_keys), optional($._json_returning))
-          )
+          keyword('JSON_SERIALIZE'),
+          parens(seq($._expression, optional($._json_format), optional($._json_returning)))
         ),
         seq(
-          choice(keyword('JSON_VALUE'), keyword('JSON_QUERY'), keyword('JSON_EXISTS')),
+          keyword('JSON_VALUE'),
           parens(
             seq(
               $._expression,
@@ -4247,7 +4247,37 @@ export default grammar({
               ',',
               $._expression,
               optional($._json_passing),
-              repeat($._json_query_behavior)
+              optional($._json_returning),
+              optional($._json_value_behaviors)
+            )
+          )
+        ),
+        seq(
+          keyword('JSON_QUERY'),
+          parens(
+            seq(
+              $._expression,
+              optional($._json_format),
+              ',',
+              $._expression,
+              optional($._json_passing),
+              optional($._json_returning),
+              optional($._json_wrapper),
+              optional($._json_quotes),
+              optional($._json_query_behaviors)
+            )
+          )
+        ),
+        seq(
+          keyword('JSON_EXISTS'),
+          parens(
+            seq(
+              $._expression,
+              optional($._json_format),
+              ',',
+              $._expression,
+              optional($._json_passing),
+              optional(seq($._json_exists_behavior, keywords('ON ERROR')))
             )
           )
         )
@@ -4274,30 +4304,42 @@ export default grammar({
 
     _json_passing: ($) => seq(keyword('PASSING'), commaSep1(seq($._expression, keyword('AS'), $._identifier))),
 
+    _json_wrapper: () =>
+      seq(
+        choice(
+          keyword('WITHOUT'),
+          seq(keyword('WITH'), optional(choice(keyword('CONDITIONAL'), keyword('UNCONDITIONAL'))))
+        ),
+        optional(keyword('ARRAY')),
+        keyword('WRAPPER')
+      ),
+
+    _json_quotes: () =>
+      seq(choice(keyword('KEEP'), keyword('OMIT')), keyword('QUOTES'), optional(keywords('ON SCALAR STRING'))),
+
+    _json_value_behavior: ($) => choice(keyword('ERROR'), keyword('NULL'), seq(keyword('DEFAULT'), $._expression)),
+
+    _json_value_behaviors: ($) =>
+      choice(
+        seq($._json_value_behavior, keywords('ON EMPTY'), optional(seq($._json_value_behavior, keywords('ON ERROR')))),
+        seq($._json_value_behavior, keywords('ON ERROR'))
+      ),
+
     _json_query_behavior: ($) =>
       choice(
-        $._json_returning,
-        seq(
-          choice(keyword('WITHOUT'), keyword('WITH')),
-          optional(choice(keyword('CONDITIONAL'), keyword('UNCONDITIONAL'))),
-          optional(keyword('ARRAY')),
-          keyword('WRAPPER')
-        ),
-        seq(choice(keyword('KEEP'), keyword('OMIT')), keyword('QUOTES'), optional(keywords('ON SCALAR STRING'))),
-        seq(
-          choice(
-            keyword('ERROR'),
-            keyword('NULL'),
-            keyword('TRUE'),
-            keyword('FALSE'),
-            keyword('UNKNOWN'),
-            seq(keyword('EMPTY'), optional(choice(keyword('ARRAY'), keyword('OBJECT')))),
-            seq(keyword('DEFAULT'), $._expression)
-          ),
-          keywords('ON'),
-          choice(keyword('EMPTY'), keyword('ERROR'))
-        )
+        keyword('ERROR'),
+        keyword('NULL'),
+        seq(keyword('EMPTY'), optional(choice(keyword('ARRAY'), keyword('OBJECT')))),
+        seq(keyword('DEFAULT'), $._expression)
       ),
+
+    _json_query_behaviors: ($) =>
+      choice(
+        seq($._json_query_behavior, keywords('ON EMPTY'), optional(seq($._json_query_behavior, keywords('ON ERROR')))),
+        seq($._json_query_behavior, keywords('ON ERROR'))
+      ),
+
+    _json_exists_behavior: () => choice(keyword('ERROR'), keyword('TRUE'), keyword('FALSE'), keyword('UNKNOWN')),
 
     json_table_expression: ($) =>
       seq(
@@ -4308,12 +4350,14 @@ export default grammar({
             $._expression,
             optional($._json_format),
             ',',
-            $._expression,
+            $.string_literal,
             optional(seq(keyword('AS'), $._identifier)),
             optional($._json_passing),
             keyword('COLUMNS'),
             parens(commaSep1($._json_table_column)),
-            repeat($._json_query_behavior)
+            optional(
+              seq(choice(keyword('ERROR'), seq(keyword('EMPTY'), optional(keyword('ARRAY')))), keywords('ON ERROR'))
+            )
           )
         ),
         optional($._table_alias)
@@ -4326,14 +4370,22 @@ export default grammar({
           $._identifier,
           $.type_name,
           optional($._json_format),
-          optional(seq(keyword('EXISTS'))),
-          optional(prec.left(PREC.ESCAPE, seq(keyword('PATH'), $._expression))),
-          repeat($._json_query_behavior)
+          optional(seq(keyword('PATH'), $.string_literal)),
+          optional($._json_wrapper),
+          optional($._json_quotes),
+          optional($._json_query_behaviors)
+        ),
+        seq(
+          $._identifier,
+          $.type_name,
+          keyword('EXISTS'),
+          optional(seq(keyword('PATH'), $.string_literal)),
+          optional(seq($._json_exists_behavior, keywords('ON ERROR')))
         ),
         seq(
           keyword('NESTED'),
           optional(keyword('PATH')),
-          $._expression,
+          $.string_literal,
           optional(seq(keyword('AS'), $._identifier)),
           keyword('COLUMNS'),
           parens(commaSep1($._json_table_column))
