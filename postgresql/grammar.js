@@ -338,6 +338,54 @@ const copyOptions = ($) => [
   ),
 ];
 
+/**
+ * @param {'valid' | 'inherit'} slot3
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildFkConstraintAttrRules(slot3) {
+  const prefix = `_cas_${slot3}`;
+  const fourth = slot3 === 'valid' ? keywords('NOT VALID') : keywords('NO INHERIT');
+  /** @type {[string, ($: GrammarSymbols<string>) => RuleOrLiteral][]} */
+  const entries = [];
+  for (let used = 0; used < 15; used++) {
+    for (const mode of [0, 1, 2]) {
+      entries.push([
+        `${prefix}_${used}_${mode}`,
+        ($) => {
+          const alts = fkConstraintTransitions(used, mode, fourth, $).map(([tok, nextUsed, nextMode]) =>
+            nextUsed === 15 ? tok : seq(tok, optional($[`${prefix}_${nextUsed}_${nextMode}`]))
+          );
+          return alts.length === 1 ? alts[0] : choice(...alts);
+        },
+      ]);
+    }
+  }
+  return Object.fromEntries(entries);
+}
+
+/**
+ * @param {number} used
+ * @param {number} mode
+ * @param {RuleOrLiteral} fourth
+ * @param {GrammarSymbols<string>} $
+ * @returns {[RuleOrLiteral, number, number][]}
+ */
+function fkConstraintTransitions(used, mode, fourth, $) {
+  /** @type {[RuleOrLiteral, number, number][]} */
+  const steps = [];
+  if (!(used & 1)) {
+    steps.push([keyword('DEFERRABLE'), used | 1, mode]);
+    if (mode !== 2) steps.push([keywords('NOT DEFERRABLE'), used | 1, 1]);
+  }
+  if (!(used & 2)) {
+    if (mode !== 1) steps.push([keywords('INITIALLY DEFERRED'), used | 2, 2]);
+    steps.push([keywords('INITIALLY IMMEDIATE'), used | 2, mode]);
+  }
+  if (!(used & 4)) steps.push([$._enforced_attr, used | 4, mode]);
+  if (!(used & 8)) steps.push([fourth, used | 8, mode]);
+  return steps;
+}
+
 export default grammar({
   name: 'postgresql',
 
@@ -378,6 +426,20 @@ export default grammar({
     [$.table_function],
     [$.rows_from_table],
     [$._transaction_mode_list],
+    [$._column_constraint],
+    [$._cas_valid_8_0],
+    [$._cas_valid_8_1],
+    [$._cas_valid_8_2],
+    [$._cas_valid_9_0],
+    [$._cas_valid_9_1],
+    [$._cas_valid_9_2],
+    [$._cas_valid_10_0],
+    [$._cas_valid_10_1],
+    [$._cas_valid_10_2],
+    [$._cas_valid_12_0],
+    [$._cas_valid_12_1],
+    [$._cas_valid_12_2],
+    [$._cas_valid_14_1],
   ],
 
   rules: {
@@ -1235,11 +1297,7 @@ export default grammar({
 
     _typed_table_element: ($) =>
       choice(
-        seq(
-          field('name', $._identifier),
-          optional(keywords('WITH OPTIONS')),
-          repeat(choice($._column_constraint, $._constraint_attribute))
-        ),
+        seq(field('name', $._identifier), optional(keywords('WITH OPTIONS')), repeat($._column_constraint)),
         $._table_constraint
       ),
 
@@ -1273,7 +1331,10 @@ export default grammar({
         optional(seq(keyword('STORAGE'), choice($._identifier, keyword('DEFAULT')))),
         optional(seq(keyword('COMPRESSION'), choice($._identifier, keyword('DEFAULT')))),
         optional($._create_generic_options),
-        repeat(choice($.collate_clause, $._column_constraint, $._constraint_attribute))
+        choice(
+          repeat($._column_constraint),
+          seq(repeat($._column_constraint), $.collate_clause, repeat($._column_constraint))
+        )
       ),
 
     collate_clause: ($) => seq(keyword('COLLATE'), field('collation', $.qualified_name)),
@@ -1283,27 +1344,22 @@ export default grammar({
         optional($.constraint_name),
         choice(
           $.null_constraint,
-          $.not_null_constraint,
+          seq($.not_null_constraint, optional(keywords('NO INHERIT'))),
           $.default_constraint,
           $.generated_identity_constraint,
           $.generated_column_constraint,
-          $.check_constraint,
-          $.unique_constraint,
-          $.primary_key_constraint,
-          $.foreign_key_clause
+          seq($.check_constraint, optional(keywords('NO INHERIT')), optional($._enforced_attr)),
+          seq(choice($.unique_constraint, $.primary_key_constraint), optional($._cas_valid_12_0)),
+          seq($.foreign_key_clause, optional($._cas_valid_8_0))
         )
       ),
 
     constraint_name: ($) => seq(keyword('CONSTRAINT'), field('name', $._identifier)),
 
-    _constraint_attribute: () =>
-      choice(
-        seq(optional(keyword('NOT')), keyword('DEFERRABLE')),
-        seq(keyword('INITIALLY'), choice(keyword('DEFERRED'), keyword('IMMEDIATE'))),
-        seq(optional(keyword('NOT')), keyword('ENFORCED')),
-        seq(optional(keyword('NOT')), keyword('VALID')),
-        keywords('NO INHERIT')
-      ),
+    _enforced_attr: () => seq(optional(keyword('NOT')), keyword('ENFORCED')),
+
+    ...buildFkConstraintAttrRules('valid'),
+    ...buildFkConstraintAttrRules('inherit'),
 
     null_constraint: () => keyword('NULL'),
 
@@ -1385,14 +1441,47 @@ export default grammar({
       seq(
         optional($.constraint_name),
         choice(
-          $.check_constraint,
-          alias($._table_unique_constraint, $.unique_constraint),
-          alias($._table_primary_key_constraint, $.primary_key_constraint),
-          $.exclude_constraint,
-          $.foreign_key_constraint,
-          alias($._table_not_null_constraint, $.not_null_constraint)
+          seq($.check_constraint, optional($._table_check_attrs)),
+          seq(
+            choice(
+              alias($._table_unique_constraint, $.unique_constraint),
+              alias($._table_primary_key_constraint, $.primary_key_constraint),
+              $.exclude_constraint
+            ),
+            optional($._cas_valid_12_0)
+          ),
+          seq($.foreign_key_constraint, optional($._cas_valid_0_0)),
+          seq(alias($._table_not_null_constraint, $.not_null_constraint), optional($._table_not_null_attrs))
+        )
+      ),
+
+    _table_not_null_attrs: () =>
+      choice(
+        seq(keywords('NO INHERIT'), optional(keywords('NOT VALID'))),
+        seq(keywords('NOT VALID'), optional(keywords('NO INHERIT')))
+      ),
+
+    _table_check_attrs: ($) =>
+      choice(
+        seq($._enforced_attr, optional($._table_not_null_attrs)),
+        seq(
+          keywords('NO INHERIT'),
+          optional(
+            choice(
+              seq($._enforced_attr, optional(keywords('NOT VALID'))),
+              seq(keywords('NOT VALID'), optional($._enforced_attr))
+            )
+          )
         ),
-        repeat($._constraint_attribute)
+        seq(
+          keywords('NOT VALID'),
+          optional(
+            choice(
+              seq($._enforced_attr, optional(keywords('NO INHERIT'))),
+              seq(keywords('NO INHERIT'), optional($._enforced_attr))
+            )
+          )
+        )
       ),
 
     _table_not_null_constraint: ($) => seq(keywords('NOT NULL'), $._identifier),
@@ -1517,7 +1606,7 @@ export default grammar({
           )
         ),
         seq(keyword('ADD'), $._table_constraint),
-        seq(keywords('ALTER CONSTRAINT'), $._identifier, repeat1($._constraint_attribute)),
+        seq(keywords('ALTER CONSTRAINT'), $._identifier, choice(keyword('INHERIT'), $._cas_inherit_0_0)),
         seq(keywords('VALIDATE CONSTRAINT'), $._identifier),
         seq(keywords('DROP CONSTRAINT'), optional($.if_exists), $._identifier, optional($._drop_behavior)),
         seq(
@@ -1823,14 +1912,16 @@ export default grammar({
         field('name', $.qualified_name),
         optional(keyword('AS')),
         field('type', $.type_name),
-        repeat(
-          choice(
-            $.collate_clause,
-            $.default_constraint,
-            seq(optional($.constraint_name), choice($.null_constraint, $.not_null_constraint, $.check_constraint)),
-            $._constraint_attribute
-          )
+        choice(
+          repeat($._domain_constraint),
+          seq(repeat($._domain_constraint), $.collate_clause, repeat($._domain_constraint))
         )
+      ),
+
+    _domain_constraint: ($) =>
+      choice(
+        $.default_constraint,
+        seq(optional($.constraint_name), choice($.null_constraint, $.not_null_constraint, $.check_constraint))
       ),
 
     alter_domain_statement: ($) =>
@@ -1844,8 +1935,7 @@ export default grammar({
           seq(
             keyword('ADD'),
             optional($.constraint_name),
-            choice($.not_null_constraint, $.check_constraint),
-            repeat($._constraint_attribute)
+            choice($.not_null_constraint, seq($.check_constraint, optional(keywords('NOT VALID'))))
           ),
           seq(keywords('DROP CONSTRAINT'), optional($.if_exists), $._identifier, optional($._drop_behavior)),
           seq(keywords('RENAME CONSTRAINT'), $._identifier, keyword('TO'), $._identifier),
@@ -2048,25 +2138,37 @@ export default grammar({
     create_trigger_statement: ($) =>
       seq(
         keyword('CREATE'),
-        optional(keywords('OR REPLACE')),
-        optional(keyword('CONSTRAINT')),
-        keyword('TRIGGER'),
-        field('name', $._identifier),
-        choice(keyword('BEFORE'), keyword('AFTER'), keywords('INSTEAD OF')),
-        $._trigger_events,
-        keyword('ON'),
-        field('table', $.qualified_name),
-        optional(seq(keyword('FROM'), $.qualified_name)),
-        repeat($._constraint_attribute),
-        optional(
+        choice(
           seq(
-            keyword('REFERENCING'),
-            repeat1(
-              seq(choice(keyword('OLD'), keyword('NEW')), keyword('TABLE'), optional(keyword('AS')), $._identifier)
-            )
+            optional(keywords('OR REPLACE')),
+            keyword('TRIGGER'),
+            field('name', $._identifier),
+            choice(keyword('BEFORE'), keyword('AFTER'), keywords('INSTEAD OF')),
+            $._trigger_events,
+            keyword('ON'),
+            field('table', $.qualified_name),
+            optional(
+              seq(
+                keyword('REFERENCING'),
+                repeat1(
+                  seq(choice(keyword('OLD'), keyword('NEW')), keyword('TABLE'), optional(keyword('AS')), $._identifier)
+                )
+              )
+            ),
+            optional(seq(keyword('FOR'), optional(keyword('EACH')), choice(keyword('ROW'), keyword('STATEMENT'))))
+          ),
+          seq(
+            keywords('CONSTRAINT TRIGGER'),
+            field('name', $._identifier),
+            keyword('AFTER'),
+            $._trigger_events,
+            keyword('ON'),
+            field('table', $.qualified_name),
+            optional(seq(keyword('FROM'), $.qualified_name)),
+            optional($._cas_valid_12_0),
+            keywords('FOR EACH ROW')
           )
         ),
-        optional(seq(keyword('FOR'), optional(keyword('EACH')), choice(keyword('ROW'), keyword('STATEMENT')))),
         optional(seq(keyword('WHEN'), parens($._expression))),
         keyword('EXECUTE'),
         choice(keyword('FUNCTION'), keyword('PROCEDURE')),
