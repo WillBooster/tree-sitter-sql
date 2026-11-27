@@ -45338,8 +45338,12 @@
           "value": "FORALL"
         },
         {
-          "type": "SYMBOL",
-          "name": "_for_iterand_decl"
+          "type": "FIELD",
+          "name": "iterator",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_plsql_name"
+          }
         },
         {
           "type": "ALIAS",
@@ -45351,29 +45355,8 @@
           "value": "IN"
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_qual_iteration_ctl"
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": ","
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "_qual_iteration_ctl"
-                  }
-                ]
-              }
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_forall_bounds_clause"
         },
         {
           "type": "CHOICE",
@@ -45442,6 +45425,131 @@
             {
               "type": "SYMBOL",
               "name": "execute_immediate_statement"
+            }
+          ]
+        }
+      ]
+    },
+    "_forall_bounds_clause": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_plsql_scalar_expression"
+            },
+            {
+              "type": "STRING",
+              "value": ".."
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_plsql_scalar_expression"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Ii][Nn][Dd][Ii][Cc][Ee][Ss]"
+                  },
+                  "named": false,
+                  "value": "INDICES"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Oo][Ff]"
+                  },
+                  "named": false,
+                  "value": "OF"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_plsql_primary_expression"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Bb][Ee][Tt][Ww][Ee][Ee][Nn]"
+                      },
+                      "named": false,
+                      "value": "BETWEEN"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_plsql_scalar_expression"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Aa][Nn][Dd]"
+                      },
+                      "named": false,
+                      "value": "AND"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_plsql_scalar_expression"
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Vv][Aa][Ll][Uu][Ee][Ss]"
+                  },
+                  "named": false,
+                  "value": "VALUES"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Oo][Ff]"
+                  },
+                  "named": false,
+                  "value": "OF"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_plsql_primary_expression"
             }
           ]
         }

@@ -17141,10 +17141,6 @@
           "named": true
         },
         {
-          "type": "between_expression",
-          "named": true
-        },
-        {
           "type": "binary_expression",
           "named": true
         },
@@ -17201,10 +17197,6 @@
           "named": true
         },
         {
-          "type": "exists_expression",
-          "named": true
-        },
-        {
           "type": "expression_list",
           "named": true
         },
@@ -17218,10 +17210,6 @@
         },
         {
           "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "in_expression",
           "named": true
         },
         {
@@ -17241,10 +17229,6 @@
           "named": true
         },
         {
-          "type": "is_expression",
-          "named": true
-        },
-        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -17253,19 +17237,11 @@
           "named": true
         },
         {
-          "type": "like_expression",
-          "named": true
-        },
-        {
           "type": "listagg_expression",
           "named": true
         },
         {
           "type": "member_expression",
-          "named": true
-        },
-        {
-          "type": "member_of_expression",
           "named": true
         },
         {
@@ -17305,15 +17281,7 @@
           "named": true
         },
         {
-          "type": "select_statement",
-          "named": true
-        },
-        {
           "type": "string_literal",
-          "named": true
-        },
-        {
-          "type": "submultiset_expression",
           "named": true
         },
         {
@@ -17334,10 +17302,6 @@
         },
         {
           "type": "trim_expression",
-          "named": true
-        },
-        {
-          "type": "type_name",
           "named": true
         },
         {

@@ -5543,14 +5543,25 @@ export default grammar({
     forall_statement: ($) =>
       seq(
         keyword('FORALL'),
-        $._for_iterand_decl,
+        field('iterator', $._plsql_name),
         keyword('IN'),
-        commaSep1($._qual_iteration_ctl),
+        $._forall_bounds_clause,
         optional(keywords('SAVE EXCEPTIONS')),
         choice(
           seq(choice($.insert_statement, $.update_statement, $.delete_statement, $.merge_statement), ';'),
           $.execute_immediate_statement
         )
+      ),
+
+    _forall_bounds_clause: ($) =>
+      choice(
+        seq($._plsql_scalar_expression, '..', $._plsql_scalar_expression),
+        seq(
+          keywords('INDICES OF'),
+          $._plsql_primary_expression,
+          optional(seq(keyword('BETWEEN'), $._plsql_scalar_expression, keyword('AND'), $._plsql_scalar_expression))
+        ),
+        seq(keywords('VALUES OF'), $._plsql_primary_expression)
       ),
 
     exit_statement: ($) =>
