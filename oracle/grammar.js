@@ -1136,7 +1136,6 @@ function buildXmlExpressionRules(k, ref, pub, def) {
     def('xml_function_expression', ($) =>
       choice(
         seq(keyword('XMLELEMENT'), '(', ref($, '_xmlelement_body'), ')'),
-        pub($, 'xml_attributes_clause'),
         seq(keyword('XMLFOREST'), '(', commaSep1(ref($, '_xml_aliased_value')), ')'),
         seq(keyword('XMLSERIALIZE'), '(', ref($, '_xmlserialize_body'), ')'),
         seq(keyword('XMLQUERY'), '(', ref($, '_xmlquery_body'), ')'),
@@ -1153,6 +1152,7 @@ function buildXmlExpressionRules(k, ref, pub, def) {
         seq(
           optional(choice(keyword('ENTITYESCAPING'), keyword('NOENTITYESCAPING'))),
           choice(seq(keyword('EVALNAME'), ref($, '_expression')), seq(optional(keyword('NAME')), $._name)),
+          optional(seq(',', pub($, 'xml_attributes_clause'))),
           repeat(seq(',', ref($, '_xml_aliased_value')))
         ),
     ],

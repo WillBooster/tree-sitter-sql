@@ -717,10 +717,9 @@ FROM emp;
         (select_item
           (xml_function_expression
             (quoted_identifier)
-            (xml_function_expression
-              (xml_attributes_clause
-                (identifier)
-                (quoted_identifier)))
+            (xml_attributes_clause
+              (identifier)
+              (quoted_identifier))
             (xml_function_expression
               (identifier)
               (quoted_identifier))))

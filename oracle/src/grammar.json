@@ -65021,10 +65021,6 @@
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "xml_attributes_clause"
-        },
-        {
           "type": "SEQ",
           "members": [
             {
@@ -65335,6 +65331,27 @@
                   "name": "_name"
                 }
               ]
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": ","
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "xml_attributes_clause"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
             }
           ]
         },
@@ -71221,15 +71238,6 @@
           ]
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_plsql_xml_attributes_clause"
-          },
-          "named": true,
-          "value": "xml_attributes_clause"
-        },
-        {
           "type": "SEQ",
           "members": [
             {
@@ -71540,6 +71548,32 @@
                   "name": "_name"
                 }
               ]
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": ","
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_plsql_xml_attributes_clause"
+                  },
+                  "named": true,
+                  "value": "xml_attributes_clause"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
             }
           ]
         },
