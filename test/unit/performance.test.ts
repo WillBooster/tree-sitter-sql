@@ -14,6 +14,27 @@ interface DialectChecks {
 }
 
 const DialectSuites: Record<string, DialectChecks> = {
+  mysql: {
+    errorLine: 'SELECT a FROM WHERE b;\n',
+    readVolumeCases: [
+      ['unclosed backslash-escaped string', "SELECT 'a\\'b\n"],
+      ['unclosed versioned comment', 'SELECT /*!50700 (a\n'],
+    ],
+  },
+  oracle: {
+    errorLine: 'SELECT a FROM WHERE b;\n',
+    readVolumeCases: [
+      ['unclosed alternative-quoted literal', "SELECT q'[hello\n"],
+      ['unclosed block comment', 'SELECT /* hello\n'],
+    ],
+  },
+  postgresql: {
+    errorLine: 'SELECT a FROM WHERE b;\n',
+    readVolumeCases: [
+      ['unclosed nested block comment', 'SELECT /* /* a\n'],
+      ['unclosed dollar-quoted string', 'SELECT $tag$ a\n'],
+    ],
+  },
   sqlite: {
     errorLine: 'SELECT a FROM WHERE b;\n',
     // The scanner reads the tokens of a module argument; an unbalanced parenthesis or quote in one statement must not

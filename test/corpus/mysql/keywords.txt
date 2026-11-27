@@ -1,0 +1,403 @@
+================================================================================
+Non-reserved keywords as unquoted column, table, and alias names
+:language(mysql)
+================================================================================
+
+SELECT
+  action, algorithm, auto_increment, charset, comment, commit, begin,
+  data, date, datetime, do, duplicate, end, engine, enum, event, events,
+  execute, first, flush, format, full, global, handler, hash, json,
+  language, last, local, locks, memory, merge, modify, name, names, no,
+  nowait, offset, only, open, options, password, persist, prepare,
+  privileges, processlist, quick, rebuild, repair, reset, restart, role,
+  rollback, rollup, row_format, savepoint, session, share, shutdown,
+  signed, skip, snapshot, start, status, storage, tables, tablespace,
+  temporary, text, time, timestamp, transaction, truncate, type, types,
+  uncommitted, unknown, user, variables, view, visible, invisible,
+  warnings, without, work, year
+FROM status AS action;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Non-reserved keywords Manual and Parallel in MySQL 8.4
+:language(mysql)
+================================================================================
+
+SELECT manual, parallel FROM manual AS parallel;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Reserved words allowed unquoted after dot qualifier
+:language(mysql)
+================================================================================
+
+SELECT t.select, t.from, t.where, t.order, t.group, t.key, t.primary, t.qualify, t.tablesample, db.table.column
+FROM db.select AS t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Case-insensitive keywords
+:language(mysql)
+================================================================================
+
+sElEcT dIsTiNcT a FrOm t WhErE b Is nOt NuLl OrDeR bY a DeSc LiMiT 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (where_clause
+        (is_expression
+          (column_reference
+            (identifier))
+          (null))))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier))))
+    (limit_clause
+      (numeric_literal))))

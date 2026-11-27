@@ -1,0 +1,287 @@
+================================================================================
+Non-reserved Oracle keywords used as table and column names
+:language(oracle)
+================================================================================
+
+CREATE TABLE status (
+  name VARCHAR2(50),
+  type VARCHAR2(20),
+  value NUMBER,
+  year NUMBER,
+  month NUMBER,
+  day NUMBER,
+  key VARCHAR2(30),
+  json CLOB,
+  object VARCHAR2(30),
+  data RAW(16),
+  result VARCHAR2(10),
+  boolean NUMBER(1)
+);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (object_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))))
+
+================================================================================
+Non-reserved analytic, pagination, and DDL keywords as unquoted identifiers and aliases
+:language(oracle)
+================================================================================
+
+SELECT
+  first,
+  last,
+  offset,
+  fetch,
+  next,
+  only,
+  ties,
+  partition,
+  subpartition,
+  matched,
+  merge,
+  pivot,
+  unpivot,
+  lateral,
+  over,
+  window,
+  within,
+  cycle,
+  search,
+  storage,
+  tablespace,
+  enable,
+  disable,
+  cascade,
+  purge,
+  if
+FROM data AS result;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Special-syntax expression keywords used as column names when not called
+:language(oracle)
+================================================================================
+
+SELECT cast, trim, extract, timestamp, interval, cursor, listagg, json_object, xmlelement FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier))
+        (select_item
+          (identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+SQL-only reserved words allowed as member names and PL/SQL parameter or variable names
+:language(oracle)
+================================================================================
+
+CREATE OR REPLACE FUNCTION read_blob(file BFILE) RETURN BLOB IS
+  v_session NUMBER := DBMS_LOB.SESSION;
+BEGIN
+  RETURN NULL;
+END;
+/
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_function_statement
+    (object_name
+      (identifier))
+    (plsql_parameter_list
+      (plsql_parameter
+        (identifier)
+        (type_name)))
+    (type_name)
+    (variable_declaration
+      (identifier)
+      (type_name)
+      (member_expression
+        (identifier)
+        (identifier)))
+    (return_statement
+      (null))))
+
+================================================================================
+Implicit column aliases without AS using non-reserved keywords
+:language(oracle)
+================================================================================
+
+SELECT
+  1 name,
+  2 type,
+  3 value,
+  4 status,
+  5 json,
+  6 boolean,
+  7 first,
+  8 offset
+FROM dual d;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (numeric_literal)
+          (identifier))
+        (select_item
+          (numeric_literal)
+          (identifier))
+        (select_item
+          (numeric_literal)
+          (identifier))
+        (select_item
+          (numeric_literal)
+          (identifier))
+        (select_item
+          (numeric_literal)
+          (identifier))
+        (select_item
+          (numeric_literal)
+          (identifier))
+        (select_item
+          (numeric_literal)
+          (identifier))
+        (select_item
+          (numeric_literal)
+          (identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))))))

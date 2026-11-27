@@ -1,0 +1,883 @@
+================================================================================
+Concatenation shares additive precedence with plus and minus
+:language(oracle)
+================================================================================
+
+SELECT a + b || c - d * e / f FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (binary_expression
+            (binary_expression
+              (binary_expression
+                (identifier)
+                (identifier))
+              (identifier))
+            (binary_expression
+              (binary_expression
+                (identifier)
+                (identifier))
+              (identifier)))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Unary operators: plus, minus, PRIOR, and CONNECT_BY_ROOT
+:language(oracle)
+================================================================================
+
+SELECT -a * +b, PRIOR emp_id = mgr_id, CONNECT_BY_ROOT last_name || '/' || last_name FROM emp;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (binary_expression
+            (unary_expression
+              (identifier))
+            (unary_expression
+              (identifier))))
+        (select_item
+          (binary_expression
+            (unary_expression
+              (identifier))
+            (identifier)))
+        (select_item
+          (binary_expression
+            (binary_expression
+              (unary_expression
+                (identifier))
+              (string_literal))
+            (identifier))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Comparison operators and quantified ANY SOME ALL comparisons
+:language(oracle)
+================================================================================
+
+SELECT
+  a = b,
+  a != b,
+  a <> b,
+  a ^= b,
+  a ~= b,
+  x >= ANY (1, 2, 3),
+  y < SOME (SELECT sal FROM emp),
+  z <= ALL (SELECT sal FROM emp)
+FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (binary_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (binary_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (binary_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (binary_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (binary_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (quantified_comparison_expression
+            (identifier)
+            (numeric_literal)
+            (numeric_literal)
+            (numeric_literal)))
+        (select_item
+          (quantified_comparison_expression
+            (identifier)
+            (select_statement
+              (select_core
+                (select_list
+                  (select_item
+                    (identifier)))
+                (from_clause
+                  (table_reference
+                    (object_name
+                      (identifier))))))))
+        (select_item
+          (quantified_comparison_expression
+            (identifier)
+            (select_statement
+              (select_core
+                (select_list
+                  (select_item
+                    (identifier)))
+                (from_clause
+                  (table_reference
+                    (object_name
+                      (identifier)))))))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Logical operator precedence: NOT over AND over OR
+:language(oracle)
+================================================================================
+
+SELECT NOT a = 1 AND b = 2 OR c = 3 FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (binary_expression
+            (binary_expression
+              (unary_expression
+                (binary_expression
+                  (identifier)
+                  (numeric_literal)))
+              (binary_expression
+                (identifier)
+                (numeric_literal)))
+            (binary_expression
+              (identifier)
+              (numeric_literal)))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+IS predicates: NULL, NAN, INFINITE, EMPTY, A SET, BOOLEAN, JSON, and OF TYPE
+:language(oracle)
+================================================================================
+
+SELECT
+  a IS NULL,
+  b IS NOT NAN,
+  c IS INFINITE,
+  d IS NOT EMPTY,
+  e IS A SET,
+  f IS NOT TRUE,
+  doc IS JSON FORMAT JSON STRICT OBJECT WITH UNIQUE KEYS,
+  obj IS OF TYPE (ONLY corporate_customer_typ, customer_typ)
+FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (is_expression
+            (identifier)))
+        (select_item
+          (is_expression
+            (identifier)))
+        (select_item
+          (is_expression
+            (identifier)))
+        (select_item
+          (is_expression
+            (identifier)))
+        (select_item
+          (is_expression
+            (identifier)))
+        (select_item
+          (is_expression
+            (identifier)))
+        (select_item
+          (is_expression
+            (identifier)))
+        (select_item
+          (is_expression
+            (identifier)
+            (type_name
+              (object_name
+                (identifier)))
+            (type_name
+              (object_name
+                (identifier))))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+LIKE, LIKEC, LIKE2, LIKE4 with ESCAPE, BETWEEN, IN, MEMBER OF, SUBMULTISET OF
+:language(oracle)
+================================================================================
+
+SELECT
+  name LIKE 'A\_%' ESCAPE '\',
+  name NOT LIKEC 'B%',
+  code LIKE2 'X%' OR code LIKE4 'Y%',
+  sal BETWEEN 1000 + 100 AND 5000 - 200 AND dept_id NOT IN (10, 20),
+  tag MEMBER OF tag_list,
+  sub_tab NOT SUBMULTISET OF full_tab,
+  EXISTS (SELECT 1 FROM dual)
+FROM emp;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (like_expression
+            (identifier)
+            (string_literal)
+            (string_literal)))
+        (select_item
+          (like_expression
+            (identifier)
+            (string_literal)))
+        (select_item
+          (binary_expression
+            (like_expression
+              (identifier)
+              (string_literal))
+            (like_expression
+              (identifier)
+              (string_literal))))
+        (select_item
+          (binary_expression
+            (between_expression
+              (identifier)
+              (binary_expression
+                (numeric_literal)
+                (numeric_literal))
+              (binary_expression
+                (numeric_literal)
+                (numeric_literal)))
+            (in_expression
+              (identifier)
+              (numeric_literal)
+              (numeric_literal))))
+        (select_item
+          (member_of_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (submultiset_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (exists_expression
+            (select_statement
+              (select_core
+                (select_list
+                  (select_item
+                    (numeric_literal)))
+                (from_clause
+                  (table_reference
+                    (object_name
+                      (identifier)))))))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Outer join indicator (+), COLLATE, AT TIME ZONE, and AT LOCAL
+:language(oracle)
+================================================================================
+
+SELECT
+  e.last_name COLLATE BINARY_CI,
+  ts AT LOCAL,
+  ts AT TIME ZONE 'UTC'
+FROM emp e, dept d
+WHERE e.dept_id(+) = d.dept_id AND e.country_id ( + ) = 'US';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (collate_expression
+            (member_expression
+              (identifier)
+              (identifier))
+            (identifier)))
+        (select_item
+          (at_time_zone_expression
+            (identifier)))
+        (select_item
+          (at_time_zone_expression
+            (identifier)
+            (string_literal))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier)))
+      (where_clause
+        (binary_expression
+          (binary_expression
+            (outer_join_expression
+              (member_expression
+                (identifier)
+                (identifier))
+              (outer_join_indicator))
+            (member_expression
+              (identifier)
+              (identifier)))
+          (binary_expression
+            (outer_join_expression
+              (member_expression
+                (identifier)
+                (identifier))
+              (outer_join_indicator))
+            (string_literal)))))))
+
+================================================================================
+CASE, CAST with ON CONVERSION ERROR, TREAT, DECODE, NVL, NVL2, COALESCE
+:language(oracle)
+================================================================================
+
+SELECT
+  CASE status WHEN 'A' THEN 1 WHEN 'B' THEN 2 ELSE 0 END,
+  CASE WHEN sal > 1000 THEN 'high' ELSE 'low' END,
+  CAST(raw_txt AS NUMBER DEFAULT 0 ON CONVERSION ERROR),
+  TREAT(val AS REF customer_typ),
+  TREAT(OBJECT_VALUE AS leaf_category_typ).product_ref_list,
+  DECODE(deptno, 10, 'Accounting', 20, 'Research', 'Other'),
+  NVL(comm, 0),
+  NVL2(comm, sal + comm, sal),
+  COALESCE(a, b, c)
+FROM emp;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (case_expression
+            (identifier)
+            (when_clause
+              (string_literal)
+              (numeric_literal))
+            (when_clause
+              (string_literal)
+              (numeric_literal))
+            (numeric_literal)))
+        (select_item
+          (case_expression
+            (when_clause
+              (binary_expression
+                (identifier)
+                (numeric_literal))
+              (string_literal))
+            (string_literal)))
+        (select_item
+          (cast_expression
+            (identifier)
+            (type_name)
+            (numeric_literal)))
+        (select_item
+          (treat_expression
+            (identifier)
+            (type_name
+              (object_name
+                (identifier)))))
+        (select_item
+          (member_expression
+            (treat_expression
+              (pseudocolumn)
+              (type_name
+                (object_name
+                  (identifier))))
+            (identifier)))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier))
+            (function_argument
+              (numeric_literal))
+            (function_argument
+              (string_literal))
+            (function_argument
+              (numeric_literal))
+            (function_argument
+              (string_literal))
+            (function_argument
+              (string_literal))))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier))
+            (function_argument
+              (numeric_literal))))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier))
+            (function_argument
+              (binary_expression
+                (identifier)
+                (identifier)))
+            (function_argument
+              (identifier))))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier))
+            (function_argument
+              (identifier))
+            (function_argument
+              (identifier)))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+EXTRACT, TRIM, TRANSLATE, CURSOR, MULTISET, sequence pseudocolumns, and DB links
+:language(oracle)
+================================================================================
+
+SELECT
+  EXTRACT(YEAR FROM hire_date),
+  EXTRACT(TIMEZONE_HOUR FROM systimestamp),
+  TRIM(LEADING '0' FROM code),
+  TRIM('  padded  '),
+  TRANSLATE(title USING NCHAR_CS),
+  CURSOR(SELECT * FROM dept d WHERE d.dept_id = e.dept_id),
+  CAST(MULTISET(SELECT item_id FROM items) AS item_list_typ),
+  emp_seq.NEXTVAL,
+  emp_seq.CURRVAL,
+  ROWNUM,
+  ROWID,
+  LEVEL,
+  SYSDATE,
+  SYSTIMESTAMP,
+  USER,
+  UID,
+  hr.emp.sal@hq.us.example.com
+FROM emp e;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (extract_expression
+            (identifier)))
+        (select_item
+          (extract_expression
+            (pseudocolumn)))
+        (select_item
+          (trim_expression
+            (string_literal)
+            (identifier)))
+        (select_item
+          (trim_expression
+            (string_literal)))
+        (select_item
+          (translate_expression
+            (identifier)))
+        (select_item
+          (cursor_expression
+            (select_statement
+              (select_core
+                (select_list
+                  (all_columns))
+                (from_clause
+                  (table_reference
+                    (object_name
+                      (identifier))
+                    (identifier)))
+                (where_clause
+                  (binary_expression
+                    (member_expression
+                      (identifier)
+                      (identifier))
+                    (member_expression
+                      (identifier)
+                      (identifier))))))))
+        (select_item
+          (cast_expression
+            (multiset_expression
+              (select_statement
+                (select_core
+                  (select_list
+                    (select_item
+                      (identifier)))
+                  (from_clause
+                    (table_reference
+                      (object_name
+                        (identifier)))))))
+            (type_name
+              (object_name
+                (identifier)))))
+        (select_item
+          (member_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (member_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (pseudocolumn))
+        (select_item
+          (pseudocolumn))
+        (select_item
+          (pseudocolumn))
+        (select_item
+          (pseudocolumn))
+        (select_item
+          (pseudocolumn))
+        (select_item
+          (pseudocolumn))
+        (select_item
+          (pseudocolumn))
+        (select_item
+          (dblink_expression
+            (member_expression
+              (member_expression
+                (identifier)
+                (identifier))
+              (identifier))
+            (dblink_name
+              (identifier)
+              (identifier)
+              (identifier)
+              (identifier)))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Analytic OVER, KEEP DENSE_RANK, LISTAGG WITHIN GROUP, JSON and XML functions
+:language(oracle)
+================================================================================
+
+SELECT
+  SUM(sal) OVER (PARTITION BY dept_id ORDER BY hire_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW),
+  FIRST_VALUE(sal IGNORE NULLS) OVER (PARTITION BY dept_id ORDER BY hire_date),
+  MIN(sal) KEEP (DENSE_RANK FIRST ORDER BY hire_date) OVER (PARTITION BY dept_id),
+  LISTAGG(DISTINCT ename, ', ' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY ename),
+  JSON_VALUE(doc, '$.id' RETURNING NUMBER DEFAULT -1 ON ERROR),
+  JSON_QUERY(doc, '$.items' WITH ARRAY WRAPPER),
+  JSON_OBJECT(KEY 'id' VALUE emp_id, 'name': ename ABSENT ON NULL),
+  JSON_ARRAY(1, 'two', doc FORMAT JSON),
+  JSON_OBJECTAGG(ename VALUE sal),
+  JSON_ARRAYAGG(ename ORDER BY ename),
+  JSON { 'active': TRUE, 'tags': JSON ['a', 'b'] },
+  XMLELEMENT("Emp", XMLATTRIBUTES(emp_id AS "id"), XMLFOREST(ename AS "Name")),
+  XMLAGG(XMLELEMENT("Item", ename) ORDER BY ename)
+FROM emp;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier))
+            (over_clause
+              (window_specification
+                (partition_by_clause
+                  (identifier))
+                (order_by_clause
+                  (ordering_term
+                    (identifier)))
+                (windowing_clause
+                  (frame_bound)
+                  (frame_bound))))))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier))
+            (over_clause
+              (window_specification
+                (partition_by_clause
+                  (identifier))
+                (order_by_clause
+                  (ordering_term
+                    (identifier)))))))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier))
+            (keep_clause
+              (order_by_clause
+                (ordering_term
+                  (identifier))))
+            (over_clause
+              (window_specification
+                (partition_by_clause
+                  (identifier))))))
+        (select_item
+          (listagg_expression
+            (identifier)
+            (string_literal)
+            (listagg_overflow_clause
+              (string_literal))
+            (within_group_clause
+              (order_by_clause
+                (ordering_term
+                  (identifier))))))
+        (select_item
+          (json_function_expression
+            (identifier)
+            (string_literal)
+            (type_name)
+            (unary_expression
+              (numeric_literal))))
+        (select_item
+          (json_function_expression
+            (identifier)
+            (string_literal)))
+        (select_item
+          (json_function_expression
+            (json_object_entry
+              (string_literal)
+              (identifier))
+            (json_object_entry
+              (string_literal)
+              (identifier))))
+        (select_item
+          (json_function_expression
+            (numeric_literal)
+            (string_literal)
+            (identifier)))
+        (select_item
+          (json_function_expression
+            (json_object_entry
+              (identifier)
+              (identifier))))
+        (select_item
+          (json_function_expression
+            (identifier)
+            (order_by_clause
+              (ordering_term
+                (identifier)))))
+        (select_item
+          (json_constructor_expression
+            (json_object_entry
+              (string_literal)
+              (boolean_literal))
+            (json_object_entry
+              (string_literal)
+              (json_constructor_expression
+                (string_literal)
+                (string_literal)))))
+        (select_item
+          (xml_function_expression
+            (quoted_identifier)
+            (xml_function_expression
+              (xml_attributes_clause
+                (identifier)
+                (quoted_identifier)))
+            (xml_function_expression
+              (identifier)
+              (quoted_identifier))))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (xml_function_expression
+                (quoted_identifier)
+                (identifier)))
+            (order_by_clause
+              (ordering_term
+                (identifier))))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Left associativity of additive and concatenation operators
+:language(oracle)
+================================================================================
+
+SELECT 1 - 2 + 3 || 4 - 5 FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (binary_expression
+            (binary_expression
+              (binary_expression
+                (binary_expression
+                  (numeric_literal)
+                  (numeric_literal))
+                (numeric_literal))
+              (numeric_literal))
+            (numeric_literal))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Left associativity of multiplicative operators and right associativity of exponent
+:language(oracle)
+================================================================================
+
+SELECT 24 / 4 * 2 / 3, 2 ** 3 ** 2 FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (binary_expression
+            (binary_expression
+              (binary_expression
+                (numeric_literal)
+                (numeric_literal))
+              (numeric_literal))
+            (numeric_literal)))
+        (select_item
+          (binary_expression
+            (numeric_literal)
+            (binary_expression
+              (numeric_literal)
+              (numeric_literal)))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+MULTISET set operators
+:language(oracle)
+================================================================================
+
+SELECT
+  t1 MULTISET UNION ALL t2,
+  t1 MULTISET INTERSECT DISTINCT t2,
+  t1 MULTISET EXCEPT t2
+FROM nested_sets;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (multiset_operator_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (multiset_operator_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (multiset_operator_expression
+            (identifier)
+            (identifier))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Chained object attributes, method calls, and named parameter association
+:language(oracle)
+================================================================================
+
+SELECT
+  c.cust_geo_location.sdo_point.x,
+  xml_col.getClobVal(),
+  pkg.compute(p_id => c.cust_id, p_flag => TRUE)
+FROM customers c;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (member_expression
+            (member_expression
+              (member_expression
+                (identifier)
+                (identifier))
+              (identifier))
+            (identifier)))
+        (select_item
+          (function_call
+            (member_expression
+              (identifier)
+              (identifier))))
+        (select_item
+          (function_call
+            (member_expression
+              (identifier)
+              (identifier))
+            (function_argument
+              (identifier)
+              (member_expression
+                (identifier)
+                (identifier)))
+            (function_argument
+              (identifier)
+              (boolean_literal)))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))))))

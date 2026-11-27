@@ -1,0 +1,680 @@
+================================================================================
+SELECT DISTINCT ON and SELECT INTO
+:language(postgresql)
+================================================================================
+
+SELECT DISTINCT ON (dept_id) dept_id, emp_id INTO TEMP TABLE top_emps FROM employees ORDER BY dept_id, salary DESC;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (distinct_clause
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (into_clause
+        (temporary)
+        (qualified_name
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier)))
+      (ordering_term
+        (column_reference
+          (identifier))))))
+
+================================================================================
+FROM ONLY, inheritance star, TABLESAMPLE, and LATERAL
+:language(postgresql)
+================================================================================
+
+SELECT t.*, s.val FROM ONLY (parent_tbl) t TABLESAMPLE bernoulli (10) REPEATABLE (42), archive_tbl * a, LATERAL (SELECT x AS val FROM child_tbl c WHERE c.id = t.id) s;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (table_columns
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier)
+          (tablesample_clause
+            (identifier)
+            (numeric_literal)
+            (numeric_literal)))
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (subquery_table
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier))
+                (identifier))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))
+                  (identifier)))
+              (where_clause
+                (binary_expression
+                  (column_reference
+                    (identifier)
+                    (identifier))
+                  (column_reference
+                    (identifier)
+                    (identifier))))))
+          (identifier))))))
+
+================================================================================
+Set-returning functions and ROWS FROM WITH ORDINALITY
+:language(postgresql)
+================================================================================
+
+SELECT * FROM generate_series(1, 5) WITH ORDINALITY AS g(n, ord), LATERAL ROWS FROM (jsonb_each(jb), unnest(arr) AS (elem text)) WITH ORDINALITY AS rf(k, v, elem, rn);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table_function
+          (function_call
+            (identifier)
+            (function_argument
+              (numeric_literal))
+            (function_argument
+              (numeric_literal)))
+          (identifier)
+          (identifier)
+          (identifier))
+        (rows_from_table
+          (function_call
+            (identifier)
+            (function_argument
+              (column_reference
+                (identifier))))
+          (unnest_expression
+            (column_reference
+              (identifier)))
+          (table_func_column
+            (identifier)
+            (type_name
+              (identifier)))
+          (identifier)
+          (column_list
+            (identifier)
+            (identifier)
+            (identifier)
+            (identifier)))))))
+
+================================================================================
+JSON_TABLE and XMLTABLE in FROM
+:language(postgresql)
+================================================================================
+
+SELECT * FROM JSON_TABLE(jb, '$.items[*]' PASSING 10 AS min_p COLUMNS (ord FOR ORDINALITY, id int PATH '$.id', NESTED PATH '$.tags[*]' COLUMNS (tag text PATH '$'))) jt, XMLTABLE(XMLNAMESPACES('http://example.com' AS ns), '//ns:row' PASSING doc COLUMNS ord FOR ORDINALITY, name text PATH 'ns:name' NOT NULL DEFAULT 'n/a') xt;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (json_table_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (numeric_literal)
+          (identifier)
+          (identifier)
+          (identifier)
+          (type_name)
+          (string_literal)
+          (string_literal)
+          (identifier)
+          (type_name
+            (identifier))
+          (string_literal)
+          (identifier))
+        (xmltable_expression
+          (string_literal)
+          (identifier)
+          (string_literal)
+          (column_reference
+            (identifier))
+          (identifier)
+          (identifier)
+          (type_name
+            (identifier))
+          (string_literal)
+          (string_literal)
+          (identifier))))))
+
+================================================================================
+JOIN types and USING alias
+:language(postgresql)
+================================================================================
+
+SELECT * FROM a INNER JOIN b ON a.id = b.id LEFT OUTER JOIN c USING (id) AS j_alias RIGHT JOIN d ON c.id = d.id FULL OUTER JOIN e USING (id) CROSS JOIN f NATURAL LEFT JOIN g;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (column_list
+            (identifier))
+          (identifier))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (column_list
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (natural_join_operator)
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+GROUP BY ALL, ROLLUP, CUBE, and GROUPING SETS
+:language(postgresql)
+================================================================================
+
+SELECT a, b, GROUPING(a, b), sum(v) FROM t GROUP BY DISTINCT GROUPING SETS (ROLLUP (a, b), CUBE (a, b), ()) HAVING sum(v) > 0;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (function_argument
+            (column_reference
+              (identifier)))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (group_by_clause
+        (column_reference
+          (identifier))
+        (column_reference
+          (identifier))
+        (column_reference
+          (identifier))
+        (column_reference
+          (identifier))
+        (row_expression))
+      (having_clause
+        (binary_expression
+          (function_call
+            (identifier)
+            (function_argument
+              (column_reference
+                (identifier))))
+          (numeric_literal))))))
+
+================================================================================
+WINDOW frame modes and exclusions
+:language(postgresql)
+================================================================================
+
+SELECT sum(x) OVER w1, avg(x) OVER w2 FROM t WINDOW w1 AS (PARTITION BY k ORDER BY ts RANGE BETWEEN INTERVAL '1 day' PRECEDING AND INTERVAL '1 day' FOLLOWING EXCLUDE GROUP), w2 AS (w1 GROUPS BETWEEN UNBOUNDED PRECEDING AND 2 FOLLOWING EXCLUDE NO OTHERS);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (over_clause
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (over_clause
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (window_clause
+        (named_window
+          (identifier)
+          (window_definition
+            (partition_by_clause
+              (column_reference
+                (identifier)))
+            (order_by_clause
+              (ordering_term
+                (column_reference
+                  (identifier))))
+            (frame_clause
+              (frame_bound
+                (typed_literal
+                  (type_name)
+                  (string_literal)))
+              (frame_bound
+                (typed_literal
+                  (type_name)
+                  (string_literal)))
+              (frame_exclusion))))
+        (named_window
+          (identifier)
+          (window_definition
+            (identifier)
+            (frame_clause
+              (frame_bound)
+              (frame_bound
+                (numeric_literal))
+              (frame_exclusion))))))))
+
+================================================================================
+Compound queries with UNION, INTERSECT, and EXCEPT
+:language(postgresql)
+================================================================================
+
+(SELECT a FROM t1 ORDER BY a LIMIT 5) UNION ALL (SELECT a FROM t2) INTERSECT DISTINCT SELECT a FROM t3 EXCEPT SELECT a FROM t4 ORDER BY 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier))))
+    (limit_clause
+      (numeric_literal))
+    (compound_operator)
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (compound_operator)
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (compound_operator)
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (order_by_clause
+      (ordering_term
+        (numeric_literal)))))
+
+================================================================================
+ORDER BY USING operator, LIMIT, OFFSET, and FETCH WITH TIES
+:language(postgresql)
+================================================================================
+
+SELECT a, b FROM t ORDER BY a USING < NULLS FIRST, b DESC NULLS LAST OFFSET 10 ROWS FETCH NEXT 20 ROWS WITH TIES;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier)))
+      (ordering_term
+        (column_reference
+          (identifier))))
+    (offset_clause
+      (numeric_literal))
+    (fetch_clause
+      (numeric_literal))))
+
+================================================================================
+Row locking clauses
+:language(postgresql)
+================================================================================
+
+SELECT * FROM accounts a JOIN ledgers l ON l.acc_id = a.id FOR NO KEY UPDATE OF a NOWAIT FOR KEY SHARE OF l SKIP LOCKED;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))))
+    (locking_clause
+      (qualified_name
+        (identifier)))
+    (locking_clause
+      (qualified_name
+        (identifier)))))
+
+================================================================================
+Top-level VALUES and TABLE queries
+:language(postgresql)
+================================================================================
+
+VALUES (1, 'a'), (2, DEFAULT) ORDER BY 1 LIMIT 1; TABLE ONLY my_table ORDER BY 1; TABLE my_table * LIMIT 5;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (values_clause
+      (row
+        (numeric_literal)
+        (string_literal))
+      (row
+        (numeric_literal)))
+    (order_by_clause
+      (ordering_term
+        (numeric_literal)))
+    (limit_clause
+      (numeric_literal)))
+  (select_statement
+    (table_query
+      (qualified_name
+        (identifier)))
+    (order_by_clause
+      (ordering_term
+        (numeric_literal))))
+  (select_statement
+    (table_query
+      (qualified_name
+        (identifier)))
+    (limit_clause
+      (numeric_literal))))
+
+================================================================================
+WITH RECURSIVE CTE with SEARCH and CYCLE
+:language(postgresql)
+================================================================================
+
+WITH RECURSIVE graph(id, link, data) AS MATERIALIZED (SELECT id, link, data FROM edges UNION ALL SELECT e.id, e.link, e.data FROM edges e JOIN graph g ON e.id = g.link) SEARCH DEPTH FIRST BY id SET ordercol CYCLE id SET is_cycle TO true DEFAULT false USING path SELECT * FROM graph;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (with_clause
+      (common_table_expression
+        (identifier)
+        (column_list
+          (identifier)
+          (identifier)
+          (identifier))
+        (select_statement
+          (select_core
+            (result_column
+              (column_reference
+                (identifier)))
+            (result_column
+              (column_reference
+                (identifier)))
+            (result_column
+              (column_reference
+                (identifier)))
+            (from_clause
+              (table
+                (qualified_name
+                  (identifier)))))
+          (compound_operator)
+          (select_core
+            (result_column
+              (column_reference
+                (identifier)
+                (identifier)))
+            (result_column
+              (column_reference
+                (identifier)
+                (identifier)))
+            (result_column
+              (column_reference
+                (identifier)
+                (identifier)))
+            (from_clause
+              (table
+                (qualified_name
+                  (identifier))
+                (identifier))
+              (join_operator)
+              (table
+                (qualified_name
+                  (identifier))
+                (identifier))
+              (join_constraint
+                (binary_expression
+                  (column_reference
+                    (identifier)
+                    (identifier))
+                  (column_reference
+                    (identifier)
+                    (identifier)))))))
+        (cte_search_clause
+          (identifier)
+          (identifier))
+        (cte_cycle_clause
+          (identifier)
+          (identifier)
+          (boolean_literal)
+          (boolean_literal)
+          (identifier))))
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Data-modifying CTEs
+:language(postgresql)
+================================================================================
+
+WITH deleted AS NOT MATERIALIZED (DELETE FROM logs WHERE created_at < now() - INTERVAL '30 days' RETURNING *), archived AS (INSERT INTO logs_archive SELECT * FROM deleted RETURNING id) SELECT count(*) FROM archived;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (with_clause
+      (common_table_expression
+        (identifier)
+        (delete_statement
+          (qualified_name
+            (identifier))
+          (where_clause
+            (binary_expression
+              (column_reference
+                (identifier))
+              (binary_expression
+                (function_call
+                  (identifier))
+                (typed_literal
+                  (type_name)
+                  (string_literal)))))
+          (returning_clause
+            (all_columns))))
+      (common_table_expression
+        (identifier)
+        (insert_statement
+          (qualified_name
+            (identifier))
+          (select_statement
+            (select_core
+              (all_columns)
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))))
+          (returning_clause
+            (result_column
+              (column_reference
+                (identifier)))))))
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (all_columns)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Empty target list SELECT
+:language(postgresql)
+================================================================================
+
+SELECT FROM items WHERE active;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (where_clause
+        (column_reference
+          (identifier))))))

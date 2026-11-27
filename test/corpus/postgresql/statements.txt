@@ -1,0 +1,334 @@
+================================================================================
+COMMENT ON and SECURITY LABEL
+:language(postgresql)
+================================================================================
+
+COMMENT ON TABLE accounts IS 'Customer accounts'; COMMENT ON COLUMN accounts.code IS NULL; SECURITY LABEL FOR selinux ON TABLE accounts IS 'system_u:object_r:sepgsql_table_t:s0';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment_statement
+    (qualified_name
+      (identifier))
+    (string_literal))
+  (comment_statement
+    (column_reference
+      (identifier)
+      (identifier)))
+  (security_label_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (string_literal)))
+
+================================================================================
+GRANT, REVOKE, ALTER DEFAULT PRIVILEGES, REASSIGN OWNED, and DROP OWNED
+:language(postgresql)
+================================================================================
+
+GRANT SELECT, UPDATE (code, ratio) ON TABLE accounts TO app_user WITH GRANT OPTION; GRANT app_role TO alice WITH ADMIN TRUE, INHERIT FALSE; REVOKE GRANT OPTION FOR UPDATE (ratio) ON TABLE accounts FROM app_user CASCADE; ALTER DEFAULT PRIVILEGES FOR ROLE admin IN SCHEMA public GRANT SELECT ON TABLES TO readonly; REASSIGN OWNED BY old_role TO CURRENT_USER; DROP OWNED BY old_role RESTRICT;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (grant_statement
+    (column_list
+      (identifier)
+      (identifier))
+    (qualified_name
+      (identifier))
+    (identifier))
+  (grant_statement
+    (identifier)
+    (identifier))
+  (revoke_statement
+    (column_list
+      (identifier))
+    (qualified_name
+      (identifier))
+    (identifier))
+  (alter_default_privileges_statement
+    (identifier)
+    (identifier)
+    (identifier))
+  (reassign_owned_statement
+    (identifier))
+  (drop_owned_statement
+    (identifier)))
+
+================================================================================
+SET, RESET, SHOW, and ALTER SYSTEM
+:language(postgresql)
+================================================================================
+
+SET LOCAL search_path TO app, public; SET TIME ZONE 'Asia/Tokyo'; SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY; RESET search_path; RESET ALL; SHOW work_mem; SHOW TRANSACTION ISOLATION LEVEL; ALTER SYSTEM SET max_connections = 200; ALTER SYSTEM RESET max_connections;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (set_statement
+    (qualified_name
+      (identifier))
+    (column_reference
+      (identifier))
+    (column_reference
+      (identifier)))
+  (set_statement
+    (string_literal))
+  (set_statement)
+  (reset_statement
+    (qualified_name
+      (identifier)))
+  (reset_statement)
+  (show_statement
+    (qualified_name
+      (identifier)))
+  (show_statement)
+  (alter_system_statement
+    (set_statement
+      (qualified_name
+        (identifier))
+      (numeric_literal)))
+  (alter_system_statement
+    (qualified_name
+      (identifier))))
+
+================================================================================
+Transactions, savepoints, and two-phase commit
+:language(postgresql)
+================================================================================
+
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE, READ WRITE, DEFERRABLE; SAVEPOINT sp1; ROLLBACK WORK TO SAVEPOINT sp1; RELEASE SAVEPOINT sp1; COMMIT AND NO CHAIN; START TRANSACTION READ ONLY; ABORT; PREPARE TRANSACTION 'tx_42'; COMMIT PREPARED 'tx_42'; ROLLBACK PREPARED 'tx_43';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (begin_statement)
+  (savepoint_statement
+    (identifier))
+  (rollback_statement
+    (identifier))
+  (release_statement
+    (identifier))
+  (commit_statement)
+  (begin_statement)
+  (rollback_statement)
+  (prepare_transaction_statement
+    (string_literal))
+  (commit_prepared_statement
+    (string_literal))
+  (rollback_prepared_statement
+    (string_literal)))
+
+================================================================================
+LOCK, TRUNCATE, VACUUM, ANALYZE, CLUSTER, and REINDEX
+:language(postgresql)
+================================================================================
+
+LOCK TABLE ONLY accounts, events * IN SHARE UPDATE EXCLUSIVE MODE NOWAIT; TRUNCATE TABLE ONLY logs, temp_items RESTART IDENTITY CASCADE; VACUUM (FULL, FREEZE, VERBOSE, ANALYZE) accounts (code, ratio); ANALYSE VERBOSE accounts (code); CLUSTER VERBOSE accounts USING accounts_pkey; REINDEX (CONCURRENTLY, VERBOSE) TABLE accounts;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (lock_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (truncate_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (vacuum_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (identifier)))
+  (analyze_statement
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)))
+  (cluster_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (reindex_statement
+    (identifier)
+    (qualified_name
+      (identifier))))
+
+================================================================================
+EXPLAIN with options
+:language(postgresql)
+================================================================================
+
+EXPLAIN (ANALYZE, BUFFERS true, FORMAT JSON) SELECT * FROM accounts WHERE id = $1; EXPLAIN ANALYZE VERBOSE CREATE TABLE t_exp AS SELECT 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (explain_statement
+    (identifier)
+    (boolean_literal)
+    (identifier)
+    (column_reference
+      (identifier))
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))
+        (where_clause
+          (binary_expression
+            (column_reference
+              (identifier))
+            (positional_parameter))))))
+  (explain_statement
+    (create_table_statement
+      (qualified_name
+        (identifier))
+      (select_statement
+        (select_core
+          (result_column
+            (numeric_literal)))))))
+
+================================================================================
+COPY statements
+:language(postgresql)
+================================================================================
+
+COPY accounts (id, code) FROM STDIN WITH (FORMAT csv, HEADER true, DELIMITER ',', NULL '') WHERE id > 0; COPY (SELECT id, code FROM accounts) TO PROGRAM 'gzip > /tmp/out.gz' WITH CSV HEADER;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (copy_statement
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (identifier))
+    (identifier)
+    (column_reference
+      (identifier))
+    (identifier)
+    (boolean_literal)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier))
+        (numeric_literal))))
+  (copy_statement
+    (select_statement
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (result_column
+          (column_reference
+            (identifier)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))))
+    (string_literal)))
+
+================================================================================
+DO, CALL, PREPARE, EXECUTE, and DEALLOCATE
+:language(postgresql)
+================================================================================
+
+DO LANGUAGE plpgsql $$ BEGIN PERFORM 1; END $$; CALL refresh_stats(1, force => true); PREPARE q_acc (bigint, text) AS SELECT * FROM accounts WHERE id = $1 AND code = $2; EXECUTE q_acc(42, 'A1'); DEALLOCATE PREPARE q_acc; DEALLOCATE ALL;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (do_statement
+    (identifier)
+    (string_literal))
+  (call_statement
+    (function_call
+      (identifier)
+      (function_argument
+        (numeric_literal))
+      (function_argument
+        (identifier)
+        (boolean_literal))))
+  (prepare_statement
+    (identifier)
+    (type_name)
+    (type_name
+      (identifier))
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))
+        (where_clause
+          (binary_expression
+            (binary_expression
+              (column_reference
+                (identifier))
+              (positional_parameter))
+            (binary_expression
+              (column_reference
+                (identifier))
+              (positional_parameter)))))))
+  (execute_statement
+    (identifier)
+    (numeric_literal)
+    (string_literal))
+  (deallocate_statement
+    (identifier))
+  (deallocate_statement))
+
+================================================================================
+LISTEN, NOTIFY, UNLISTEN, cursors, DISCARD, CHECKPOINT, and LOAD
+:language(postgresql)
+================================================================================
+
+LISTEN chan_events; NOTIFY chan_events, 'payload'; UNLISTEN *; DECLARE cur1 BINARY INSENSITIVE SCROLL CURSOR WITH HOLD FOR SELECT * FROM accounts; FETCH FORWARD 10 FROM cur1; MOVE ABSOLUTE 0 IN cur1; CLOSE cur1; DISCARD TEMP; CHECKPOINT; LOAD 'auto_explain';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (listen_statement
+    (identifier))
+  (notify_statement
+    (identifier)
+    (string_literal))
+  (unlisten_statement)
+  (declare_statement
+    (identifier)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (fetch_statement
+    (numeric_literal)
+    (identifier))
+  (move_statement
+    (numeric_literal)
+    (identifier))
+  (close_statement
+    (identifier))
+  (discard_statement)
+  (checkpoint_statement)
+  (load_statement
+    (string_literal)))

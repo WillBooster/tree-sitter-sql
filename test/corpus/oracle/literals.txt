@@ -1,0 +1,300 @@
+================================================================================
+Numeric literals including binary float and double suffixes
+:language(oracle)
+================================================================================
+
+SELECT 0, 42, 3.14, .5, 10., 1e10, 2.5E-3, 1.0f, 1.0F, 2.5d, 2.5D, 7f, 9D FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal))
+        (select_item
+          (numeric_literal)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Standard and national string literals with doubled quotes and multiline spans
+:language(oracle)
+================================================================================
+
+SELECT '', 'hello', 'it''s Oracle', N'national ''text''', n'line 1
+line 2' FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Alternative-quoted text literals with paired and custom delimiters
+:language(oracle)
+================================================================================
+
+SELECT q'[it's [fine]]', Q'{a 'b' c}', q'<x > y>', q'(1)2)', q'!bang's!', nq'[unicode]' FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+ANSI date, timestamp, and interval literals
+:language(oracle)
+================================================================================
+
+SELECT
+  DATE '2026-11-27',
+  TIMESTAMP '2026-11-27 12:30:00.123456 +09:00',
+  INTERVAL '2-6' YEAR(2) TO MONTH,
+  INTERVAL '5 12:30:15.50' DAY(2) TO SECOND(2),
+  INTERVAL '90' MINUTE
+FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (date_literal
+            (string_literal)))
+        (select_item
+          (timestamp_literal
+            (string_literal)))
+        (select_item
+          (interval_literal
+            (string_literal)
+            (numeric_literal)))
+        (select_item
+          (interval_literal
+            (string_literal)
+            (numeric_literal)
+            (numeric_literal)))
+        (select_item
+          (interval_literal
+            (string_literal))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Boolean and null literals in Oracle 23ai
+:language(oracle)
+================================================================================
+
+SELECT NULL, TRUE, FALSE FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (null))
+        (select_item
+          (boolean_literal))
+        (select_item
+          (boolean_literal)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Unquoted, Unicode, dollar-hash, and double-quoted identifiers
+:language(oracle)
+================================================================================
+
+SELECT emp_1$#, v$session.sid, café, "Mixed Case #1" FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (identifier))
+        (select_item
+          (member_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (identifier))
+        (select_item
+          (quoted_identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Bind variables: named, positional, and quoted
+:language(oracle)
+================================================================================
+
+SELECT :emp_id, :b$1#2, :1, :2, :"quoted bind" FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (bind_variable))
+        (select_item
+          (bind_variable))
+        (select_item
+          (bind_variable))
+        (select_item
+          (bind_variable))
+        (select_item
+          (bind_variable)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Line comments, block comments, and optimizer hints
+:language(oracle)
+================================================================================
+
+-- Leading comment
+SELECT /*+ INDEX(e emp_pk) PARALLEL(4) */
+  --+ FIRST_ROWS(10)
+  e.emp_id /* inline comment */
+FROM emp e;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (select_statement
+    (select_core
+      (comment)
+      (comment)
+      (select_list
+        (select_item
+          (member_expression
+            (identifier)
+            (identifier))))
+      (comment)
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Alternative-quoted strings containing delimiter characters inside body
+:language(oracle)
+================================================================================
+
+SELECT q'[arr[0] = 1]', q'!hello!!world!', NQ'{nested {braces} ok}' FROM dual;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal))
+        (select_item
+          (string_literal)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
+
+================================================================================
+Integer literals immediately before PL/SQL double-dot range operator
+:language(oracle)
+================================================================================
+
+BEGIN
+  FOR i IN 1..10 LOOP
+    NULL;
+  END LOOP;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (anonymous_block
+    (for_statement
+      (identifier)
+      (numeric_literal)
+      (numeric_literal)
+      (null_statement))))

@@ -56,6 +56,8 @@ should_run() {
 }
 
 clone chinook https://github.com/lerocha/chinook-database 7f67772503d71ba90f19283c38e93923addb43fa
+clone quartz https://github.com/quartz-scheduler/quartz 741ccc3cff96a32e4ab07d69624eaaa534624245
+clone spring-batch https://github.com/spring-projects/spring-batch 86b656768ab09cf5d2b1b07f650a987652cd3e1b
 if should_run sqlite; then
   clone anki https://github.com/ankitects/anki 641aae52f59b9d9579817cfe80d3020059b5da46
   clone northwind https://github.com/jpwhite3/northwind-SQLite3 4f56e7f5906dfd23b25244c5bfe8fb5da6402efd
@@ -124,22 +126,34 @@ parse() {
 }
 
 # Synapse keeps the migrations that run on both SQLite and PostgreSQL in .sql files, those for SQLite alone in
-# .sql.sqlite files, and those for PostgreSQL alone in .sql.postgres files. Chinook has a script for each database
-# system.
+# .sql.sqlite files, and those for PostgreSQL alone in .sql.postgres files. Chinook, Quartz, and Spring Batch ship
+# scripts per database system.
 if should_run sqlite; then
-  parse sqlite examples/anki examples/northwind examples/synapse examples/chinook \
-    \( -name '*.sql' -o -name '*.sql.sqlite' \) \( ! -path 'examples/chinook/*' -o -name 'Chinook_Sqlite*.sql' \)
+  parse sqlite examples/anki examples/northwind examples/synapse examples/chinook examples/spring-batch \
+    \( -name '*.sql' -o -name '*.sql.sqlite' \) \
+    \( ! -path 'examples/chinook/*' -o -name 'Chinook_Sqlite*.sql' \) \
+    \( ! -path 'examples/spring-batch/*' -o -name '*sqlite*.sql' \)
 fi
-if should_run postgresql && [[ -d postgresql ]]; then
-  parse postgresql examples/synapse examples/chinook \
-    \( -name '*.sql' -o -name '*.sql.postgres' \) \( ! -path 'examples/chinook/*' -o -name 'Chinook_PostgreSql*.sql' \)
+if should_run postgresql; then
+  parse postgresql examples/synapse examples/chinook examples/quartz examples/spring-batch \
+    \( -name '*.sql' -o -name '*.sql.postgres' \) \
+    \( ! -path 'examples/chinook/*' -o -name 'Chinook_PostgreSql*.sql' \) \
+    \( ! -path 'examples/quartz/*' -o -name '*postgres*.sql' \) \
+    \( ! -path 'examples/spring-batch/*' -o -name '*postgresql*.sql' \)
 fi
-if should_run mysql && [[ -d mysql ]]; then
-  parse mysql examples/mysql-test-db examples/chinook \
-    -name '*.sql' ! -name 'test_employees_md5.sql' ! -name 'test_employees_sha.sql' ! -name 'employees_partitioned*.sql' \
-    \( ! -path 'examples/chinook/*' -o -name 'Chinook_MySql*.sql' \)
+if should_run mysql; then
+  parse mysql examples/mysql-test-db examples/chinook examples/quartz examples/spring-batch \
+    ! -path 'examples/mysql-test-db/postgresql/*' \
+    \( -name '*.sql' -o -name '*.dump' \) \
+    ! -name 'test_employees_md5.sql' ! -name 'test_employees_sha.sql' ! -name 'employees_partitioned*.sql' \
+    \( ! -path 'examples/chinook/*' -o -name 'Chinook_MySql*.sql' \) \
+    \( ! -path 'examples/quartz/*' -o -name '*mysql*.sql' \) \
+    \( ! -path 'examples/spring-batch/*' -o -name '*mysql*.sql' \)
 fi
-if should_run oracle && [[ -d oracle ]]; then
-  parse oracle examples/oracle-samples examples/chinook \
-    -name '*.sql' \( ! -path 'examples/chinook/*' -o -name 'Chinook_Oracle*.sql' \)
+if should_run oracle; then
+  parse oracle examples/oracle-samples examples/chinook examples/quartz examples/spring-batch \
+    -name '*.sql' \
+    \( ! -path 'examples/chinook/*' -o -name 'Chinook_Oracle*.sql' \) \
+    \( ! -path 'examples/quartz/*' -o -name '*oracle*.sql' \) \
+    \( ! -path 'examples/spring-batch/*' -o -name '*oracle*.sql' \)
 fi

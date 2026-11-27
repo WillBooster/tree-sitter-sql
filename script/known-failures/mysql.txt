@@ -1,0 +1,3 @@
+examples/mysql-test-db/employees.sql
+examples/mysql-test-db/objects.sql
+examples/mysql-test-db/sakila/sakila-mv-schema.sql

@@ -1,0 +1,349 @@
+================================================================================
+Decimal and underscore-separated numbers
+:language(postgresql)
+================================================================================
+
+SELECT 0, 42, 1_000_000, 3.141_592, .5_1, 10., 1e10, 2.5E-3, 1_2.3_4e+5_6;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal)))))
+
+================================================================================
+Non-decimal integer literals
+:language(postgresql)
+================================================================================
+
+SELECT 0x1F, 0Xdead_beef, 0o755, 0O7_0, 0b1010_0101, 0B10;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal)))))
+
+================================================================================
+Single-quoted strings and continuations
+:language(postgresql)
+================================================================================
+
+SELECT '', 'hello', 'it''s', 'back\slash', 'first'
+  -- comment between segments
+  'second';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal)))))
+
+================================================================================
+C-escape and national character strings
+:language(postgresql)
+================================================================================
+
+SELECT E'line\nbreak', e'quote\'s \\ path', E'part1'
+'part2\'s', N'national', n'abc';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal)))))
+
+================================================================================
+Dollar-quoted string literals
+:language(postgresql)
+================================================================================
+
+SELECT $$simple$$, $tag$with $$ nested $other$ and 'quotes'$tag$, $_1$body$_1$;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal)))))
+
+================================================================================
+Unicode escape strings and identifiers
+:language(postgresql)
+================================================================================
+
+SELECT U&'d\0061t\+000061', U&'d!0061t!+000061' /* c */ UESCAPE '!', U&'\D83D\DE00', U&"col\0061", U&"col!0062" UESCAPE '!' FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (column_reference
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (quoted_identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Bit and hexadecimal string literals
+:language(postgresql)
+================================================================================
+
+SELECT B'10101', b'01'
+'10', X'1a2F', x'dead'
+'beef';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (bit_string_literal))
+      (result_column
+        (bit_string_literal))
+      (result_column
+        (bit_string_literal))
+      (result_column
+        (bit_string_literal)))))
+
+================================================================================
+Typed date, time, timestamp, interval, and generic literals
+:language(postgresql)
+================================================================================
+
+SELECT DATE '2026-01-15', TIME (3) WITH TIME ZONE '12:30:00+09', TIMESTAMP WITHOUT TIME ZONE '2026-01-15 12:30:00', INTERVAL '1 year 2 months' YEAR TO MONTH, INTERVAL (2) '1.25', int4 '42', pg_catalog.numeric(10, 2) '3.14';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (typed_literal
+          (type_name
+            (identifier))
+          (string_literal)))
+      (result_column
+        (typed_literal
+          (type_name
+            (numeric_literal))
+          (string_literal)))
+      (result_column
+        (typed_literal
+          (type_name)
+          (string_literal)))
+      (result_column
+        (typed_literal
+          (type_name)
+          (string_literal)))
+      (result_column
+        (typed_literal
+          (type_name
+            (numeric_literal))
+          (string_literal)))
+      (result_column
+        (typed_literal
+          (type_name
+            (identifier))
+          (string_literal)))
+      (result_column
+        (typed_literal
+          (type_name
+            (identifier)
+            (identifier)
+            (numeric_literal)
+            (numeric_literal))
+          (string_literal))))))
+
+================================================================================
+Boolean, null, and session value keywords
+:language(postgresql)
+================================================================================
+
+SELECT TRUE, FALSE, NULL, CURRENT_DATE, CURRENT_TIME(2), CURRENT_TIMESTAMP(6), LOCALTIME, LOCALTIMESTAMP(3), CURRENT_USER, SESSION_USER, SYSTEM_USER, USER, CURRENT_ROLE, CURRENT_CATALOG, CURRENT_SCHEMA;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (boolean_literal))
+      (result_column
+        (boolean_literal))
+      (result_column
+        (null))
+      (result_column
+        (current_value))
+      (result_column
+        (current_value
+          (numeric_literal)))
+      (result_column
+        (current_value
+          (numeric_literal)))
+      (result_column
+        (current_value))
+      (result_column
+        (current_value
+          (numeric_literal)))
+      (result_column
+        (current_value))
+      (result_column
+        (current_value))
+      (result_column
+        (current_value))
+      (result_column
+        (current_value))
+      (result_column
+        (current_value))
+      (result_column
+        (current_value))
+      (result_column
+        (current_value)))))
+
+================================================================================
+Positional parameters
+:language(postgresql)
+================================================================================
+
+SELECT $1, $2, $15 + $3;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (positional_parameter))
+      (result_column
+        (positional_parameter))
+      (result_column
+        (binary_expression
+          (positional_parameter)
+          (positional_parameter))))))
+
+================================================================================
+Nested block comments and line comments
+:language(postgresql)
+================================================================================
+
+-- leading comment
+SELECT /* outer /* inner /* deepest */ inner */ outer */ 1, /***/ 2; -- trailing
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (select_statement
+    (select_core
+      (comment)
+      (result_column
+        (numeric_literal))
+      (comment)
+      (result_column
+        (numeric_literal))))
+  (comment))
+
+================================================================================
+Quoted and Unicode identifiers
+:language(postgresql)
+================================================================================
+
+SELECT "a""b", "select", col$1, _priv, données, テーブル FROM "my schema"."my table";
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (quoted_identifier)
+            (quoted_identifier)))))))

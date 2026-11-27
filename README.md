@@ -13,23 +13,39 @@ SQL grammars for [tree-sitter](https://github.com/tree-sitter/tree-sitter), gene
 the WillBooster ABI (`0x5742000d`), which upstream `tree-sitter` runtimes and WillBooster runtimes prior to 22.0.0
 reject. The supported WillBooster runtime is version 23.0.0 or later in the 23.x series.
 
-The `sqlite` grammar parses the SQL dialect of [SQLite](https://sqlite.org/lang.html) 3.54 in its default build. Its
-rules follow SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c`), which are in the public domain:
-input that they reject, which SQLite reports as a syntax error, an unrecognized token, or incomplete input, yields
-`ERROR` or `MISSING` nodes, except for
+## Dialects
 
-- `OVER` as an alias without `AS` before a WINDOW clause after a closing parenthesis other than a function call's, such
-  as `SELECT (1) OVER WINDOW w AS ()`, which SQLite's tokenizer reads as a keyword by the token before it;
-- a NUL character, which ends the input for SQLite but is an error here;
-- input that is not valid UTF-8 or UTF-16, which SQLite reads byte by byte.
+Each dialect has its own grammar and external scanner in `<dialect>/`, built independently on top of the small DSL
+helpers in `common/common.mjs`:
 
-SQLite's parser also reports errors of other kinds while it builds a statement, from comparing names (a trigger's
-schema with its table's), combining constraints (DEFAULT on a generated column, AUTOINCREMENT on a WITHOUT ROWID table),
-and looking up the schema or the limits of the connection. The grammar rejects some of them where they shape a single
-clause, such as an unknown join type, an ORDER BY clause before UNION, NULLS FIRST in an index, or a qualified table name
-in a trigger outside the temp schema, but it accepts the others.
+| Dialect                                                                                      | Directory     | Wasm file                     | Rust constants                                 | Cargo feature |
+| -------------------------------------------------------------------------------------------- | ------------- | ----------------------------- | ---------------------------------------------- | ------------- |
+| [SQLite](https://sqlite.org/lang.html) 3.54                                                  | `sqlite/`     | `tree-sitter-sqlite.wasm`     | `LANGUAGE_SQLITE`, `SQLITE_NODE_TYPES`         | `sqlite`      |
+| [PostgreSQL](https://www.postgresql.org/docs/18/sql-syntax.html) 18                          | `postgresql/` | `tree-sitter-postgresql.wasm` | `LANGUAGE_POSTGRESQL`, `POSTGRESQL_NODE_TYPES` | `postgresql`  |
+| [MySQL](https://dev.mysql.com/doc/refman/8.4/en/sql-statements.html) 8.4                     | `mysql/`      | `tree-sitter-mysql.wasm`      | `LANGUAGE_MYSQL`, `MYSQL_NODE_TYPES`           | `mysql`       |
+| [Oracle Database](https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/) 23ai | `oracle/`     | `tree-sitter-oracle.wasm`     | `LANGUAGE_ORACLE`, `ORACLE_NODE_TYPES`         | `oracle`      |
 
-`common/common.mjs` holds the lexical rules that SQL dialects share, for the grammars of other dialects to build on.
+- `sqlite` follows SQLite's own grammar (`src/parse.y`) and tokenizer (`src/tokenize.c`) in its default build. Input
+  that SQLite rejects as a syntax error, an unrecognized token, or incomplete input yields `ERROR` or `MISSING` nodes,
+  except for `OVER` as an alias without `AS` before `WINDOW` after a non-call closing parenthesis (such as
+  `SELECT (1) OVER WINDOW w AS ()`), a NUL character (which ends input for SQLite's C parser but is an error here), and
+  invalid UTF-8/UTF-16. Semantic or parser-action checks beyond `parse.y` are enforced only where they shape a single
+  clause.
+- `postgresql` covers PostgreSQL 18 SQL statements, expressions, operator precedence, keyword categories, nested block
+  comments, dollar-quoted strings (`$$...$$` and `$tag$...$tag$`), C-escape and Unicode-escape strings and identifiers,
+  numeric radix and underscore-separated literals, and user-defined operators. Client `psql` meta-commands (`\c`, `\i`)
+  are rejected as syntax errors.
+- `mysql` covers MySQL 8.4 SQL in its default SQL mode, including DDL, DML, queries, stored programs (`CREATE PROCEDURE`,
+  `CREATE FUNCTION`, `CREATE TRIGGER`, `CREATE EVENT`), backslash-escaped and charset-prefixed strings, whitespace-bound
+  `-- ` and `#` comments, executable versioned comments (`/*! ... */` and `/*!50700 ... */`), `@` user and `@@` system
+  variables, and MySQL's 17-level operator precedence (`||` as logical `OR`, `&&` as logical `AND`, `^` as bitwise XOR).
+  Client `mysql` directives (`DELIMITER`, `SOURCE`) are rejected as syntax errors.
+- `oracle` covers Oracle Database 23ai SQL and embedded PL/SQL units (`CREATE TRIGGER`, `CREATE FUNCTION`,
+  `CREATE PROCEDURE`, `CREATE PACKAGE`, `CREATE TYPE`, anonymous `DECLARE`/`BEGIN` blocks, and inline `WITH` functions
+  and procedures), hierarchical queries (`START WITH` / `CONNECT BY`), `(+)` outer joins, `PIVOT` / `UNPIVOT`,
+  `MATCH_RECOGNIZE`, `MODEL`, multi-table `INSERT ALL`/`FIRST`, `MERGE`, alternative-quoted literals (`q'[...]'`,
+  `nq'<...>'`), and standalone `/` terminators after PL/SQL units. Client SQL*Plus directives (`REM`, `SET`, `CONNECT`,
+  `PROMPT`, `SPOOL`, `@`) are rejected as syntax errors.
 
 ## Support Scope
 
@@ -40,10 +56,13 @@ produces may change; such changes are released as new major versions.
 
 ## Usage
 
-The npm package ships `tree-sitter-sqlite.wasm` for
+The npm package ships one `.wasm` file per dialect for
 [@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter) version 23.0.0 or later in
-the 23.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. In Node.js and Bun, load the grammar from
-its path:
+the 23.x series, which runs in Node.js, Bun, browsers, and Cloudflare Workers. Replace `tree-sitter-sqlite.wasm` in the
+examples below with `tree-sitter-postgresql.wasm`, `tree-sitter-mysql.wasm`, or `tree-sitter-oracle.wasm` for another
+dialect.
+
+In Node.js and Bun, load the grammar from its path:
 
 ```js
 import { fileURLToPath } from 'node:url';
@@ -82,12 +101,11 @@ const parser = new Parser();
 parser.setLanguage(await Language.load(sqlite));
 ```
 
-The package also ships the grammar definitions (`common/common.mjs` and `sqlite/grammar.js`, with the `package.json`
-file that marks the latter as an ES module) and the node types in `sqlite/src/node-types.json`.
+The package also ships each dialect's `grammar.js`, `package.json`, and `src/node-types.json`, together with
+`common/common.mjs` and `tree-sitter.json`.
 
-In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-sql) and on
-[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) version 23.0.0 or later in the 23.x series;
-`Cargo.lock` records the version this package is tested and fuzzed with:
+In Rust, depend on [willbooster-tree-sitter-sql](https://crates.io/crates/willbooster-tree-sitter-sql) and on
+[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) version 23.0.0 or later in the 23.x series:
 
 ```sh
 cargo add willbooster-tree-sitter@23 --rename tree-sitter
@@ -96,10 +114,15 @@ cargo add willbooster-tree-sitter-sql --rename tree-sitter-sql
 
 ```rust
 let mut parser = tree_sitter::Parser::new();
-parser.set_language(&tree_sitter_sql::LANGUAGE_SQLITE.into())?;
+parser.set_language(&tree_sitter_sql::LANGUAGE_POSTGRESQL.into())?;
 ```
 
-The crate also exports `SQLITE_NODE_TYPES`.
+All four dialect features (`sqlite`, `postgresql`, `mysql`, `oracle`) are enabled by default. Disable default features
+to compile only selected dialects:
+
+```sh
+cargo add willbooster-tree-sitter-sql --no-default-features --features postgresql --rename tree-sitter-sql
+```
 
 ## Development
 
@@ -108,55 +131,24 @@ mise install
 bun install --frozen-lockfile
 bun run test/ci-setup # installs Chromium for the browser test
 bun run build/ci
+bun run verify
 bun run test
-script/parse-examples
 cargo test
 ```
 
-The scripts and tests generate, build, test, and parse with `script/tree-sitter`, the tree-sitter CLI of the
-WillBooster/tree-sitter runtime version locked in `Cargo.lock`, since the generator and the runtime of upstream's CLI are
-not the ones this package ships with. Its first run downloads that CLI from the runtime's GitHub Release, or builds it
-with `cargo` (whose build runs the CMake that `mise.toml` pins) when the download fails or the release has no binary
-that runs here. Run other CLI commands through it as well (e.g. `script/tree-sitter parse --grammar-path sqlite
-file.sql`).
-
-`bun run generate` records a fresh generation profile from the `test/corpus` cases, then generates compact parser
-tables. It would also profile files tracked in `examples/`, but this repository tracks none. The parser also embeds
-metadata from `tree-sitter.json`. After changing a grammar, the scanner, `tree-sitter.json`, or a corpus case,
-regenerate and commit `sqlite/src/`. Profiles in `.tmp/generation-profiles/` are temporary and must not be committed.
-`bun run build-wasm`, `bun run build/ci`, and the release build regenerate the parser before compiling it.
-
-`bun run test` runs:
-
-- the corpus in `test/corpus`, with the native build and with the Wasm build (the first run downloads the WASI SDK);
-- a check that the real-world files in `examples/` fail to parse exactly as listed in `script/known-failures.txt`. The
-  first run clones the repositories. The example repositories are pinned to commits in `script/parse-examples`. After a
-  grammar change or a moved pin alters that list, `script/parse-examples` rewrites it; review its diff before
-  committing. Each listed file is also rejected by SQLite;
-- a performance check (`test/unit/performance.test.ts`) that recovering from an error on each line takes linear time,
-  since consumers parse files while they are being edited, and that the scanner reads the input a bounded number of
-  times. It loads the Wasm build through @willbooster/web-tree-sitter, which `bun run build/ci` rebuilds after
-  regenerating the parser;
-- a check (`test/unit/runtimeVersion.test.ts`) that `@willbooster/web-tree-sitter` in `package.json` and
-  `willbooster-tree-sitter` in `Cargo.lock` are the same version, since the Wasm tests run on the former and the Rust
-  tests, the fuzzer, and the CLI on the latter;
-- tests that load the Wasm build with @willbooster/web-tree-sitter in Chromium (`test/e2e/browser.test.ts`) and in
-  Cloudflare Workers with and without Node.js compatibility (`test/e2e/workers.test.ts`).
-
-The tests compile the parser into `.tmp/tree-sitter-lib` rather than the CLI's cache shared by every checkout;
-`script/parse-examples` builds a parser of its own in `.tmp/` for each run and deletes it afterwards.
-
-CI also runs these tests on Linux arm64 and macOS, where the CLI compiles the parser and the scanner natively, and
-fuzzes the parser with libFuzzer and sanitizers (`.github/workflows/robustness.yml`).
-
-When changing the grammar, compare what it accepts with SQLite itself: a valid statement must parse without errors, and
-a statement that SQLite rejects with a syntax error must yield `ERROR` or `MISSING` nodes. SQL from SQLite's test suite
-(`test/*.test`), and that SQL with tokens deleted, inserted, replaced, or swapped, make good inputs for the comparison.
-To check the grouping of operators, evaluate random constant expressions in SQLite both as written and with every node of
-their tree enclosed in parentheses.
-
-### References
-
-- [SQL As Understood By SQLite](https://sqlite.org/lang.html)
-- [SQLite's grammar (`src/parse.y`)](https://sqlite.org/src/file/src/parse.y) and
-  [tokenizer (`src/tokenize.c`)](https://sqlite.org/src/file/src/tokenize.c)
+- Run tree-sitter CLI subcommands through `script/tree-sitter` (for example,
+  `script/tree-sitter parse --grammar-path postgresql file.sql`), not upstream's `tree-sitter` CLI, whose generator and
+  runtime ABI differ from `Cargo.lock`.
+- `script/generate [--build-wasm] [dialect...]` regenerates all dialects by default, or only the named dialect
+  directories. After changing `<dialect>/grammar.js`, `<dialect>/src/scanner.c`, `common/common.mjs`,
+  `tree-sitter.json`, or `test/corpus/<dialect>/`, run `bun run build/ci` and commit `<dialect>/src/`. Do not commit
+  `.tmp/`.
+- Every corpus case in `test/corpus/<dialect>/*.txt` must include `:language(<dialect>)` in its header, and each dialect
+  must keep raw NUL byte cases in `test/corpus/<dialect>/null-characters.txt` for the fuzzer seed check in
+  `.github/workflows/robustness.yml`.
+- `script/parse-examples [--check] [dialect...]` clones pinned real-world SQL repositories into `examples/` and compares
+  the files that fail to parse against `script/known-failures/<dialect>.txt`. Run it without `--check` after a grammar
+  change or a moved commit pin alters a list, and confirm every listed file is also rejected by that dialect's SQL
+  parser.
+- When changing a dialect's grammar, check accepted and rejected statements against the target database parser (such as
+  `sqlite3` or `postgres`) so valid SQL parses without errors and syntax errors yield `ERROR` or `MISSING` nodes.

@@ -4,7 +4,7 @@ autoexamples = false
 categories = ["parser-implementations", "parsing", "text-editors"]
 description = "SQL grammars (SQLite, PostgreSQL, MySQL, and Oracle) for tree-sitter"
 edition = "2024"
-keywords = ["parsing", "tree-sitter", "sql", "sqlite", "postgresql"]
+keywords = ["tree-sitter", "sql", "sqlite", "postgresql", "mysql"]
 license = "MIT"
 name = "willbooster-tree-sitter-sql"
 readme = "README.md"
@@ -15,6 +15,21 @@ build = "bindings/rust/build.rs"
 include = [
   "/bindings/rust/*",
   "/common/*",
+  "/mysql/grammar.js",
+  "/mysql/src/*",
+  "!/mysql/src/grammar.json",
+  "!/mysql/src/.gitattributes",
+  "!/mysql/src/.editorconfig",
+  "/oracle/grammar.js",
+  "/oracle/src/*",
+  "!/oracle/src/grammar.json",
+  "!/oracle/src/.gitattributes",
+  "!/oracle/src/.editorconfig",
+  "/postgresql/grammar.js",
+  "/postgresql/src/*",
+  "!/postgresql/src/grammar.json",
+  "!/postgresql/src/.gitattributes",
+  "!/postgresql/src/.editorconfig",
   "/sqlite/grammar.js",
   "/sqlite/src/*",
   "!/sqlite/src/grammar.json",
@@ -29,7 +44,10 @@ name = "tree_sitter_sql"
 path = "bindings/rust/lib.rs"
 
 [features]
-default = ["sqlite"]
+default = ["mysql", "oracle", "postgresql", "sqlite"]
+mysql = []
+oracle = []
+postgresql = []
 sqlite = []
 
 [dependencies]

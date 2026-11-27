@@ -1,0 +1,9 @@
+examples/chinook/ChinookDatabase/DataSources/Chinook_PostgreSql.sql
+examples/chinook/ChinookDatabase/DataSources/Chinook_PostgreSql_AutoIncrementPKs.sql
+examples/chinook/ChinookDatabase/DataSources/Chinook_PostgreSql_SerialPKs.sql
+examples/synapse/synapse/storage/schema/main/delta/12/v12.sql
+examples/synapse/synapse/storage/schema/main/delta/14/v14.sql
+examples/synapse/synapse/storage/schema/main/delta/16/users.sql
+examples/synapse/synapse/storage/schema/main/delta/54/account_validity_with_renewal.sql
+examples/synapse/synapse/storage/schema/main/delta/87/02_per_connection_state.sql
+examples/synapse/synapse/storage/schema/state/delta/89/01_state_groups_deletion.sql

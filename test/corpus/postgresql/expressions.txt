@@ -1,0 +1,990 @@
+================================================================================
+Exponentiation, unary minus, and typecast precedence
+:language(postgresql)
+================================================================================
+
+SELECT -2 ^ 3 ^ 2 + 4 * 5 / 2 % 3, -2::numeric ^ 2;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (binary_expression
+            (binary_expression
+              (unary_expression
+                (numeric_literal))
+              (numeric_literal))
+            (numeric_literal))
+          (binary_expression
+            (binary_expression
+              (binary_expression
+                (numeric_literal)
+                (numeric_literal))
+              (numeric_literal))
+            (numeric_literal))))
+      (result_column
+        (binary_expression
+          (unary_expression
+            (cast_expression
+              (numeric_literal)
+              (type_name)))
+          (numeric_literal))))))
+
+================================================================================
+Typecasts, subscripts, slices, and field selection
+:language(postgresql)
+================================================================================
+
+SELECT a::int[], (arr)[1], arr[1:3], arr[:2], arr[2:], arr[:], (rec).field, (rec).*, (f())[1].col::text FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (type_name)))
+      (result_column
+        (subscript_expression
+          (parenthesized_expression
+            (column_reference
+              (identifier)))
+          (numeric_literal)))
+      (result_column
+        (subscript_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (subscript_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (result_column
+        (subscript_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (result_column
+        (subscript_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (field_selection
+          (parenthesized_expression
+            (column_reference
+              (identifier)))
+          (identifier)))
+      (result_column
+        (field_selection
+          (parenthesized_expression
+            (column_reference
+              (identifier)))
+          (all_columns)))
+      (result_column
+        (cast_expression
+          (field_selection
+            (subscript_expression
+              (parenthesized_expression
+                (function_call
+                  (identifier)))
+              (numeric_literal))
+            (identifier))
+          (type_name
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+AT TIME ZONE, AT LOCAL, and COLLATE
+:language(postgresql)
+================================================================================
+
+SELECT ts AT TIME ZONE 'UTC', ts AT LOCAL, name COLLATE "C" || '!' FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (at_time_zone_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (at_time_zone_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (collate_expression
+            (column_reference
+              (identifier))
+            (qualified_name
+              (quoted_identifier)))
+          (custom_operator)
+          (string_literal)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+JSON, array, range, regex, and custom operators
+:language(postgresql)
+================================================================================
+
+SELECT 'a' || 1 + 2, jb -> 'a' ->> 0, jb #> '{a,b}', jb #>> '{a,b}', jb @> '{}', jb <@ '{}', jb ? 'k', jb ?| array['a'], jb ?& array['a'], jb #- '{a}', r1 && r2, s ~ '^a', s ~* 'a', s !~ 'b', s !~* 'b', tsv @@ tsquery, p1 <-> p2, |/ 25, 1 +- 2, 1 <<+/* c */ 2, 1 OPERATOR(pg_catalog.+) 2 FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (string_literal)
+          (custom_operator)
+          (binary_expression
+            (numeric_literal)
+            (numeric_literal))))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (column_reference
+              (identifier))
+            (custom_operator)
+            (string_literal))
+          (custom_operator)
+          (numeric_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (array_expression
+            (string_literal))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (array_expression
+            (string_literal))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (column_reference
+            (identifier))))
+      (result_column
+        (unary_expression
+          (custom_operator)
+          (numeric_literal)))
+      (result_column
+        (binary_expression
+          (numeric_literal)
+          (unary_expression
+            (numeric_literal))))
+      (result_column
+        (binary_expression
+          (numeric_literal)
+          (custom_operator)
+          (unary_expression
+            (comment)
+            (numeric_literal))))
+      (result_column
+        (binary_expression
+          (numeric_literal)
+          (operator_invocation
+            (identifier))
+          (numeric_literal)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Quantified comparisons with ANY, SOME, and ALL
+:language(postgresql)
+================================================================================
+
+SELECT a = ANY (arr), b <> ALL (SELECT x FROM u), c @> SOME (ARRAY[arr]) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))))))
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (custom_operator)
+          (array_expression
+            (column_reference
+              (identifier)))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+BETWEEN and BETWEEN SYMMETRIC
+:language(postgresql)
+================================================================================
+
+SELECT a BETWEEN 1 + 1 AND 10, b NOT BETWEEN SYMMETRIC 5 AND 1, c BETWEEN ASYMMETRIC 0 AND 9 = true FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (between_expression
+          (column_reference
+            (identifier))
+          (binary_expression
+            (numeric_literal)
+            (numeric_literal))
+          (numeric_literal)))
+      (result_column
+        (between_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (binary_expression
+          (between_expression
+            (column_reference
+              (identifier))
+            (numeric_literal)
+            (numeric_literal))
+          (boolean_literal)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+IN and NOT IN expressions
+:language(postgresql)
+================================================================================
+
+SELECT a IN (1, 2, 3), b NOT IN (SELECT id FROM u) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+LIKE, ILIKE, and SIMILAR TO with ESCAPE
+:language(postgresql)
+================================================================================
+
+SELECT a LIKE 'foo!_%' ESCAPE '!', b NOT ILIKE ANY (ARRAY['a%', 'b%']), c SIMILAR TO '%(a|b)%' ESCAPE '#' FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (string_literal)))
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (array_expression
+            (string_literal)
+            (string_literal))))
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (string_literal)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+IS predicates and null tests
+:language(postgresql)
+================================================================================
+
+SELECT a IS NULL, a IS NOT NULL, a ISNULL, a NOTNULL, b IS TRUE, b IS NOT FALSE, b IS UNKNOWN, c IS DISTINCT FROM d, c IS NOT DISTINCT FROM d, x IS DOCUMENT, s IS NFC NORMALIZED, j IS JSON OBJECT WITH UNIQUE KEYS, j IS NOT JSON ARRAY FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (null)))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (null)))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (boolean_literal)))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (boolean_literal)))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Logical NOT, AND, and OR precedence
+:language(postgresql)
+================================================================================
+
+SELECT NOT a AND b OR c AND NOT d FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (binary_expression
+            (unary_expression
+              (column_reference
+                (identifier)))
+            (column_reference
+              (identifier)))
+          (binary_expression
+            (column_reference
+              (identifier))
+            (unary_expression
+              (column_reference
+                (identifier))))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+ARRAY and ROW constructors
+:language(postgresql)
+================================================================================
+
+SELECT ARRAY[], ARRAY[1, 2, 3], ARRAY[[1, 2], [3, 4]], ARRAY(SELECT id FROM t), ROW(), ROW(1), ROW(1, 'a'), (1, 'a', true), (1, 2) OVERLAPS (2, 3);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (array_expression))
+      (result_column
+        (array_expression
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (array_expression
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (array_expression
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))))))
+      (result_column
+        (row_expression))
+      (result_column
+        (row_expression
+          (numeric_literal)))
+      (result_column
+        (row_expression
+          (numeric_literal)
+          (string_literal)))
+      (result_column
+        (row_expression
+          (numeric_literal)
+          (string_literal)
+          (boolean_literal)))
+      (result_column
+        (overlaps_expression
+          (row_expression
+            (numeric_literal)
+            (numeric_literal))
+          (row_expression
+            (numeric_literal)
+            (numeric_literal)))))))
+
+================================================================================
+CASE, CAST, and TREAT expressions
+:language(postgresql)
+================================================================================
+
+SELECT CASE x WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'other' END, CASE WHEN x > 0 THEN x ELSE 0 END, CAST(x AS numeric(10, 2)), TREAT(x AS int) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (case_expression
+          (column_reference
+            (identifier))
+          (when_clause
+            (numeric_literal)
+            (string_literal))
+          (when_clause
+            (numeric_literal)
+            (string_literal))
+          (string_literal)))
+      (result_column
+        (case_expression
+          (when_clause
+            (binary_expression
+              (column_reference
+                (identifier))
+              (numeric_literal))
+            (column_reference
+              (identifier)))
+          (numeric_literal)))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (type_name
+            (numeric_literal)
+            (numeric_literal))))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (type_name)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+EXTRACT, SUBSTRING, TRIM, POSITION, OVERLAY, and NORMALIZE
+:language(postgresql)
+================================================================================
+
+SELECT EXTRACT(EPOCH FROM ts), SUBSTRING(s FROM 2 FOR 3), SUBSTRING(s, 2, 3), TRIM(BOTH ' ' FROM s), TRIM('x' FROM s), TRIM(s), POSITION('ab' IN s), OVERLAY(s PLACING 'xy' FROM 2 FOR 3), NORMALIZE(s, NFKC) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (extract_expression
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (substring_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (substring_expression
+          (function_argument
+            (column_reference
+              (identifier)))
+          (function_argument
+            (numeric_literal))
+          (function_argument
+            (numeric_literal))))
+      (result_column
+        (trim_expression
+          (string_literal)
+          (column_reference
+            (identifier))))
+      (result_column
+        (trim_expression
+          (string_literal)
+          (column_reference
+            (identifier))))
+      (result_column
+        (trim_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (position_expression
+          (string_literal)
+          (column_reference
+            (identifier))))
+      (result_column
+        (overlay_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (normalize_expression
+          (column_reference
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+COALESCE, NULLIF, GREATEST, LEAST, and EXISTS
+:language(postgresql)
+================================================================================
+
+SELECT COALESCE(a, b, 0), NULLIF(a, 0), GREATEST(a, b, c), LEAST(a, b), EXISTS (SELECT 1 FROM u WHERE u.id = t.id) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (function_argument
+            (column_reference
+              (identifier)))
+          (function_argument
+            (numeric_literal))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (function_argument
+            (numeric_literal))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (function_argument
+            (column_reference
+              (identifier)))
+          (function_argument
+            (column_reference
+              (identifier)))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (function_argument
+            (column_reference
+              (identifier)))))
+      (result_column
+        (exists_expression
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))
+              (where_clause
+                (binary_expression
+                  (column_reference
+                    (identifier)
+                    (identifier))
+                  (column_reference
+                    (identifier)
+                    (identifier))))))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Function calls with named args, VARIADIC, WITHIN GROUP, FILTER, and OVER
+:language(postgresql)
+================================================================================
+
+SELECT f(a := 1, b => 2, VARIADIC arr), count(DISTINCT a ORDER BY a DESC) FILTER (WHERE a > 0), percentile_cont(0.5) WITHIN GROUP (ORDER BY a) OVER w, sum(a) OVER (PARTITION BY b ORDER BY c ROWS BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE TIES) FROM t WINDOW w AS (PARTITION BY b);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (identifier)
+            (numeric_literal))
+          (function_argument
+            (identifier)
+            (numeric_literal))
+          (function_argument
+            (column_reference
+              (identifier)))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (order_by_clause
+            (ordering_term
+              (column_reference
+                (identifier))))
+          (filter_clause
+            (where_clause
+              (binary_expression
+                (column_reference
+                  (identifier))
+                (numeric_literal))))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (numeric_literal))
+          (within_group_clause
+            (order_by_clause
+              (ordering_term
+                (column_reference
+                  (identifier)))))
+          (over_clause
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (column_reference
+              (identifier)))
+          (over_clause
+            (window_definition
+              (partition_by_clause
+                (column_reference
+                  (identifier)))
+              (order_by_clause
+                (ordering_term
+                  (column_reference
+                    (identifier))))
+              (frame_clause
+                (frame_bound
+                  (numeric_literal))
+                (frame_bound)
+                (frame_exclusion))))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (window_clause
+        (named_window
+          (identifier)
+          (window_definition
+            (partition_by_clause
+              (column_reference
+                (identifier)))))))))
+
+================================================================================
+SQL/JSON and XML expressions
+:language(postgresql)
+================================================================================
+
+SELECT JSON_OBJECT('a': 1, 'b' VALUE 2 NULL ON NULL WITH UNIQUE KEYS RETURNING jsonb), JSON_ARRAY(1, 2 ABSENT ON NULL), JSON_SCALAR(1), JSON_SERIALIZE('{"a":1}' RETURNING text), JSON_VALUE(jb, '$.a' PASSING 1 AS x RETURNING int DEFAULT 0 ON EMPTY ERROR ON ERROR), JSON_QUERY(jb, '$.b' WITH CONDITIONAL ARRAY WRAPPER KEEP QUOTES), JSON_EXISTS(jb, '$.c'), XMLELEMENT(NAME item, XMLATTRIBUTES(id AS attr), name), XMLFOREST(a AS x, b), XMLPI(NAME php, 'echo 1;'), XMLROOT(doc, VERSION '1.0', STANDALONE YES), XMLPARSE(DOCUMENT '<a/>'), XMLSERIALIZE(CONTENT doc AS text INDENT), XMLEXISTS('//a' PASSING BY VALUE doc), XMLCONCAT(doc, doc) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (json_expression
+          (string_literal)
+          (numeric_literal)
+          (string_literal)
+          (numeric_literal)
+          (type_name
+            (identifier))))
+      (result_column
+        (json_expression
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (json_expression
+          (numeric_literal)))
+      (result_column
+        (json_expression
+          (string_literal)
+          (type_name
+            (identifier))))
+      (result_column
+        (json_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (numeric_literal)
+          (identifier)
+          (type_name)
+          (numeric_literal)))
+      (result_column
+        (json_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (json_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (xml_expression
+          (identifier)
+          (xml_attributes
+            (column_reference
+              (identifier))
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (xml_expression
+          (column_reference
+            (identifier))
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (xml_expression
+          (identifier)
+          (string_literal)))
+      (result_column
+        (xml_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (xml_expression
+          (string_literal)))
+      (result_column
+        (xml_expression
+          (column_reference
+            (identifier))
+          (type_name
+            (identifier))))
+      (result_column
+        (xml_expression
+          (string_literal)
+          (column_reference
+            (identifier))))
+      (result_column
+        (xml_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))

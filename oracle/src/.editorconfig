@@ -1,0 +1,6 @@
+# script/generate writes parser.c with trailing whitespace and the JSON files without a final newline, and CI fails
+# when the committed files differ from a regeneration, so editors must keep them as they are. Kept here because the
+# root .editorconfig is generated.
+[*]
+insert_final_newline = unset
+trim_trailing_whitespace = false
