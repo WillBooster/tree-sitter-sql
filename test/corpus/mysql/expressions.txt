@@ -422,7 +422,7 @@ SELECT IF(a > 0, 'yes', 'no'),
        JSON_VALUE(doc, '$.id' RETURNING UNSIGNED DEFAULT 0 ON EMPTY ERROR ON ERROR),
        ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC),
        LEAD(salary, 1, 0) RESPECT NULLS OVER w,
-       NTH_VALUE(salary, 2) FROM FIRST IGNORE NULLS OVER (w ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);
+       NTH_VALUE(salary, 2) FROM FIRST RESPECT NULLS OVER (w ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);
 
 --------------------------------------------------------------------------------
 

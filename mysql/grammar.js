@@ -1848,7 +1848,7 @@ function buildScopedExpressionRules(sp) {
         seq(
           field('name', alias(keyword('NTILE'), $.identifier)),
           '(',
-          $._stable_integer,
+          scopedHid($, sp, '_positive_stable_integer'),
           ')',
           scopedVis($, sp, 'over_clause')
         ),
@@ -1856,7 +1856,7 @@ function buildScopedExpressionRules(sp) {
           field('name', choice(alias(keyword('LEAD'), $.identifier), alias(keyword('LAG'), $.identifier))),
           '(',
           scopedHid($, sp, '_expression'),
-          optional(seq(',', $._stable_integer, optional(seq(',', scopedHid($, sp, '_expression'))))),
+          optional(seq(',', scopedHid($, sp, '_stable_integer'), optional(seq(',', scopedHid($, sp, '_expression'))))),
           ')',
           optional($._null_treatment),
           scopedVis($, sp, 'over_clause')
@@ -1877,12 +1877,28 @@ function buildScopedExpressionRules(sp) {
           '(',
           scopedHid($, sp, '_expression'),
           ',',
-          scopedHid($, sp, '_simple_expr'),
+          scopedHid($, sp, '_positive_stable_integer'),
           ')',
-          optional(seq(keyword('FROM'), choice(keyword('FIRST'), keyword('LAST')))),
+          optional(keywords('FROM FIRST')),
           optional($._null_treatment),
           scopedVis($, sp, 'over_clause')
         )
+      ),
+    [k('_stable_integer')]: ($) =>
+      choice(
+        alias($._uint64_literal, $.numeric_literal),
+        $.placeholder,
+        $.user_variable,
+        ...(sp ? [alias($._stable_ident_ref, $.column_reference)] : []),
+        seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
+      ),
+    [k('_positive_stable_integer')]: ($) =>
+      choice(
+        alias($._nonzero_uint64_literal, $.numeric_literal),
+        $.placeholder,
+        $.user_variable,
+        ...(sp ? [alias($._stable_ident_ref, $.column_reference)] : []),
+        seq(choice($._zero_int_literal, $._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
       ),
     [k('over_clause')]: ($) =>
       seq(
@@ -4357,18 +4373,9 @@ export default grammar({
 
     _rows_frame_following: ($) => seq($._rows_frame_offset, keyword('FOLLOWING')),
 
-    _stable_integer: ($) =>
-      choice(
-        alias($._uint64_literal, $.numeric_literal),
-        $.placeholder,
-        alias($._stable_ident_ref, $.column_reference),
-        $.user_variable,
-        seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
-      ),
-
     _stable_ident_ref: ($) => field('name', $._identifier),
 
-    _null_treatment: () => seq(choice(keyword('RESPECT'), keyword('IGNORE')), keyword('NULLS')),
+    _null_treatment: () => keywords('RESPECT NULLS'),
 
     _function_name: ($) =>
       choice(
