@@ -316,7 +316,9 @@ const RESERVED_FUNCTION_NAMES = [
 
 const ZERO_ARG_WINDOW_NAMES = ['CUME_DIST', 'DENSE_RANK', 'PERCENT_RANK', 'RANK', 'ROW_NUMBER'];
 
-const DISTINCT_AGGREGATE_NAMES = ['AVG', 'MAX', 'MIN', 'ST_COLLECT', 'SUM'];
+const WINDOW_DISTINCT_AGGREGATE_NAMES = ['MAX', 'MIN', 'ST_COLLECT'];
+const NON_WINDOW_DISTINCT_AGGREGATE_NAMES = ['AVG', 'SUM'];
+const DISTINCT_AGGREGATE_NAMES = [...WINDOW_DISTINCT_AGGREGATE_NAMES, ...NON_WINDOW_DISTINCT_AGGREGATE_NAMES];
 
 const ALL_ONLY_AGGREGATE_NAMES = [
   'BIT_AND',
@@ -3934,6 +3936,7 @@ export default grammar({
     function_call: ($) =>
       choice(
         $._scalar_function_call,
+        $._non_window_distinct_aggregate_call,
         seq($._aggregate_function_call, optional($.over_clause)),
         $._window_function_call
       ),
@@ -4064,6 +4067,27 @@ export default grammar({
 
     _distinct_keyword: () => choice(keyword('DISTINCT'), keyword('DISTINCTROW')),
 
+    _non_window_distinct_aggregate_call: ($) =>
+      choice(
+        seq(
+          field('name', alias(keyword('COUNT'), $.identifier)),
+          '(',
+          $._distinct_keyword,
+          commaSep1($._expression),
+          ')'
+        ),
+        seq(
+          field(
+            'name',
+            choice(...NON_WINDOW_DISTINCT_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))
+          ),
+          '(',
+          $._distinct_keyword,
+          $._expression,
+          ')'
+        )
+      ),
+
     _aggregate_function_call: ($) =>
       choice(
         seq(
@@ -4071,20 +4095,26 @@ export default grammar({
           '(',
           choice(
             seq(optional(keyword('ALL')), alias('*', $.all_columns)),
-            seq(optional(keyword('ALL')), $._expression),
-            seq($._distinct_keyword, commaSep1($._expression))
+            seq(optional(keyword('ALL')), $._expression)
           ),
           ')'
         ),
         seq(
-          field('name', choice(...DISTINCT_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))),
+          field('name', choice(...WINDOW_DISTINCT_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))),
           '(',
           optional(choice($._distinct_keyword, keyword('ALL'))),
           $._expression,
           ')'
         ),
         seq(
-          field('name', choice(...ALL_ONLY_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))),
+          field(
+            'name',
+            choice(
+              ...[...NON_WINDOW_DISTINCT_AGGREGATE_NAMES, ...ALL_ONLY_AGGREGATE_NAMES].map((word) =>
+                alias(keyword(word), $.identifier)
+              )
+            )
+          ),
           '(',
           optional(keyword('ALL')),
           $._expression,
