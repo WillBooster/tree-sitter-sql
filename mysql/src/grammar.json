@@ -20784,23 +20784,6 @@
           "value": "BEGIN"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "ALIAS",
-              "content": {
-                "type": "PATTERN",
-                "value": "[Ww][Oo][Rr][Kk]"
-              },
-              "named": false,
-              "value": "WORK"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
           "type": "REPEAT",
           "content": {
             "type": "SEQ",

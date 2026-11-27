@@ -2443,7 +2443,6 @@ export default grammar({
       seq(
         optional(seq(field('label', $._label_identifier), ':')),
         keyword('BEGIN'),
-        optional(keyword('WORK')),
         repeat(seq($.declare_statement, ';')),
         repeat(seq($._routine_statement, ';')),
         keyword('END'),

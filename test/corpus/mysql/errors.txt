@@ -850,3 +850,13 @@ WITH ROLLUP on GROUP_CONCAT ORDER BY is invalid
 SELECT GROUP_CONCAT(x ORDER BY y WITH ROLLUP) FROM t;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+BEGIN WORK in stored-program compound statement is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() BEGIN WORK SELECT 1; END;
+
+--------------------------------------------------------------------------------
