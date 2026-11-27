@@ -139,10 +139,9 @@ cargo test
 - Run tree-sitter CLI subcommands through `script/tree-sitter` (for example,
   `script/tree-sitter parse --grammar-path postgresql file.sql`), not upstream's `tree-sitter` CLI, whose generator and
   runtime ABI differ from `Cargo.lock`.
-- `script/generate [--build-wasm] [dialect...]` regenerates all dialects by default, or only the named dialect
-  directories. After changing `<dialect>/grammar.js`, `<dialect>/src/scanner.c`, `common/common.mjs`,
-  `tree-sitter.json`, or `test/corpus/<dialect>/`, run `bun run build/ci` and commit `<dialect>/src/`. Do not commit
-  `.tmp/`.
+- `script/generate [--build-wasm]` regenerates all dialects. After changing `<dialect>/grammar.js`,
+  `<dialect>/src/scanner.c`, `common/common.mjs`, `tree-sitter.json`, or `test/corpus/<dialect>/`, run `bun run build/ci`
+  and commit `<dialect>/src/`. Do not commit `.tmp/`.
 - Every corpus case in `test/corpus/<dialect>/*.txt` must include `:language(<dialect>)` in its header, and each dialect
   must keep raw NUL byte cases in `test/corpus/<dialect>/null-characters.txt` for the fuzzer seed check in
   `.github/workflows/robustness.yml`.

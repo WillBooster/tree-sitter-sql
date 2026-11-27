@@ -7,6 +7,10 @@ if [[ ${1:-} == --build-wasm ]]; then
   build_wasm=true
   shift
 fi
+if [[ $# -gt 0 ]]; then
+  echo "Usage: $0 [--build-wasm]" >&2
+  exit 1
+fi
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
@@ -59,18 +63,7 @@ while IFS= read -r -d '' file; do
   example_files+=("$root/$file")
 done < "$examples"
 
-all_grammars=$(node -e 'const {grammars} = require("./tree-sitter.json"); console.log([...new Set(grammars.map(({path}) => path ?? "."))].sort().join("\n"));')
-if [[ $# -gt 0 ]]; then
-  for requested in "$@"; do
-    if ! grep -qxF -- "$requested" <<< "$all_grammars"; then
-      echo "Unknown grammar directory: $requested" >&2
-      exit 1
-    fi
-  done
-  grammars=$(printf '%s\n' "$@" | LC_ALL=C sort -u)
-else
-  grammars=$all_grammars
-fi
+grammars=$(node -e 'const {grammars} = require("./tree-sitter.json"); console.log([...new Set(grammars.map(({path}) => path ?? "."))].sort().join("\n"));')
 
 # Keep this loop in the parent shell: signal traps wait for its foreground CLI before restoring sources.
 while IFS= read -r grammar; do
