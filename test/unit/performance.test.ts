@@ -7,12 +7,27 @@ import { describe, expect, test } from 'vitest';
 import { generationInputMtime } from '../helpers/generationInputs.js';
 
 const Root = path.join(import.meta.dirname, '../..');
-const ErrorSources = {
-  sqlite: (lines: number): string => 'SELECT a FROM WHERE b;\n'.repeat(lines),
+
+interface DialectChecks {
+  errorLine: string;
+  readVolumeCases: [name: string, line: string][];
+}
+
+const DialectSuites: Record<string, DialectChecks> = {
+  sqlite: {
+    errorLine: 'SELECT a FROM WHERE b;\n',
+    // The scanner reads the tokens of a module argument; an unbalanced parenthesis or quote in one statement must not
+    // make it read the rest of the input again for each later statement.
+    readVolumeCases: [
+      ['parenthesis in module argument', 'CREATE VIRTUAL TABLE t USING m((a\n'],
+      ['quote in module argument', "CREATE VIRTUAL TABLE t USING m(a, 'b\n"],
+    ],
+  },
 };
+
 await Parser.init();
 
-for (const [grammar, errorSource] of Object.entries(ErrorSources)) {
+for (const [grammar, { errorLine, readVolumeCases }] of Object.entries(DialectSuites)) {
   // The Wasm build is the one the package ships.
   const wasmPath = path.join(Root, `tree-sitter-${grammar}.wasm`);
   const parser = new Parser();
@@ -23,17 +38,22 @@ for (const [grammar, errorSource] of Object.entries(ErrorSources)) {
     // linear. `tree-sitter build --wasm` compiles src/ without regenerating it, so each step is checked on its own.
     test('uses a Wasm build built from the current parser', () => {
       const mtime = (file: string): number => fs.statSync(path.join(Root, file)).mtimeMs;
-      expect(
-        Math.max(generationInputMtime(Root), mtime('common/common.mjs'), mtime(`${grammar}/grammar.js`)) >
-          mtime(`${grammar}/src/parser.c`),
-        `generation inputs changed after ${grammar}/src/parser.c was generated; run \`bun run build/ci\``
-      ).toBe(false);
+      const headerGenerator = path.join(Root, grammar, 'generate-headers');
       expect(
         Math.max(
-          ...['parser.c', 'scanner.c', 'reserved_words.h', 'tree_sitter/parser.h'].map((file) =>
-            mtime(`${grammar}/src/${file}`)
-          )
-        ) > fs.statSync(wasmPath).mtimeMs,
+          generationInputMtime(Root, grammar),
+          mtime('common/common.mjs'),
+          mtime(`${grammar}/grammar.js`),
+          fs.existsSync(headerGenerator) ? fs.statSync(headerGenerator).mtimeMs : 0
+        ) > mtime(`${grammar}/src/parser.c`),
+        `generation inputs changed after ${grammar}/src/parser.c was generated; run \`bun run build/ci\``
+      ).toBe(false);
+      const cSources = fs
+        .readdirSync(path.join(Root, grammar, 'src'), { recursive: true, encoding: 'utf8' })
+        .filter((file) => file.endsWith('.c') || file.endsWith('.h'))
+        .map((file) => mtime(`${grammar}/src/${file}`));
+      expect(
+        Math.max(...cSources) > fs.statSync(wasmPath).mtimeMs,
         `${grammar}/src/ changed after the Wasm build was built; run \`bun run build/ci\``
       ).toBe(false);
     });
@@ -46,8 +66,8 @@ for (const [grammar, errorSource] of Object.entries(ErrorSources)) {
     // 20,000 lines are measured after warm-up parses and in alternation, each keeping its fastest run; their ratio is
     // about 10 locally, and 18 leaves a margin over that while failing for growth faster than about n^1.25.
     test('recovers from an error on each line in linear time', { timeout: 60_000 }, () => {
-      const small = errorSource(2000);
-      const large = errorSource(20_000);
+      const small = errorLine.repeat(2000);
+      const large = errorLine.repeat(20_000);
       parseCpuTime(parser, large);
       parseCpuTime(parser, large);
       let smallFastest = Infinity;
@@ -59,12 +79,7 @@ for (const [grammar, errorSource] of Object.entries(ErrorSources)) {
       expect(largeFastest / smallFastest).toBeLessThan(18);
     });
 
-    // The scanner reads the tokens of a module argument; an unbalanced parenthesis or quote in one statement must not
-    // make it read the rest of the input again for each later statement.
-    test.each([
-      ['parenthesis', 'CREATE VIRTUAL TABLE t USING m((a\n'],
-      ['quote', "CREATE VIRTUAL TABLE t USING m(a, 'b\n"],
-    ])('reads repeated module arguments with an unbalanced %s in linear input volume', (_, line) => {
+    test.each(readVolumeCases)('reads repeated %s in linear input volume', (_, line) => {
       const small = countReads(parser, line.repeat(200));
       const large = countReads(parser, line.repeat(2000));
       expect(small).toBeGreaterThan(0);

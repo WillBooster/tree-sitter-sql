@@ -2,9 +2,9 @@
 authors = ["WillBooster Inc."]
 autoexamples = false
 categories = ["parser-implementations", "parsing", "text-editors"]
-description = "SQL grammars (SQLite) for tree-sitter"
+description = "SQL grammars (SQLite, PostgreSQL, MySQL, and Oracle) for tree-sitter"
 edition = "2024"
-keywords = ["parsing", "tree-sitter", "sql", "sqlite"]
+keywords = ["parsing", "tree-sitter", "sql", "sqlite", "postgresql"]
 license = "MIT"
 name = "willbooster-tree-sitter-sql"
 readme = "README.md"
@@ -17,6 +17,7 @@ include = [
   "/common/*",
   "/sqlite/grammar.js",
   "/sqlite/src/*",
+  "!/sqlite/src/grammar.json",
   "!/sqlite/src/.gitattributes",
   "!/sqlite/src/.editorconfig",
   "/tree-sitter.json",
@@ -26,6 +27,10 @@ include = [
 [lib]
 name = "tree_sitter_sql"
 path = "bindings/rust/lib.rs"
+
+[features]
+default = ["sqlite"]
+sqlite = []
 
 [dependencies]
 tree-sitter-language = "0.1.6"

@@ -1,5 +1,6 @@
 ================================================================================
 Transactions
+:language(sqlite)
 ================================================================================
 
 BEGIN; BEGIN DEFERRED TRANSACTION; BEGIN IMMEDIATE TRANSACTION t; BEGIN EXCLUSIVE; COMMIT; COMMIT TRANSACTION; END TRANSACTION t; ROLLBACK; ROLLBACK TO s; ROLLBACK TRANSACTION TO SAVEPOINT s;
@@ -24,6 +25,7 @@ BEGIN; BEGIN DEFERRED TRANSACTION; BEGIN IMMEDIATE TRANSACTION t; BEGIN EXCLUSIV
 
 ================================================================================
 Savepoints
+:language(sqlite)
 ================================================================================
 
 SAVEPOINT s; RELEASE s; RELEASE SAVEPOINT s;
@@ -40,6 +42,7 @@ SAVEPOINT s; RELEASE s; RELEASE SAVEPOINT s;
 
 ================================================================================
 Pragma
+:language(sqlite)
 ================================================================================
 
 PRAGMA foreign_keys; PRAGMA foreign_keys = ON; PRAGMA main.cache_size = -2000; PRAGMA journal_mode = 'WAL'; PRAGMA table_info(t); PRAGMA secure_delete = DELETE; PRAGMA x = DEFAULT; PRAGMA y = +1.5;
@@ -81,6 +84,7 @@ PRAGMA foreign_keys; PRAGMA foreign_keys = ON; PRAGMA main.cache_size = -2000; P
 
 ================================================================================
 Vacuum, attach, and detach
+:language(sqlite)
 ================================================================================
 
 VACUUM; VACUUM main; VACUUM INTO 'backup.db'; ATTACH DATABASE 'file.db' AS aux KEY 'secret'; ATTACH 'x.db' AS y; DETACH DATABASE aux; DETACH y;
@@ -111,6 +115,7 @@ VACUUM; VACUUM main; VACUUM INTO 'backup.db'; ATTACH DATABASE 'file.db' AS aux K
 
 ================================================================================
 Reindex and analyze
+:language(sqlite)
 ================================================================================
 
 REINDEX; REINDEX nocase; REINDEX main.i; ANALYZE; ANALYZE main; ANALYZE main.t;

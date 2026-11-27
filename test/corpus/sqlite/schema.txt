@@ -1,5 +1,6 @@
 ================================================================================
 Create table
+:language(sqlite)
 ================================================================================
 
 CREATE TABLE IF NOT EXISTS main.t (id INTEGER PRIMARY KEY ASC ON CONFLICT FAIL AUTOINCREMENT, name VARCHAR (10, 2) NOT NULL ON CONFLICT ABORT UNIQUE COLLATE nocase, flag DEFAULT -1, CONSTRAINT c);
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS main.t (id INTEGER PRIMARY KEY ASC ON CONFLICT FAIL A
 
 ================================================================================
 Column constraints
+:language(sqlite)
 ================================================================================
 
 CREATE TABLE t (a DEFAULT 'x', b DEFAULT (1 + 2), c DEFAULT +1.5, d DEFAULT true, e DEFAULT "q", f NULL, g CHECK (g > 0), h REFERENCES u (id) ON DELETE CASCADE ON UPDATE SET NULL MATCH simple NOT DEFERRABLE INITIALLY IMMEDIATE, i AS (a || b) STORED, j GENERATED ALWAYS AS (1) VIRTUAL);
@@ -111,6 +113,7 @@ CREATE TABLE t (a DEFAULT 'x', b DEFAULT (1 + 2), c DEFAULT +1.5, d DEFAULT true
 
 ================================================================================
 Table constraints
+:language(sqlite)
 ================================================================================
 
 CREATE TABLE t (a, b, PRIMARY KEY (a AUTOINCREMENT) ON CONFLICT REPLACE, UNIQUE (b DESC) CONSTRAINT c CHECK (a > b) FOREIGN KEY (a) REFERENCES u (x) ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED);
@@ -154,6 +157,7 @@ CREATE TABLE t (a, b, PRIMARY KEY (a AUTOINCREMENT) ON CONFLICT REPLACE, UNIQUE 
 
 ================================================================================
 Table options
+:language(sqlite)
 ================================================================================
 
 CREATE TEMP TABLE t (a) WITHOUT ROWID, STRICT; CREATE TEMPORARY TABLE u AS SELECT 1;
@@ -180,6 +184,7 @@ CREATE TEMP TABLE t (a) WITHOUT ROWID, STRICT; CREATE TEMPORARY TABLE u AS SELEC
 
 ================================================================================
 Type names
+:language(sqlite)
 ================================================================================
 
 CREATE TABLE t (a UNSIGNED BIG INT, b DOUBLE PRECISION, c 'text', d NUMERIC(-1, +2));
@@ -216,6 +221,7 @@ CREATE TABLE t (a UNSIGNED BIG INT, b DOUBLE PRECISION, c 'text', d NUMERIC(-1, 
 
 ================================================================================
 Create virtual table
+:language(sqlite)
 ================================================================================
 
 CREATE VIRTUAL TABLE IF NOT EXISTS ft USING fts5(title, body, tokenize = 'porter unicode61', prefix = '2 3', content = '', x (y, z), /* c */ w);
@@ -249,6 +255,7 @@ CREATE VIRTUAL TABLE r USING rtree; CREATE VIRTUAL TABLE e USING m(, a,);
 
 ================================================================================
 Create view
+:language(sqlite)
 ================================================================================
 
 CREATE TEMP VIEW IF NOT EXISTS v (a, b) AS SELECT 1, 2;
@@ -273,6 +280,7 @@ CREATE TEMP VIEW IF NOT EXISTS v (a, b) AS SELECT 1, 2;
 
 ================================================================================
 Create index
+:language(sqlite)
 ================================================================================
 
 CREATE UNIQUE INDEX IF NOT EXISTS main.i ON t (a COLLATE nocase DESC, b + 1) WHERE a IS NOT NULL;
@@ -304,6 +312,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS main.i ON t (a COLLATE nocase DESC, b + 1) WHE
 
 ================================================================================
 Create trigger
+:language(sqlite)
 ================================================================================
 
 CREATE TRIGGER IF NOT EXISTS tr BEFORE UPDATE OF a, b ON t FOR EACH ROW WHEN new.a > 0 BEGIN UPDATE OR IGNORE u SET x = new.a, (y, z) = (1, 2) FROM v WHERE id = old.id; INSERT INTO u SELECT 1 ON CONFLICT (x) DO NOTHING; DELETE FROM u WHERE id = old.id; SELECT RAISE(ABORT, 'no'); END;
@@ -384,6 +393,7 @@ CREATE TRIGGER IF NOT EXISTS tr BEFORE UPDATE OF a, b ON t FOR EACH ROW WHEN new
 
 ================================================================================
 Trigger timing and events
+:language(sqlite)
 ================================================================================
 
 CREATE TEMP TRIGGER tr INSTEAD OF DELETE ON v BEGIN SELECT 1; END; CREATE TRIGGER tr AFTER INSERT ON t BEGIN SELECT 2; END; CREATE TRIGGER tr DELETE ON t BEGIN SELECT 3; END;
@@ -422,6 +432,7 @@ CREATE TEMP TRIGGER tr INSTEAD OF DELETE ON v BEGIN SELECT 1; END; CREATE TRIGGE
 
 ================================================================================
 Qualified tables in triggers in the temp schema
+:language(sqlite)
 ================================================================================
 
 CREATE TEMP TRIGGER a INSERT ON t BEGIN DELETE FROM main.u; END; CREATE TRIGGER temp.b INSERT ON t BEGIN DELETE FROM main.u; END; CREATE TRIGGER c INSERT ON temp.t BEGIN DELETE FROM main.u; END; CREATE TRIGGER d INSERT ON t BEGIN DELETE FROM main.u; END;
@@ -475,6 +486,7 @@ CREATE TEMP TRIGGER a INSERT ON t BEGIN DELETE FROM main.u; END; CREATE TRIGGER 
 
 ================================================================================
 Drop
+:language(sqlite)
 ================================================================================
 
 DROP TABLE IF EXISTS main.t; DROP VIEW v; DROP INDEX i; DROP TRIGGER IF EXISTS tr;
@@ -500,6 +512,7 @@ DROP TABLE IF EXISTS main.t; DROP VIEW v; DROP INDEX i; DROP TRIGGER IF EXISTS t
 
 ================================================================================
 Alter table
+:language(sqlite)
 ================================================================================
 
 ALTER TABLE main.t RENAME TO u; ALTER TABLE t RENAME COLUMN a TO b; ALTER TABLE t RENAME a TO b; ALTER TABLE t ADD COLUMN c INT NOT NULL DEFAULT 0; ALTER TABLE t ADD d; ALTER TABLE t DROP COLUMN c; ALTER TABLE t DROP d;
@@ -548,6 +561,7 @@ ALTER TABLE main.t RENAME TO u; ALTER TABLE t RENAME COLUMN a TO b; ALTER TABLE 
 
 ================================================================================
 Alter table constraints
+:language(sqlite)
 ================================================================================
 
 ALTER TABLE t DROP CONSTRAINT c; ALTER TABLE t ALTER COLUMN a DROP NOT NULL; ALTER TABLE t ALTER a SET NOT NULL ON CONFLICT ABORT; ALTER TABLE t ADD CONSTRAINT c CHECK (a > 0) ON CONFLICT FAIL; ALTER TABLE t ADD CHECK (b);
@@ -588,6 +602,7 @@ ALTER TABLE t DROP CONSTRAINT c; ALTER TABLE t ALTER COLUMN a DROP NOT NULL; ALT
 
 ================================================================================
 Tokens in module arguments
+:language(sqlite)
 ================================================================================
 
 CREATE VIRTUAL TABLE t USING m(1__000, 1_, $foo(a'b), $a::b, @9, a->>b, $foo(());
@@ -609,6 +624,7 @@ CREATE VIRTUAL TABLE t USING m(1__000, 1_, $foo(a'b), $a::b, @9, a->>b, $foo(())
 
 ================================================================================
 Key columns
+:language(sqlite)
 ================================================================================
 
 CREATE TABLE t (a, b, c, PRIMARY KEY ((a) COLLATE nocase DESC, 'b'), UNIQUE ("c"));
@@ -641,6 +657,7 @@ CREATE TABLE t (a, b, c, PRIMARY KEY ((a) COLLATE nocase DESC, 'b'), UNIQUE ("c"
 
 ================================================================================
 GENERATED as a word of a type name
+:language(sqlite)
 ================================================================================
 
 CREATE TABLE t (a GENERATED, b INT GENERATED ALWAYS AS (1), c INT(5) GENERATED ALWAYS AS (2), d NOT NULL GENERATED ALWAYS AS (3));
@@ -678,6 +695,7 @@ CREATE TABLE t (a GENERATED, b INT GENERATED ALWAYS AS (1), c INT(5) GENERATED A
 
 ================================================================================
 Names in the temp schema
+:language(sqlite)
 ================================================================================
 
 CREATE TEMP TABLE "temp".t (a); CREATE TEMP TABLE temp (a); CREATE TEMP VIEW [TEMP].v AS SELECT 1; CREATE TRIGGER 'temp'.tr INSERT ON t BEGIN DELETE FROM main.u; END;

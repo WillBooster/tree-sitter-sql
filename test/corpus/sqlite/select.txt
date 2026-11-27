@@ -1,5 +1,6 @@
 ================================================================================
 Simple select
+:language(sqlite)
 ================================================================================
 
 SELECT a, b AS c, d e, t.* FROM t;
@@ -29,6 +30,7 @@ SELECT a, b AS c, d e, t.* FROM t;
 
 ================================================================================
 Select without FROM
+:language(sqlite)
 ================================================================================
 
 SELECT 1, 'x', NULL;
@@ -47,6 +49,7 @@ SELECT 1, 'x', NULL;
 
 ================================================================================
 Distinct and all
+:language(sqlite)
 ================================================================================
 
 SELECT DISTINCT a FROM t; SELECT ALL a FROM t;
@@ -75,6 +78,7 @@ SELECT DISTINCT a FROM t; SELECT ALL a FROM t;
 
 ================================================================================
 Where, group by, having
+:language(sqlite)
 ================================================================================
 
 SELECT a, count(*) FROM t WHERE b > 1 GROUP BY a HAVING count(*) > 2;
@@ -112,6 +116,7 @@ SELECT a, count(*) FROM t WHERE b > 1 GROUP BY a HAVING count(*) > 2;
 
 ================================================================================
 Having without group by
+:language(sqlite)
 ================================================================================
 
 SELECT count(*) FROM t HAVING count(*) > 0;
@@ -138,6 +143,7 @@ SELECT count(*) FROM t HAVING count(*) > 0;
 
 ================================================================================
 Order by and limit
+:language(sqlite)
 ================================================================================
 
 SELECT a FROM t ORDER BY a DESC NULLS LAST, b ASC LIMIT 10 OFFSET 5;
@@ -167,6 +173,7 @@ SELECT a FROM t ORDER BY a DESC NULLS LAST, b ASC LIMIT 10 OFFSET 5;
 
 ================================================================================
 Limit with comma
+:language(sqlite)
 ================================================================================
 
 SELECT a FROM t LIMIT 5, 10;
@@ -189,6 +196,7 @@ SELECT a FROM t LIMIT 5, 10;
 
 ================================================================================
 Compound select
+:language(sqlite)
 ================================================================================
 
 SELECT a FROM t UNION SELECT b FROM u UNION ALL SELECT c FROM v INTERSECT SELECT d FROM w EXCEPT SELECT e FROM x ORDER BY 1 LIMIT 3;
@@ -249,6 +257,7 @@ SELECT a FROM t UNION SELECT b FROM u UNION ALL SELECT c FROM v INTERSECT SELECT
 
 ================================================================================
 Values
+:language(sqlite)
 ================================================================================
 
 VALUES (1, 2), (3, 4);
@@ -267,6 +276,7 @@ VALUES (1, 2), (3, 4);
 
 ================================================================================
 Values in a compound select
+:language(sqlite)
 ================================================================================
 
 VALUES (1) UNION SELECT 2 ORDER BY 1;
@@ -288,6 +298,7 @@ VALUES (1) UNION SELECT 2 ORDER BY 1;
 
 ================================================================================
 Common table expressions
+:language(sqlite)
 ================================================================================
 
 WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 5), d AS MATERIALIZED (SELECT 2), e AS NOT MATERIALIZED (SELECT 3) SELECT * FROM c, d, e;
@@ -350,6 +361,7 @@ WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 5), d A
 
 ================================================================================
 Joins
+:language(sqlite)
 ================================================================================
 
 SELECT * FROM a JOIN b ON a.id = b.id LEFT JOIN c USING (id) LEFT OUTER JOIN d CROSS JOIN e INNER JOIN f RIGHT JOIN g FULL OUTER JOIN h NATURAL JOIN i NATURAL LEFT JOIN j, k ON k.x = 1;
@@ -424,6 +436,7 @@ SELECT * FROM a JOIN b ON a.id = b.id LEFT JOIN c USING (id) LEFT OUTER JOIN d C
 
 ================================================================================
 Join keywords in any order
+:language(sqlite)
 ================================================================================
 
 SELECT * FROM a OUTER LEFT JOIN b LEFT NATURAL JOIN c;
@@ -449,6 +462,7 @@ SELECT * FROM a OUTER LEFT JOIN b LEFT NATURAL JOIN c;
 
 ================================================================================
 Table aliases and index hints
+:language(sqlite)
 ================================================================================
 
 SELECT * FROM main.t AS x INDEXED BY i, u y NOT INDEXED, v 'z';
@@ -481,6 +495,7 @@ SELECT * FROM main.t AS x INDEXED BY i, u y NOT INDEXED, v 'z';
 
 ================================================================================
 Subqueries in FROM
+:language(sqlite)
 ================================================================================
 
 SELECT * FROM (SELECT 1) AS s, (a JOIN b) j, ((SELECT 2)) w;
@@ -519,6 +534,7 @@ SELECT * FROM (SELECT 1) AS s, (a JOIN b) j, ((SELECT 2)) w;
 
 ================================================================================
 Table-valued functions
+:language(sqlite)
 ================================================================================
 
 SELECT * FROM json_each('[1]') AS j, generate_series(1, 10);
@@ -544,6 +560,7 @@ SELECT * FROM json_each('[1]') AS j, generate_series(1, 10);
 
 ================================================================================
 Window clause
+:language(sqlite)
 ================================================================================
 
 SELECT sum(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS), v AS (w);
@@ -586,6 +603,7 @@ SELECT sum(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c ROWS BETWEEN 
 
 ================================================================================
 Window frames
+:language(sqlite)
 ================================================================================
 
 SELECT f() OVER (ROWS 2 PRECEDING), f() OVER (RANGE CURRENT ROW EXCLUDE TIES), f() OVER (GROUPS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING EXCLUDE GROUP), f() OVER (ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING EXCLUDE CURRENT ROW), f() OVER ();
@@ -638,6 +656,7 @@ SELECT f() OVER (ROWS 2 PRECEDING), f() OVER (RANGE CURRENT ROW EXCLUDE TIES), f
 
 ================================================================================
 Explain
+:language(sqlite)
 ================================================================================
 
 EXPLAIN SELECT 1; EXPLAIN QUERY PLAN SELECT 1;
@@ -658,6 +677,7 @@ EXPLAIN SELECT 1; EXPLAIN QUERY PLAN SELECT 1;
 
 ================================================================================
 Statements without semicolons and empty statements
+:language(sqlite)
 ================================================================================
 
 ;; SELECT 1 ;; SELECT 2
@@ -676,6 +696,7 @@ Statements without semicolons and empty statements
 
 ================================================================================
 FILTER, OVER, and WINDOW as window names
+:language(sqlite)
 ================================================================================
 
 SELECT f() OVER (filter), sum(1) OVER over, sum(1) OVER "filter" FROM t WINDOW w AS (), filter AS ();
@@ -715,6 +736,7 @@ SELECT f() OVER (filter), sum(1) OVER over, sum(1) OVER "filter" FROM t WINDOW w
 
 ================================================================================
 OVER as an alias before WINDOW
+:language(sqlite)
 ================================================================================
 
 SELECT 1 OVER WINDOW w AS (); SELECT sum(1) OVER window;
@@ -741,6 +763,7 @@ SELECT 1 OVER WINDOW w AS (); SELECT sum(1) OVER window;
 
 ================================================================================
 Limit with an offset before a comma
+:language(sqlite)
 ================================================================================
 
 SELECT 1 LIMIT 5, 10;

@@ -7,20 +7,24 @@
 // and its tokenizer, src/tokenize.c, and also reject what SQLite rejects while parsing, beyond those two files (e.g. an
 // unknown join type, or ORDER BY on a SELECT before UNION).
 
-import {
-  blockComment,
-  commaSep,
-  commaSep1,
-  keyword,
-  keywordPattern,
-  keywords,
-  lineComment,
-  quoted,
-} from '../common/common.mjs';
+import { commaSep, commaSep1, keyword, keywordPattern, keywords } from '../common/common.mjs';
 
 // The CLI injects the DSL before loading this grammar.
 const { grammar, alias, choice, field, optional, prec, repeat, repeat1, reserved, seq, token } =
   /** @type {typeof globalThis & import('@willbooster/web-tree-sitter/dsl').DSL} */ (globalThis);
+
+// The tokens below contain no NUL character, which ends the input of SQLite and is therefore an error wherever it
+// appears.
+/**
+ * A literal enclosed in `quote`, in which two consecutive quotes stand for one.
+ *
+ * @param {string} quote
+ */
+const quoted = (quote) => new RegExp(`${quote}([^${quote}\\x00]|${quote}${quote})*${quote}`);
+
+const lineComment = seq('--', /[^\n\u0000]*/);
+
+const blockComment = /\/\*[^*\u0000]*\*+([^/*\u0000][^*\u0000]*\*+)*\//;
 
 const PREC = {
   OR: 1,

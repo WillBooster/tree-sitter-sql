@@ -2,6 +2,12 @@
 
 set -euo pipefail
 
+build_wasm=false
+if [[ ${1:-} == --build-wasm ]]; then
+  build_wasm=true
+  shift
+fi
+
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
 mkdir -p .tmp/generation-profiles
@@ -48,23 +54,41 @@ trap 'exit 143' TERM
 examples="$workspace/examples.z"
 git ls-files -z -- examples > "$examples"
 
-training=(--corpus "$root/test/corpus")
+example_files=()
 while IFS= read -r -d '' file; do
-  training+=("$root/$file")
+  example_files+=("$root/$file")
 done < "$examples"
 
+all_grammars=$(node -e 'const {grammars} = require("./tree-sitter.json"); console.log([...new Set(grammars.map(({path}) => path ?? "."))].sort().join("\n"));')
+if [[ $# -gt 0 ]]; then
+  for requested in "$@"; do
+    if ! grep -qxF "$requested" <<< "$all_grammars"; then
+      echo "Unknown grammar directory: $requested" >&2
+      exit 1
+    fi
+  done
+  grammars=$(printf '%s\n' "$@" | LC_ALL=C sort -u)
+else
+  grammars=$all_grammars
+fi
+
 # Keep this loop in the parent shell: signal traps wait for its foreground CLI before restoring sources.
-grammars=$(node -e 'const {grammars} = require("./tree-sitter.json"); console.log([...new Set(grammars.map(({path}) => path ?? "."))].sort().join("\n"));')
 while IFS= read -r grammar; do
   cp -Rp "$grammar/src" "$workspace/src"
   backup="$workspace/src"
   script/tree-sitter generate "$grammar/grammar.js"
-  script/generate-reserved-words "$grammar/src/grammar.json" > "$grammar/src/reserved_words.h"
+  if [[ -x "$grammar/generate-headers" ]]; then
+    "$grammar/generate-headers"
+  fi
   name=$(node -e 'console.log(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).name)' "$grammar/src/grammar.json")
   profile="$workspace/$name.json"
+  training=(--corpus "$root/test/corpus/$name")
+  if [[ ${#example_files[@]} -gt 0 ]]; then
+    training+=("${example_files[@]}")
+  fi
   script/tree-sitter profile --grammar-path "$grammar" --output "$profile" "${training[@]}"
   script/tree-sitter generate "$grammar/grammar.js" --profile "$profile"
-  if [[ ${1:-} == --build-wasm ]]; then
+  if [[ $build_wasm == true ]]; then
     script/tree-sitter build --wasm --optimization z "$grammar"
   fi
   backup=
