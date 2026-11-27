@@ -477,20 +477,23 @@ const optionalEq = (value) => seq(optional('='), value);
 const leftBinaryOp = (precedence, operand, operator) =>
   prec.left(precedence, seq(field('left', operand), field('operator', operator), field('right', operand)));
 
-/** @param {GrammarSymbols<string>} $ */
-const commonStatements = ($) => [
-  $.select_statement,
-  $.insert_statement,
-  $.replace_statement,
-  $.update_statement,
-  $.delete_statement,
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {boolean} [sp]
+ */
+const commonStatements = ($, sp = false) => [
+  scopedVis($, sp, 'select_statement'),
+  scopedVis($, sp, 'insert_statement'),
+  scopedVis($, sp, 'replace_statement'),
+  scopedVis($, sp, 'update_statement'),
+  scopedVis($, sp, 'delete_statement'),
   $.load_statement,
   $.import_table_statement,
   $.create_database_statement,
   $.alter_database_statement,
   $.drop_database_statement,
   $.use_statement,
-  $.create_table_statement,
+  scopedVis($, sp, 'create_table_statement'),
   $.alter_table_statement,
   $.drop_table_statement,
   $.rename_table_statement,
@@ -547,9 +550,9 @@ const commonStatements = ($) => [
   $.clone_statement,
   $.cache_index_statement,
   $.load_index_statement,
-  $.show_statement,
+  scopedVis($, sp, 'show_statement'),
   $.describe_statement,
-  $.explain_statement,
+  scopedVis($, sp, 'explain_statement'),
   $.grant_statement,
   $.revoke_statement,
   $.create_user_statement,
@@ -575,8 +578,530 @@ const commonStatements = ($) => [
   $.deallocate_statement,
   $.call_statement,
   $.do_statement,
-  $.handler_statement,
+  scopedVis($, sp, 'handler_statement'),
 ];
+
+/**
+ * @param {boolean} sp
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildScopedRules(sp) {
+  return {
+    ...buildScopedSelectRules(sp),
+    ...buildScopedCompoundQueryRules(sp),
+    ...buildScopedFromRules(sp),
+    ...buildScopedDmlRules(sp),
+    ...buildScopedUtilityRules(sp),
+  };
+}
+
+/**
+ * @param {boolean} sp
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildScopedSelectRules(sp) {
+  const k = (/** @type {string} */ n) => scopedKey(sp, n);
+  return {
+    [k('select_statement')]: ($) => choice(scopedHid($, sp, '_select_no_into'), scopedHid($, sp, '_select_with_into')),
+    [k('_select_no_into')]: ($) =>
+      seq(
+        optional(scopedVis($, sp, 'with_clause')),
+        scopedHid($, sp, '_query_body_no_into'),
+        optional($.order_by_clause),
+        optional(scopedVis($, sp, 'limit_clause')),
+        repeat($.locking_clause)
+      ),
+    [k('_select_with_into')]: ($) =>
+      choice(
+        seq(
+          optional(scopedVis($, sp, 'with_clause')),
+          scopedHid($, sp, '_query_body_with_into'),
+          optional($.order_by_clause),
+          optional(scopedVis($, sp, 'limit_clause')),
+          repeat($.locking_clause)
+        ),
+        seq(
+          optional(scopedVis($, sp, 'with_clause')),
+          scopedHid($, sp, '_query_body_no_into'),
+          optional($.order_by_clause),
+          optional(scopedVis($, sp, 'limit_clause')),
+          choice(seq($.into_clause, repeat($.locking_clause)), seq(repeat1($.locking_clause), $.into_clause))
+        )
+      ),
+    [k('_subquery_select')]: ($) => scopedHid($, sp, '_select_no_into'),
+    [k('with_clause')]: ($) =>
+      seq(keyword('WITH'), optional(keyword('RECURSIVE')), commaSep1(scopedVis($, sp, 'common_table_expression'))),
+    [k('common_table_expression')]: ($) =>
+      seq(
+        field('name', $._identifier),
+        optional($.column_list),
+        keyword('AS'),
+        '(',
+        alias(scopedHid($, sp, '_subquery_select'), $.select_statement),
+        ')'
+      ),
+    [k('limit_clause')]: ($) => {
+      const val = scopedHid($, sp, '_limit_value');
+      return seq(
+        keyword('LIMIT'),
+        choice(
+          seq(field('limit', val), optional(seq(keyword('OFFSET'), field('offset', val)))),
+          seq(field('offset', val), ',', field('limit', val))
+        )
+      );
+    },
+    [k('_simple_limit_clause')]: ($) => seq(keyword('LIMIT'), field('limit', scopedHid($, sp, '_limit_value'))),
+  };
+}
+
+/**
+ * @param {boolean} sp
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildScopedCompoundQueryRules(sp) {
+  const k = (/** @type {string} */ n) => scopedKey(sp, n);
+  return {
+    [k('_query_body_no_into')]: ($) =>
+      choice(scopedHid($, sp, '_query_term_no_into'), scopedVis($, sp, 'compound_query')),
+    [k('_query_body_with_into')]: ($) =>
+      choice(
+        scopedHid($, sp, '_query_term_with_into'),
+        alias(scopedHid($, sp, '_compound_query_with_into'), $.compound_query)
+      ),
+    [k('compound_query')]: ($) =>
+      prec.left(
+        seq(
+          field('left', scopedHid($, sp, '_query_body_no_into')),
+          field('operator', alias($._union_or_except_operator, $.compound_operator)),
+          field('right', scopedHid($, sp, '_query_term_no_into'))
+        )
+      ),
+    [k('_compound_query_with_into')]: ($) =>
+      prec.left(
+        seq(
+          field('left', scopedHid($, sp, '_query_body_no_into')),
+          field('operator', alias($._union_or_except_operator, $.compound_operator)),
+          field('right', scopedHid($, sp, '_query_term_with_into'))
+        )
+      ),
+    [k('_query_term_no_into')]: ($) =>
+      choice(
+        scopedHid($, sp, '_query_primary_no_into'),
+        alias(scopedHid($, sp, '_intersect_query_no_into'), $.compound_query)
+      ),
+    [k('_query_term_with_into')]: ($) =>
+      choice(
+        scopedHid($, sp, '_query_primary_with_into'),
+        alias(scopedHid($, sp, '_intersect_query_with_into'), $.compound_query)
+      ),
+    [k('_intersect_query_no_into')]: ($) =>
+      prec.left(
+        seq(
+          field('left', scopedHid($, sp, '_query_term_no_into')),
+          field('operator', alias($._intersect_operator, $.compound_operator)),
+          field('right', scopedHid($, sp, '_query_primary_no_into'))
+        )
+      ),
+    [k('_intersect_query_with_into')]: ($) =>
+      prec.left(
+        seq(
+          field('left', scopedHid($, sp, '_query_term_no_into')),
+          field('operator', alias($._intersect_operator, $.compound_operator)),
+          field('right', scopedHid($, sp, '_query_primary_with_into'))
+        )
+      ),
+    [k('_query_primary_no_into')]: ($) =>
+      choice(
+        scopedVis($, sp, 'select_core'),
+        $.values_statement,
+        $.table_value_statement,
+        scopedVis($, sp, 'parenthesized_query')
+      ),
+    [k('_query_primary_with_into')]: ($) =>
+      choice(
+        alias(scopedHid($, sp, '_select_core_with_into'), $.select_core),
+        alias(scopedHid($, sp, '_parenthesized_query_with_into'), $.parenthesized_query)
+      ),
+    [k('_parenthesized_query_with_into')]: ($) =>
+      choice(
+        seq(
+          '(',
+          optional(scopedVis($, sp, 'with_clause')),
+          scopedHid($, sp, '_query_body_with_into'),
+          optional($.order_by_clause),
+          optional(scopedVis($, sp, 'limit_clause')),
+          repeat($.locking_clause),
+          ')'
+        ),
+        seq(
+          '(',
+          optional(scopedVis($, sp, 'with_clause')),
+          scopedHid($, sp, '_query_body_no_into'),
+          optional($.order_by_clause),
+          optional(scopedVis($, sp, 'limit_clause')),
+          choice(seq($.into_clause, repeat($.locking_clause)), seq(repeat1($.locking_clause), $.into_clause)),
+          ')'
+        )
+      ),
+    [k('parenthesized_query')]: ($) =>
+      seq(
+        '(',
+        optional(scopedVis($, sp, 'with_clause')),
+        scopedHid($, sp, '_query_body_no_into'),
+        optional($.order_by_clause),
+        optional(scopedVis($, sp, 'limit_clause')),
+        repeat($.locking_clause),
+        ')'
+      ),
+  };
+}
+
+/**
+ * @param {boolean} sp
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildScopedFromRules(sp) {
+  const k = (/** @type {string} */ n) => scopedKey(sp, n);
+  return {
+    [k('select_core')]: ($) =>
+      prec.right(
+        seq(
+          keyword('SELECT'),
+          repeat($._select_modifier),
+          commaSep1(choice($.result_column, alias('*', $.all_columns), $.table_columns)),
+          optional(scopedVis($, sp, 'from_clause')),
+          optional($.where_clause),
+          optional($.group_by_clause),
+          optional($.having_clause),
+          optional($.window_clause)
+        )
+      ),
+    [k('_select_core_with_into')]: ($) =>
+      prec.right(
+        1,
+        seq(
+          keyword('SELECT'),
+          repeat($._select_modifier),
+          commaSep1(choice($.result_column, alias('*', $.all_columns), $.table_columns)),
+          $.into_clause,
+          optional(scopedVis($, sp, 'from_clause')),
+          optional($.where_clause),
+          optional($.group_by_clause),
+          optional($.having_clause),
+          optional($.window_clause)
+        )
+      ),
+    [k('from_clause')]: ($) => seq(keyword('FROM'), choice(keyword('DUAL'), scopedHid($, sp, '_table_references'))),
+    [k('_table_references')]: ($) => commaSep1(scopedHid($, sp, '_table_reference')),
+    [k('_table_reference')]: ($) =>
+      choice(
+        scopedHid($, sp, '_table_factor'),
+        scopedHid($, sp, '_joined_table'),
+        seq('{', keyword('OJ'), scopedHid($, sp, '_table_reference'), '}')
+      ),
+    [k('_table_factor')]: ($) =>
+      choice($.table, scopedVis($, sp, 'subquery_table'), $.json_table, scopedVis($, sp, 'join_table')),
+    [k('subquery_table')]: ($) =>
+      seq(
+        optional(keyword('LATERAL')),
+        '(',
+        alias(scopedHid($, sp, '_subquery_select'), $.select_statement),
+        ')',
+        $._table_alias,
+        optional($.column_list)
+      ),
+    [k('join_table')]: ($) => seq('(', scopedHid($, sp, '_table_references'), ')'),
+    [k('_joined_table')]: ($) =>
+      choice(
+        prec.right(
+          1,
+          seq(
+            scopedHid($, sp, '_table_reference'),
+            optional(choice(keyword('INNER'), keyword('CROSS'))),
+            keyword('JOIN'),
+            scopedHid($, sp, '_table_reference'),
+            optional($.join_constraint)
+          )
+        ),
+        prec.right(
+          1,
+          seq(
+            scopedHid($, sp, '_table_reference'),
+            keyword('STRAIGHT_JOIN'),
+            scopedHid($, sp, '_table_reference'),
+            optional(seq(keyword('ON'), field('condition', $._expression)))
+          )
+        ),
+        prec.left(
+          2,
+          seq(
+            scopedHid($, sp, '_table_reference'),
+            choice(keyword('LEFT'), keyword('RIGHT')),
+            optional(keyword('OUTER')),
+            keyword('JOIN'),
+            scopedHid($, sp, '_table_reference'),
+            $.join_constraint
+          )
+        ),
+        prec.left(
+          2,
+          seq(
+            scopedHid($, sp, '_table_reference'),
+            keyword('NATURAL'),
+            optional(
+              choice(keyword('INNER'), seq(choice(keyword('LEFT'), keyword('RIGHT')), optional(keyword('OUTER'))))
+            ),
+            keyword('JOIN'),
+            scopedHid($, sp, '_table_factor')
+          )
+        )
+      ),
+    [k('_multi_table_references')]: ($) =>
+      choice(
+        seq(scopedHid($, sp, '_table_reference'), ',', commaSep1(scopedHid($, sp, '_table_reference'))),
+        scopedHid($, sp, '_joined_table'),
+        seq('{', keyword('OJ'), scopedHid($, sp, '_table_reference'), '}'),
+        scopedVis($, sp, 'subquery_table'),
+        $.json_table,
+        scopedVis($, sp, 'join_table')
+      ),
+  };
+}
+
+/**
+ * @param {boolean} sp
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildScopedDmlRules(sp) {
+  const k = (/** @type {string} */ n) => scopedKey(sp, n);
+  return {
+    [k('insert_statement')]: ($) =>
+      seq(
+        keyword('INSERT'),
+        optional(choice(keyword('LOW_PRIORITY'), keyword('DELAYED'), keyword('HIGH_PRIORITY'))),
+        optional(keyword('IGNORE')),
+        optional(keyword('INTO')),
+        field('table', $.qualified_name),
+        optional($.partition_names_clause),
+        choice(
+          seq(
+            optional($._insert_column_list),
+            choice(
+              seq(
+                choice(
+                  seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
+                  $._values_clause
+                ),
+                optional($._insert_row_alias)
+              ),
+              alias(scopedHid($, sp, '_insert_query'), $.select_statement)
+            )
+          ),
+          seq($.set_clause, optional($._insert_row_alias))
+        ),
+        optional($.on_duplicate_key_update_clause)
+      ),
+    [k('replace_statement')]: ($) =>
+      seq(
+        keyword('REPLACE'),
+        optional(choice(keyword('LOW_PRIORITY'), keyword('DELAYED'))),
+        optional(keyword('INTO')),
+        field('table', $.qualified_name),
+        optional($.partition_names_clause),
+        choice(
+          seq(
+            optional($._insert_column_list),
+            choice(
+              seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
+              $._values_clause,
+              alias(scopedHid($, sp, '_insert_query'), $.select_statement)
+            )
+          ),
+          $.set_clause
+        )
+      ),
+    [k('_insert_query')]: ($) =>
+      choice(
+        seq(
+          scopedVis($, sp, 'with_clause'),
+          scopedHid($, sp, '_query_body_no_into'),
+          optional($.order_by_clause),
+          optional(scopedVis($, sp, 'limit_clause')),
+          repeat($.locking_clause)
+        ),
+        seq(
+          choice(
+            scopedVis($, sp, 'select_core'),
+            $.table_value_statement,
+            scopedVis($, sp, 'parenthesized_query'),
+            scopedVis($, sp, 'compound_query'),
+            alias(scopedHid($, sp, '_intersect_query_no_into'), $.compound_query)
+          ),
+          optional($.order_by_clause),
+          optional(scopedVis($, sp, 'limit_clause')),
+          repeat($.locking_clause)
+        ),
+        seq(
+          $.values_statement,
+          choice(
+            seq($.order_by_clause, optional(scopedVis($, sp, 'limit_clause')), repeat($.locking_clause)),
+            seq(scopedVis($, sp, 'limit_clause'), repeat($.locking_clause)),
+            repeat1($.locking_clause)
+          )
+        )
+      ),
+    [k('update_statement')]: ($) =>
+      seq(
+        optional(scopedVis($, sp, 'with_clause')),
+        keyword('UPDATE'),
+        optional(keyword('LOW_PRIORITY')),
+        optional(keyword('IGNORE')),
+        choice(
+          seq(
+            $.table,
+            $.set_clause,
+            optional($.where_clause),
+            optional($.order_by_clause),
+            optional(alias(scopedHid($, sp, '_simple_limit_clause'), $.limit_clause))
+          ),
+          seq(scopedHid($, sp, '_multi_table_references'), $.set_clause, optional($.where_clause))
+        )
+      ),
+    [k('delete_statement')]: ($) =>
+      seq(
+        optional(scopedVis($, sp, 'with_clause')),
+        keyword('DELETE'),
+        repeat(choice(keyword('LOW_PRIORITY'), keyword('QUICK'), keyword('IGNORE'))),
+        choice(
+          seq(
+            keyword('FROM'),
+            choice(
+              seq(
+                field('table', $.qualified_name),
+                optional($._table_alias),
+                optional($.partition_names_clause),
+                optional($.where_clause),
+                optional($.order_by_clause),
+                optional(alias(scopedHid($, sp, '_simple_limit_clause'), $.limit_clause))
+              ),
+              seq(
+                commaSep1($.delete_target),
+                keyword('USING'),
+                scopedHid($, sp, '_table_references'),
+                optional($.where_clause)
+              )
+            )
+          ),
+          seq(
+            commaSep1($.delete_target),
+            keyword('FROM'),
+            scopedHid($, sp, '_table_references'),
+            optional($.where_clause)
+          )
+        )
+      ),
+  };
+}
+
+/**
+ * @param {boolean} sp
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildScopedUtilityRules(sp) {
+  const k = (/** @type {string} */ n) => scopedKey(sp, n);
+  return {
+    [k('create_table_statement')]: ($) =>
+      seq(
+        keyword('CREATE'),
+        optional(keyword('TEMPORARY')),
+        keyword('TABLE'),
+        optional($.if_not_exists),
+        field('name', $.qualified_name),
+        choice(
+          seq(keyword('LIKE'), field('like', $.qualified_name)),
+          seq('(', keyword('LIKE'), field('like', $.qualified_name), ')'),
+          seq(
+            '(',
+            commaSep1($._create_definition),
+            ')',
+            optional($._table_options),
+            optional($.partition_by_clause_ddl),
+            optional(scopedHid($, sp, '_create_table_query_tail'))
+          ),
+          seq(
+            optional($._table_options),
+            optional($.partition_by_clause_ddl),
+            scopedHid($, sp, '_create_table_query_tail')
+          )
+        )
+      ),
+    [k('_create_table_query_tail')]: ($) =>
+      seq(
+        optional(choice(keyword('IGNORE'), keyword('REPLACE'))),
+        optional(keyword('AS')),
+        alias(scopedHid($, sp, '_subquery_select'), $.select_statement)
+      ),
+    [k('show_statement')]: ($) =>
+      seq(
+        keyword('SHOW'),
+        choice(
+          $._show_non_limit_body,
+          seq(choice(keyword('WARNINGS'), keyword('ERRORS')), optional(scopedVis($, sp, 'limit_clause'))),
+          seq($._show_profile_head, optional(scopedVis($, sp, 'limit_clause'))),
+          seq(
+            $._show_log_events_head,
+            optional(scopedVis($, sp, 'limit_clause')),
+            optional(seq(keywords('FOR CHANNEL'), $.string_literal))
+          )
+        )
+      ),
+    [k('explain_statement')]: ($) =>
+      seq(
+        choice(keyword('EXPLAIN'), keyword('DESCRIBE'), keyword('DESC')),
+        optional($._explain_option),
+        choice(
+          scopedVis($, sp, 'select_statement'),
+          scopedVis($, sp, 'insert_statement'),
+          scopedVis($, sp, 'replace_statement'),
+          scopedVis($, sp, 'update_statement'),
+          scopedVis($, sp, 'delete_statement'),
+          seq(keywords('FOR CONNECTION'), $.numeric_literal)
+        )
+      ),
+    [k('handler_statement')]: ($) =>
+      seq(
+        keyword('HANDLER'),
+        field('table', $.qualified_name),
+        choice($._handler_open_or_close, seq($._handler_read_head, optional(scopedVis($, sp, 'limit_clause'))))
+      ),
+  };
+}
+
+/**
+ * @param {boolean} sp
+ * @param {string} name
+ */
+function scopedKey(sp, name) {
+  return sp ? (name.startsWith('_') ? `_sp${name}` : `_sp_${name}`) : name;
+}
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {boolean} sp
+ * @param {string} name
+ */
+function scopedVis($, sp, name) {
+  return sp ? alias($[`_sp_${name}`], $[name]) : $[name];
+}
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {boolean} sp
+ * @param {string} name
+ */
+function scopedHid($, sp, name) {
+  return $[sp ? `_sp${name}` : name];
+}
 
 /** @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
 function buildTlsOptionRules() {
@@ -652,6 +1177,7 @@ export default grammar({
     [$.group_by_clause],
     [$.check_constraint_body],
     [$._select_no_into, $.parenthesized_query],
+    [$._sp_select_no_into, $._sp_parenthesized_query],
   ],
 
   rules: {
@@ -675,140 +1201,13 @@ export default grammar({
     // Queries & SELECT
     // =========================================================================
 
-    select_statement: ($) => choice($._select_no_into, $._select_with_into),
-
-    _select_no_into: ($) =>
-      seq(
-        optional($.with_clause),
-        $._query_body_no_into,
-        optional($.order_by_clause),
-        optional($.limit_clause),
-        repeat($.locking_clause)
-      ),
-
-    _select_with_into: ($) =>
-      choice(
-        seq(
-          optional($.with_clause),
-          $._query_body_with_into,
-          optional($.order_by_clause),
-          optional($.limit_clause),
-          repeat($.locking_clause)
-        ),
-        seq(
-          optional($.with_clause),
-          $._query_body_no_into,
-          optional($.order_by_clause),
-          optional($.limit_clause),
-          choice(seq($.into_clause, repeat($.locking_clause)), seq(repeat1($.locking_clause), $.into_clause))
-        )
-      ),
-
-    _subquery_select: ($) => $._select_no_into,
-
-    with_clause: ($) => seq(keyword('WITH'), optional(keyword('RECURSIVE')), commaSep1($.common_table_expression)),
-
-    common_table_expression: ($) =>
-      seq(
-        field('name', $._identifier),
-        optional($.column_list),
-        keyword('AS'),
-        '(',
-        alias($._subquery_select, $.select_statement),
-        ')'
-      ),
-
-    _query_body_no_into: ($) => choice($._query_term_no_into, $.compound_query),
-
-    _query_body_with_into: ($) => choice($._query_term_with_into, alias($._compound_query_with_into, $.compound_query)),
-
-    compound_query: ($) =>
-      prec.left(
-        seq(
-          field('left', $._query_body_no_into),
-          field('operator', alias($._union_or_except_operator, $.compound_operator)),
-          field('right', $._query_term_no_into)
-        )
-      ),
-
-    _compound_query_with_into: ($) =>
-      prec.left(
-        seq(
-          field('left', $._query_body_no_into),
-          field('operator', alias($._union_or_except_operator, $.compound_operator)),
-          field('right', $._query_term_with_into)
-        )
-      ),
-
-    _query_term_no_into: ($) => choice($._query_primary_no_into, alias($._intersect_query_no_into, $.compound_query)),
-
-    _query_term_with_into: ($) =>
-      choice($._query_primary_with_into, alias($._intersect_query_with_into, $.compound_query)),
-
-    _intersect_query_no_into: ($) =>
-      prec.left(
-        seq(
-          field('left', $._query_term_no_into),
-          field('operator', alias($._intersect_operator, $.compound_operator)),
-          field('right', $._query_primary_no_into)
-        )
-      ),
-
-    _intersect_query_with_into: ($) =>
-      prec.left(
-        seq(
-          field('left', $._query_term_no_into),
-          field('operator', alias($._intersect_operator, $.compound_operator)),
-          field('right', $._query_primary_with_into)
-        )
-      ),
+    ...buildScopedRules(false),
+    ...buildScopedRules(true),
 
     _union_or_except_operator: ($) =>
       seq(choice(keyword('UNION'), keyword('EXCEPT')), optional(choice(keyword('ALL'), $._distinct_keyword))),
 
     _intersect_operator: ($) => seq(keyword('INTERSECT'), optional(choice(keyword('ALL'), $._distinct_keyword))),
-
-    _query_primary_no_into: ($) =>
-      choice($.select_core, $.values_statement, $.table_value_statement, $.parenthesized_query),
-
-    _query_primary_with_into: ($) =>
-      choice(
-        alias($._select_core_with_into, $.select_core),
-        alias($._parenthesized_query_with_into, $.parenthesized_query)
-      ),
-
-    _parenthesized_query_with_into: ($) =>
-      choice(
-        seq(
-          '(',
-          optional($.with_clause),
-          $._query_body_with_into,
-          optional($.order_by_clause),
-          optional($.limit_clause),
-          repeat($.locking_clause),
-          ')'
-        ),
-        seq(
-          '(',
-          optional($.with_clause),
-          $._query_body_no_into,
-          optional($.order_by_clause),
-          optional($.limit_clause),
-          choice(seq($.into_clause, repeat($.locking_clause)), seq(repeat1($.locking_clause), $.into_clause)),
-          ')'
-        )
-      ),
-
-    parenthesized_query: ($) =>
-      seq(
-        '(',
-        optional($.with_clause),
-        $._query_body_no_into,
-        optional($.order_by_clause),
-        optional($.limit_clause),
-        repeat($.locking_clause),
-        ')'
-      ),
 
     values_statement: ($) => $._values_clause,
 
@@ -819,36 +1218,6 @@ export default grammar({
     row_constructor: ($) => seq(keyword('ROW'), '(', commaSep($._expression), ')'),
 
     table_value_statement: ($) => seq(keyword('TABLE'), field('table', $.qualified_name)),
-
-    select_core: ($) =>
-      prec.right(
-        seq(
-          keyword('SELECT'),
-          repeat($._select_modifier),
-          commaSep1(choice($.result_column, alias('*', $.all_columns), $.table_columns)),
-          optional($.from_clause),
-          optional($.where_clause),
-          optional($.group_by_clause),
-          optional($.having_clause),
-          optional($.window_clause)
-        )
-      ),
-
-    _select_core_with_into: ($) =>
-      prec.right(
-        1,
-        seq(
-          keyword('SELECT'),
-          repeat($._select_modifier),
-          commaSep1(choice($.result_column, alias('*', $.all_columns), $.table_columns)),
-          $.into_clause,
-          optional($.from_clause),
-          optional($.where_clause),
-          optional($.group_by_clause),
-          optional($.having_clause),
-          optional($.window_clause)
-        )
-      ),
 
     _select_modifier: () =>
       choice(
@@ -897,14 +1266,6 @@ export default grammar({
         )
       ),
 
-    from_clause: ($) => seq(keyword('FROM'), choice(keyword('DUAL'), $._table_references)),
-
-    _table_references: ($) => commaSep1($._table_reference),
-
-    _table_reference: ($) => choice($._table_factor, $._joined_table, seq('{', keyword('OJ'), $._table_reference, '}')),
-
-    _table_factor: ($) => choice($.table, $.subquery_table, $.json_table, $.join_table),
-
     table: ($) =>
       seq(
         field('name', $.qualified_name),
@@ -924,18 +1285,6 @@ export default grammar({
         commaSep(choice($._identifier, keyword('PRIMARY'))),
         ')'
       ),
-
-    subquery_table: ($) =>
-      seq(
-        optional(keyword('LATERAL')),
-        '(',
-        alias($._subquery_select, $.select_statement),
-        ')',
-        $._table_alias,
-        optional($.column_list)
-      ),
-
-    join_table: ($) => seq('(', $._table_references, ')'),
 
     json_table: ($) =>
       seq(
@@ -997,52 +1346,6 @@ export default grammar({
 
     _signed_num_literal: ($) => seq(field('operator', choice('+', '-')), field('operand', $.numeric_literal)),
 
-    _joined_table: ($) =>
-      choice(
-        prec.right(
-          1,
-          seq(
-            $._table_reference,
-            optional(choice(keyword('INNER'), keyword('CROSS'))),
-            keyword('JOIN'),
-            $._table_reference,
-            optional($.join_constraint)
-          )
-        ),
-        prec.right(
-          1,
-          seq(
-            $._table_reference,
-            keyword('STRAIGHT_JOIN'),
-            $._table_reference,
-            optional(seq(keyword('ON'), field('condition', $._expression)))
-          )
-        ),
-        prec.left(
-          2,
-          seq(
-            $._table_reference,
-            choice(keyword('LEFT'), keyword('RIGHT')),
-            optional(keyword('OUTER')),
-            keyword('JOIN'),
-            $._table_reference,
-            $.join_constraint
-          )
-        ),
-        prec.left(
-          2,
-          seq(
-            $._table_reference,
-            keyword('NATURAL'),
-            optional(
-              choice(keyword('INNER'), seq(choice(keyword('LEFT'), keyword('RIGHT')), optional(keyword('OUTER'))))
-            ),
-            keyword('JOIN'),
-            $._table_factor
-          )
-        )
-      ),
-
     join_constraint: ($) =>
       choice(seq(keyword('ON'), field('condition', $._expression)), seq(keyword('USING'), $.column_list)),
 
@@ -1084,25 +1387,15 @@ export default grammar({
 
     ordering_term: ($) => seq(field('value', $._expression), optional(choice(keyword('ASC'), keyword('DESC')))),
 
-    limit_clause: ($) =>
-      seq(
-        keyword('LIMIT'),
-        choice(
-          seq(field('limit', $._limit_value), optional(seq(keyword('OFFSET'), field('offset', $._limit_value)))),
-          seq(field('offset', $._limit_value), ',', field('limit', $._limit_value))
-        )
-      ),
-
-    _simple_limit_clause: ($) => seq(keyword('LIMIT'), field('limit', $._limit_value)),
-
-    // Stored routines may also use local variables or parameters in LIMIT, while prepared statements use `?`.
+    // Stored routines may also use local variables or parameters in LIMIT (`_sp_limit_value`), while standalone statements allow uint64 or `?`.
     _limit_value: ($) =>
       choice(
         alias($._uint64_literal, $.numeric_literal),
         $.placeholder,
-        $._identifier,
         seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
       ),
+
+    _sp_limit_value: ($) => choice($._limit_value, $._identifier),
 
     locking_clause: ($) =>
       choice(
@@ -1119,84 +1412,6 @@ export default grammar({
     // Data Manipulation (INSERT, REPLACE, UPDATE, DELETE, LOAD)
     // =========================================================================
 
-    insert_statement: ($) =>
-      seq(
-        keyword('INSERT'),
-        optional(choice(keyword('LOW_PRIORITY'), keyword('DELAYED'), keyword('HIGH_PRIORITY'))),
-        optional(keyword('IGNORE')),
-        optional(keyword('INTO')),
-        field('table', $.qualified_name),
-        optional($.partition_names_clause),
-        choice(
-          seq(
-            optional($._insert_column_list),
-            choice(
-              seq(
-                choice(
-                  seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
-                  $._values_clause
-                ),
-                optional($._insert_row_alias)
-              ),
-              alias($._insert_query, $.select_statement)
-            )
-          ),
-          seq($.set_clause, optional($._insert_row_alias))
-        ),
-        optional($.on_duplicate_key_update_clause)
-      ),
-
-    replace_statement: ($) =>
-      seq(
-        keyword('REPLACE'),
-        optional(choice(keyword('LOW_PRIORITY'), keyword('DELAYED'))),
-        optional(keyword('INTO')),
-        field('table', $.qualified_name),
-        optional($.partition_names_clause),
-        choice(
-          seq(
-            optional($._insert_column_list),
-            choice(
-              seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
-              $._values_clause,
-              alias($._insert_query, $.select_statement)
-            )
-          ),
-          $.set_clause
-        )
-      ),
-
-    _insert_query: ($) =>
-      choice(
-        seq(
-          $.with_clause,
-          $._query_body_no_into,
-          optional($.order_by_clause),
-          optional($.limit_clause),
-          repeat($.locking_clause)
-        ),
-        seq(
-          choice(
-            $.select_core,
-            $.table_value_statement,
-            $.parenthesized_query,
-            $.compound_query,
-            alias($._intersect_query_no_into, $.compound_query)
-          ),
-          optional($.order_by_clause),
-          optional($.limit_clause),
-          repeat($.locking_clause)
-        ),
-        seq(
-          $.values_statement,
-          choice(
-            seq($.order_by_clause, optional($.limit_clause), repeat($.locking_clause)),
-            seq($.limit_clause, repeat($.locking_clause)),
-            repeat1($.locking_clause)
-          )
-        )
-      ),
-
     _insert_column_list: ($) => seq('(', commaSep($.column_reference), ')'),
 
     insert_values_row: ($) => seq('(', commaSep(choice($._expression, keyword('DEFAULT'))), ')'),
@@ -1205,64 +1420,10 @@ export default grammar({
 
     on_duplicate_key_update_clause: ($) => seq(keywords('ON DUPLICATE KEY UPDATE'), commaSep1($.assignment)),
 
-    update_statement: ($) =>
-      seq(
-        optional($.with_clause),
-        keyword('UPDATE'),
-        optional(keyword('LOW_PRIORITY')),
-        optional(keyword('IGNORE')),
-        choice(
-          seq(
-            $.table,
-            $.set_clause,
-            optional($.where_clause),
-            optional($.order_by_clause),
-            optional(alias($._simple_limit_clause, $.limit_clause))
-          ),
-          seq($._multi_table_references, $.set_clause, optional($.where_clause))
-        )
-      ),
-
-    _multi_table_references: ($) =>
-      choice(
-        seq($._table_reference, ',', commaSep1($._table_reference)),
-        $._joined_table,
-        seq('{', keyword('OJ'), $._table_reference, '}'),
-        $.subquery_table,
-        $.json_table,
-        $.join_table
-      ),
-
     set_clause: ($) => seq(keyword('SET'), commaSep1($.assignment)),
 
     assignment: ($) =>
       seq(field('left', $.column_reference), '=', field('right', choice($._expression, keyword('DEFAULT')))),
-
-    delete_statement: ($) =>
-      seq(
-        optional($.with_clause),
-        keyword('DELETE'),
-        repeat(choice(keyword('LOW_PRIORITY'), keyword('QUICK'), keyword('IGNORE'))),
-        choice(
-          // Single-table DELETE or multi-table `DELETE FROM t1, t2 USING ...`
-          seq(
-            keyword('FROM'),
-            choice(
-              seq(
-                field('table', $.qualified_name),
-                optional($._table_alias),
-                optional($.partition_names_clause),
-                optional($.where_clause),
-                optional($.order_by_clause),
-                optional(alias($._simple_limit_clause, $.limit_clause))
-              ),
-              seq(commaSep1($.delete_target), keyword('USING'), $._table_references, optional($.where_clause))
-            )
-          ),
-          // Multi-table `DELETE t1, t2 FROM ...`
-          seq(commaSep1($.delete_target), keyword('FROM'), $._table_references, optional($.where_clause))
-        )
-      ),
 
     delete_target: ($) =>
       choice(
@@ -1375,35 +1536,6 @@ export default grammar({
     if_not_exists: () => keywords('IF NOT EXISTS'),
 
     if_exists: () => keywords('IF EXISTS'),
-
-    create_table_statement: ($) =>
-      seq(
-        keyword('CREATE'),
-        optional(keyword('TEMPORARY')),
-        keyword('TABLE'),
-        optional($.if_not_exists),
-        field('name', $.qualified_name),
-        choice(
-          seq(keyword('LIKE'), field('like', $.qualified_name)),
-          seq('(', keyword('LIKE'), field('like', $.qualified_name), ')'),
-          seq(
-            '(',
-            commaSep1($._create_definition),
-            ')',
-            optional($._table_options),
-            optional($.partition_by_clause_ddl),
-            optional($._create_table_query_tail)
-          ),
-          seq(optional($._table_options), optional($.partition_by_clause_ddl), $._create_table_query_tail)
-        )
-      ),
-
-    _create_table_query_tail: ($) =>
-      seq(
-        optional(choice(keyword('IGNORE'), keyword('REPLACE'))),
-        optional(keyword('AS')),
-        alias($._subquery_select, $.select_statement)
-      ),
 
     _create_definition: ($) => choice($.column_definition, $.table_constraint),
 
@@ -2435,7 +2567,7 @@ export default grammar({
         alias($._sp_get_diagnostics_statement, $.get_diagnostics_statement),
         alias($._sp_signal_statement, $.signal_statement),
         alias($._sp_resignal_statement, $.resignal_statement),
-        ...commonStatements($)
+        ...commonStatements($, true)
       ),
 
     compound_statement: ($) =>
@@ -2457,7 +2589,7 @@ export default grammar({
             keywords('CONDITION FOR'),
             choice($._sqlstate_clause, $._sp_condition_number)
           ),
-          seq(field('cursor', $._identifier), keywords('CURSOR FOR'), alias($._subquery_select, $.select_statement)),
+          seq(field('cursor', $._identifier), keywords('CURSOR FOR'), alias($._sp_subquery_select, $.select_statement)),
           seq(
             choice(keyword('CONTINUE'), keyword('EXIT')),
             keywords('HANDLER FOR'),
@@ -2929,131 +3061,128 @@ export default grammar({
         )
       ),
 
-    show_statement: ($) =>
+    _show_non_limit_body: ($) =>
+      choice(
+        seq(
+          optional(keyword('EXTENDED')),
+          optional(keyword('FULL')),
+          choice(keyword('COLUMNS'), keyword('FIELDS')),
+          choice(keyword('FROM'), keyword('IN')),
+          $.qualified_name,
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
+          optional($._like_or_where)
+        ),
+        seq(
+          optional(keyword('EXTENDED')),
+          optional(keyword('FULL')),
+          keyword('TABLES'),
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
+          optional($._like_or_where)
+        ),
+        seq(choice(keyword('DATABASES'), keyword('SCHEMAS')), optional($._like_or_where)),
+        seq(
+          optional(choice(keyword('GLOBAL'), keyword('SESSION'))),
+          choice(keyword('VARIABLES'), keyword('STATUS')),
+          optional($._like_or_where)
+        ),
+        seq(
+          optional(keyword('EXTENDED')),
+          choice(keyword('INDEX'), keyword('INDEXES'), keyword('KEYS')),
+          choice(keyword('FROM'), keyword('IN')),
+          $.qualified_name,
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
+          optional($.where_clause)
+        ),
+        seq(
+          keyword('CREATE'),
+          choice(
+            seq(keyword('USER'), $.account_name),
+            seq(choice(keyword('DATABASE'), keyword('SCHEMA')), optional($.if_not_exists), $.qualified_name),
+            seq(
+              choice(
+                keyword('TABLE'),
+                keyword('VIEW'),
+                keyword('PROCEDURE'),
+                keyword('FUNCTION'),
+                keyword('TRIGGER'),
+                keyword('EVENT')
+              ),
+              $.qualified_name
+            )
+          )
+        ),
+        seq(
+          keyword('GRANTS'),
+          optional(
+            seq(
+              keyword('FOR'),
+              $.account_name,
+              optional(seq(keyword('USING'), commaSep1(alias($._role_name, $.account_name))))
+            )
+          )
+        ),
+        seq(optional(keyword('FULL')), keyword('PROCESSLIST')),
+        seq(keyword('COUNT'), '(', '*', ')', choice(keyword('WARNINGS'), keyword('ERRORS'))),
+        seq(
+          keywords('TABLE STATUS'),
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
+          optional($._like_or_where)
+        ),
+        seq(choice(keyword('PROCEDURE'), keyword('FUNCTION')), keyword('STATUS'), optional($._like_or_where)),
+        seq(choice(keyword('PROCEDURE'), keyword('FUNCTION')), keyword('CODE'), $.qualified_name),
+        seq(
+          choice(keyword('TRIGGERS'), keyword('EVENTS')),
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
+          optional($._like_or_where)
+        ),
+        seq(choice(keywords('CHARACTER SET'), keyword('CHARSET'), keyword('COLLATION')), optional($._like_or_where)),
+        seq(optional(keyword('STORAGE')), keyword('ENGINES')),
+        seq(
+          keyword('ENGINE'),
+          choice($._identifier, keyword('ALL')),
+          choice(keyword('STATUS'), keyword('MUTEX'), keyword('LOGS'))
+        ),
+        keyword('PRIVILEGES'),
+        keyword('PLUGINS'),
+        keyword('PROFILES'),
+        seq(
+          keywords('OPEN TABLES'),
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
+          optional($._like_or_where)
+        ),
+        keywords('BINARY LOGS'),
+        keywords('BINARY LOG STATUS'),
+        seq(keyword('REPLICA'), keyword('STATUS'), optional(seq(keywords('FOR CHANNEL'), $.string_literal))),
+        keyword('REPLICAS')
+      ),
+
+    _show_profile_head: ($) =>
       seq(
-        keyword('SHOW'),
-        choice(
-          seq(
-            optional(keyword('EXTENDED')),
-            optional(keyword('FULL')),
-            choice(keyword('COLUMNS'), keyword('FIELDS')),
-            choice(keyword('FROM'), keyword('IN')),
-            $.qualified_name,
-            optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-            optional($._like_or_where)
-          ),
-          seq(
-            optional(keyword('EXTENDED')),
-            optional(keyword('FULL')),
-            keyword('TABLES'),
-            optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-            optional($._like_or_where)
-          ),
-          seq(choice(keyword('DATABASES'), keyword('SCHEMAS')), optional($._like_or_where)),
-          seq(
-            optional(choice(keyword('GLOBAL'), keyword('SESSION'))),
-            choice(keyword('VARIABLES'), keyword('STATUS')),
-            optional($._like_or_where)
-          ),
-          seq(
-            optional(keyword('EXTENDED')),
-            choice(keyword('INDEX'), keyword('INDEXES'), keyword('KEYS')),
-            choice(keyword('FROM'), keyword('IN')),
-            $.qualified_name,
-            optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-            optional($.where_clause)
-          ),
-          seq(
-            keyword('CREATE'),
+        keyword('PROFILE'),
+        optional(
+          commaSep1(
             choice(
-              seq(keyword('USER'), $.account_name),
-              seq(choice(keyword('DATABASE'), keyword('SCHEMA')), optional($.if_not_exists), $.qualified_name),
-              seq(
-                choice(
-                  keyword('TABLE'),
-                  keyword('VIEW'),
-                  keyword('PROCEDURE'),
-                  keyword('FUNCTION'),
-                  keyword('TRIGGER'),
-                  keyword('EVENT')
-                ),
-                $.qualified_name
-              )
+              keyword('ALL'),
+              keywords('BLOCK IO'),
+              keywords('CONTEXT SWITCHES'),
+              keyword('CPU'),
+              keyword('IPC'),
+              keyword('MEMORY'),
+              keywords('PAGE FAULTS'),
+              keyword('SOURCE'),
+              keyword('SWAPS')
             )
-          ),
-          seq(
-            keyword('GRANTS'),
-            optional(
-              seq(
-                keyword('FOR'),
-                $.account_name,
-                optional(seq(keyword('USING'), commaSep1(alias($._role_name, $.account_name))))
-              )
-            )
-          ),
-          seq(optional(keyword('FULL')), keyword('PROCESSLIST')),
-          seq(choice(keyword('WARNINGS'), keyword('ERRORS')), optional($.limit_clause)),
-          seq(keyword('COUNT'), '(', '*', ')', choice(keyword('WARNINGS'), keyword('ERRORS'))),
-          seq(
-            keywords('TABLE STATUS'),
-            optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-            optional($._like_or_where)
-          ),
-          seq(choice(keyword('PROCEDURE'), keyword('FUNCTION')), keyword('STATUS'), optional($._like_or_where)),
-          seq(choice(keyword('PROCEDURE'), keyword('FUNCTION')), keyword('CODE'), $.qualified_name),
-          seq(
-            choice(keyword('TRIGGERS'), keyword('EVENTS')),
-            optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-            optional($._like_or_where)
-          ),
-          seq(choice(keywords('CHARACTER SET'), keyword('CHARSET'), keyword('COLLATION')), optional($._like_or_where)),
-          seq(optional(keyword('STORAGE')), keyword('ENGINES')),
-          seq(
-            keyword('ENGINE'),
-            choice($._identifier, keyword('ALL')),
-            choice(keyword('STATUS'), keyword('MUTEX'), keyword('LOGS'))
-          ),
-          keyword('PRIVILEGES'),
-          keyword('PLUGINS'),
-          keyword('PROFILES'),
-          seq(
-            keyword('PROFILE'),
-            optional(
-              commaSep1(
-                choice(
-                  keyword('ALL'),
-                  keywords('BLOCK IO'),
-                  keywords('CONTEXT SWITCHES'),
-                  keyword('CPU'),
-                  keyword('IPC'),
-                  keyword('MEMORY'),
-                  keywords('PAGE FAULTS'),
-                  keyword('SOURCE'),
-                  keyword('SWAPS')
-                )
-              )
-            ),
-            optional(seq(keywords('FOR QUERY'), $.numeric_literal)),
-            optional($.limit_clause)
-          ),
-          seq(
-            keywords('OPEN TABLES'),
-            optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-            optional($._like_or_where)
-          ),
-          keywords('BINARY LOGS'),
-          keywords('BINARY LOG STATUS'),
-          seq(
-            choice(keyword('BINLOG'), keyword('RELAYLOG')),
-            keyword('EVENTS'),
-            optional(seq(keyword('IN'), $.string_literal)),
-            optional(seq(keyword('FROM'), $.numeric_literal)),
-            optional($.limit_clause),
-            optional(seq(keywords('FOR CHANNEL'), $.string_literal))
-          ),
-          seq(keyword('REPLICA'), keyword('STATUS'), optional(seq(keywords('FOR CHANNEL'), $.string_literal))),
-          keyword('REPLICAS')
-        )
+          )
+        ),
+        optional(seq(keywords('FOR QUERY'), $.numeric_literal))
+      ),
+
+    _show_log_events_head: ($) =>
+      seq(
+        choice(keyword('BINLOG'), keyword('RELAYLOG')),
+        keyword('EVENTS'),
+        optional(seq(keyword('IN'), $.string_literal)),
+        optional(seq(keyword('FROM'), $.numeric_literal))
       ),
 
     _like_or_where: ($) => choice(seq(keyword('LIKE'), $.string_literal), $.where_clause),
@@ -3065,25 +3194,12 @@ export default grammar({
         optional(choice($._identifier, $.string_literal))
       ),
 
-    explain_statement: ($) =>
-      seq(
-        choice(keyword('EXPLAIN'), keyword('DESCRIBE'), keyword('DESC')),
-        optional(
-          choice(
-            seq(keyword('ANALYZE'), optional($._explain_format)),
-            keyword('EXTENDED'),
-            keyword('PARTITIONS'),
-            $._explain_format
-          )
-        ),
-        choice(
-          $.select_statement,
-          $.insert_statement,
-          $.replace_statement,
-          $.update_statement,
-          $.delete_statement,
-          seq(keywords('FOR CONNECTION'), $.numeric_literal)
-        )
+    _explain_option: ($) =>
+      choice(
+        seq(keyword('ANALYZE'), optional($._explain_format)),
+        keyword('EXTENDED'),
+        keyword('PARTITIONS'),
+        $._explain_format
       ),
 
     _explain_format: () =>
@@ -3565,33 +3681,26 @@ export default grammar({
 
     do_statement: ($) => seq(keyword('DO'), commaSep1($._expression)),
 
-    handler_statement: ($) =>
+    _handler_open_or_close: ($) => choice(seq(keyword('OPEN'), optional($._table_alias)), keyword('CLOSE')),
+
+    _handler_read_head: ($) =>
       seq(
-        keyword('HANDLER'),
-        field('table', $.qualified_name),
+        keyword('READ'),
         choice(
-          seq(keyword('OPEN'), optional($._table_alias)),
-          keyword('CLOSE'),
+          keyword('FIRST'),
+          keyword('NEXT'),
           seq(
-            keyword('READ'),
+            field('index', $._identifier),
             choice(
               keyword('FIRST'),
               keyword('NEXT'),
-              seq(
-                field('index', $._identifier),
-                choice(
-                  keyword('FIRST'),
-                  keyword('NEXT'),
-                  keyword('PREV'),
-                  keyword('LAST'),
-                  seq(choice('=', '<=', '>=', '<', '>'), '(', commaSep1($._expression), ')')
-                )
-              )
-            ),
-            optional($.where_clause),
-            optional($.limit_clause)
+              keyword('PREV'),
+              keyword('LAST'),
+              seq(choice('=', '<=', '>=', '<', '>'), '(', commaSep1($._expression), ')')
+            )
           )
-        )
+        ),
+        optional($.where_clause)
       ),
 
     // =========================================================================
