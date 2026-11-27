@@ -678,13 +678,11 @@ const buildOperatorAndPredicateRules = (k, ref, pub, def, isPlsql) => [
       seq(
         optional(keyword('NOT')),
         keyword('IN'),
-        choice(
-          prec(
-            2,
-            seq('(', choice(alias($._subquery_statement, $.select_statement), commaSep1(ref($, '_expression'))), ')')
-          ),
-          field('collection', ref($, '_primary_expression'))
-        )
+        '(',
+        isPlsql
+          ? commaSep1(ref($, '_expression'))
+          : choice(alias($._subquery_statement, $.select_statement), commaSep1(ref($, '_expression'))),
+        ')'
       ),
   ],
   def('member_of_expression', ($) =>
@@ -794,22 +792,7 @@ function buildCaseAndBuiltinRules(k, ref, pub, def, isPlsql) {
           $._is_predicate_tail,
           ref($, '_like_tail'),
           ref($, '_between_tail'),
-          seq(
-            optional(keyword('NOT')),
-            keyword('IN'),
-            choice(
-              prec(
-                2,
-                seq(
-                  '(',
-                  choice(alias($._subquery_statement, $.select_statement), commaSep1(ref($, '_expression'))),
-                  ')'
-                )
-              ),
-              ref($, '_callable_expression'),
-              $.bind_variable
-            )
-          ),
+          ref($, '_in_tail'),
           ref($, '_member_of_tail'),
           ref($, '_submultiset_tail')
         ),
