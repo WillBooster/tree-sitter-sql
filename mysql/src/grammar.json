@@ -4190,37 +4190,6 @@
               }
             }
           ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Ww][Ii][Tt][Hh]"
-                  },
-                  "named": false,
-                  "value": "WITH"
-                },
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Rr][Oo][Ll][Ll][Uu][Pp]"
-                  },
-                  "named": false,
-                  "value": "ROLLUP"
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
         }
       ]
     },
@@ -44170,9 +44139,6 @@
     ],
     [
       "partition_by_clause_ddl"
-    ],
-    [
-      "order_by_clause"
     ],
     [
       "group_by_clause"

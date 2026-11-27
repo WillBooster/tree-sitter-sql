@@ -658,7 +658,6 @@ export default grammar({
     [$.alter_table_action],
     [$.references_clause],
     [$.partition_by_clause_ddl],
-    [$.order_by_clause],
     [$.group_by_clause],
     [$.check_constraint_body],
     [$.function_call],
@@ -1060,7 +1059,7 @@ export default grammar({
         seq(choice(keyword('UNBOUNDED'), $._expression), choice(keyword('PRECEDING'), keyword('FOLLOWING')))
       ),
 
-    order_by_clause: ($) => seq(keywords('ORDER BY'), commaSep1($.ordering_term), optional(keywords('WITH ROLLUP'))),
+    order_by_clause: ($) => seq(keywords('ORDER BY'), commaSep1($.ordering_term)),
 
     ordering_term: ($) => seq(field('value', $._expression), optional(choice(keyword('ASC'), keyword('DESC')))),
 
