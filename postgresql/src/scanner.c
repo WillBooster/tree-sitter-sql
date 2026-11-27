@@ -284,8 +284,10 @@ static bool scan_positional_param(TSLexer *lexer, const bool *valid_symbols) {
   int64_t val = 0;
   bool overflow = false;
   while (is_digit(lexer->lookahead)) {
-    val = val * 10 + (lexer->lookahead - '0');
-    if (val > INT32_MAX) overflow = true;
+    if (!overflow) {
+      val = val * 10 + (lexer->lookahead - '0');
+      if (val > INT32_MAX) overflow = true;
+    }
     advance(lexer);
   }
   bool trailing = is_ident_cont(lexer->lookahead);
