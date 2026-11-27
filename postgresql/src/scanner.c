@@ -1,3 +1,4 @@
+// code-gauge-allow-file fileNcss -- tree-sitter compiles one scanner.c covering PostgreSQL comments, literals, numbers, parameters, and custom operators
 #include "tree_sitter/array.h"
 #include "tree_sitter/parser.h"
 
@@ -101,88 +102,75 @@ static bool scan_quote_continuation(TSLexer *lexer) {
   }
 }
 
-static bool step_surrogate_state(int32_t cp, bool *expecting_low) {
+typedef struct {
+  CharArray *out;
+  bool c_escapes;
+  bool done;
+  bool expecting_low;
+  bool invalid;
+} QuotedState;
+
+static bool step_codepoint(uint32_t cp, bool *expecting_low) {
+  if (cp == 0 || cp > 0x10FFFF) return false;
   bool is_high = cp >= 0xD800 && cp <= 0xDBFF;
   bool is_low = cp >= 0xDC00 && cp <= 0xDFFF;
-  if (*expecting_low) {
-    *expecting_low = false;
-    return is_low;
-  }
-  *expecting_low = is_high;
-  return !is_low;
+  bool prev_high = *expecting_low;
+  *expecting_low = prev_high ? false : is_high;
+  return prev_high ? is_low : !is_low;
 }
 
-static bool scan_c_unicode_escape(TSLexer *lexer, unsigned digits, bool *expecting_low, bool *invalid) {
-  uint32_t cp = 0;
-  for (unsigned i = 0; i < digits; i++) {
-    if (!is_hex_digit(lexer->lookahead)) {
-      *invalid = true;
-      *expecting_low = false;
-      return true;
-    }
-    cp = (cp << 4) | (uint32_t)hex_value(lexer->lookahead);
-    advance(lexer);
-  }
-  if (cp == 0 || cp > 0x10FFFF || !step_surrogate_state((int32_t)cp, expecting_low)) {
-    *invalid = true;
-    *expecting_low = false;
-  }
-  return true;
+static void fail_quote(QuotedState *s) {
+  s->invalid = true;
+  s->expecting_low = false;
 }
 
-static bool scan_c_escape(TSLexer *lexer, bool *expecting_low, bool *invalid) {
+static bool scan_c_escape(TSLexer *lexer, QuotedState *s) {
   if (at_eof(lexer)) return false;
   int32_t c = lexer->lookahead;
   if (c == 'u' || c == 'U') {
     advance(lexer);
-    return scan_c_unicode_escape(lexer, c == 'u' ? 4 : 8, expecting_low, invalid);
+    unsigned digits = c == 'u' ? 4 : 8;
+    uint32_t cp = 0;
+    for (unsigned i = 0; i < digits; i++) {
+      if (!is_hex_digit(lexer->lookahead)) return fail_quote(s), true;
+      cp = (cp << 4) | (uint32_t)hex_value(lexer->lookahead);
+      advance(lexer);
+    }
+    if (!step_codepoint(cp, &s->expecting_low)) fail_quote(s);
+    return true;
   }
-  if (*expecting_low) {
-    *invalid = true;
-    *expecting_low = false;
-  }
-  if (c == 0) *invalid = true;
+  if (s->expecting_low || c == 0) fail_quote(s);
   advance(lexer);
   return true;
 }
 
-static bool step_quoted_char(
-    TSLexer *lexer, int32_t quote, bool c_escapes, CharArray *out, bool *done, bool *expecting_low, bool *invalid) {
+static bool step_quoted_char(TSLexer *lexer, int32_t quote, QuotedState *s) {
   int32_t c = lexer->lookahead;
   advance(lexer);
-  if (c == 0) {
-    *invalid = true;
-    *expecting_low = false;
-    return true;
-  }
+  if (c == 0) return fail_quote(s), true;
   if (c == quote) {
     if (lexer->lookahead != quote) {
-      if (*expecting_low) *invalid = true;
-      *done = true;
+      if (s->expecting_low) s->invalid = true;
+      s->done = true;
       return true;
     }
     advance(lexer);
-  } else if (c_escapes && c == '\\') {
-    return scan_c_escape(lexer, expecting_low, invalid);
+  } else if (s->c_escapes && c == '\\') {
+    return scan_c_escape(lexer, s);
   }
-  if (*expecting_low) {
-    *invalid = true;
-    *expecting_low = false;
-  }
-  if (out != NULL) array_push(out, c);
+  if (s->expecting_low) fail_quote(s);
+  if (s->out != NULL) array_push(s->out, c);
   return true;
 }
 
 static bool scan_quoted_segment(TSLexer *lexer, int32_t quote, bool c_escapes, CharArray *out, unsigned *count) {
   advance(lexer);
-  bool invalid = false;
-  bool expecting_low = false;
-  bool done = false;
-  while (!at_eof(lexer) && !done) {
-    if (!step_quoted_char(lexer, quote, c_escapes, out, &done, &expecting_low, &invalid)) return false;
-    if (!done) (*count)++;
+  QuotedState s = {.out = out, .c_escapes = c_escapes};
+  while (!at_eof(lexer) && !s.done) {
+    if (!step_quoted_char(lexer, quote, &s)) return false;
+    if (!s.done) (*count)++;
   }
-  return done && !invalid;
+  return s.done && !s.invalid;
 }
 
 static bool scan_string_segments(TSLexer *lexer, bool c_escapes, CharArray *out) {
@@ -232,7 +220,7 @@ static bool is_valid_uescape_char(int32_t c) {
   return c > 0 && c <= 0x7F && !is_hex_digit(c) && strchr("+'\"", c) == NULL && !is_space(c);
 }
 
-static bool parse_hex_run(const CharArray *buf, unsigned *idx, unsigned digits, int32_t *out) {
+static bool parse_hex_run(const CharArray *buf, unsigned *idx, unsigned digits, uint32_t *out) {
   if (*idx + digits > buf->size) return false;
   uint32_t val = 0;
   for (unsigned i = 0; i < digits; i++) {
@@ -241,8 +229,7 @@ static bool parse_hex_run(const CharArray *buf, unsigned *idx, unsigned digits, 
     val = (val << 4) | (uint32_t)hex_value(c);
   }
   *idx += digits;
-  if (val == 0 || val > 0x10FFFF) return false;
-  *out = (int32_t)val;
+  *out = val;
   return true;
 }
 
@@ -250,13 +237,10 @@ static bool step_unicode_char(const CharArray *buf, unsigned *idx, int32_t esc, 
   int32_t c = buf->contents[(*idx)++];
   if (c != esc) return !*expecting_low;
   if (*idx >= buf->size) return false;
-  if (buf->contents[*idx] == esc) {
-    (*idx)++;
-    return !*expecting_low;
-  }
-  int32_t cp = 0;
+  if (buf->contents[*idx] == esc) return (*idx)++, !*expecting_low;
+  uint32_t cp = 0;
   bool ok = buf->contents[*idx] == '+' ? ((*idx)++, parse_hex_run(buf, idx, 6, &cp)) : parse_hex_run(buf, idx, 4, &cp);
-  return ok && step_surrogate_state(cp, expecting_low);
+  return ok && step_codepoint(cp, expecting_low);
 }
 
 static bool validate_unicode_escapes(const CharArray *buf, int32_t esc) {
