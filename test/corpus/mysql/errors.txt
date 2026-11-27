@@ -890,3 +890,13 @@ OVER clause on scalar function or omitted OVER on ROW_NUMBER is invalid
 SELECT ABS(1) OVER ();
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Non-literal expression in JSON_VALUE DEFAULT is invalid
+:error
+:language(mysql)
+================================================================================
+
+SELECT JSON_VALUE('{}', '$.b' DEFAULT 1 + 2 ON ERROR);
+
+--------------------------------------------------------------------------------

@@ -651,7 +651,6 @@ export default grammar({
     [$.partition_by_clause_ddl],
     [$.group_by_clause],
     [$.check_constraint_body],
-    [$.function_call],
     [$._select_no_into, $.parenthesized_query],
   ],
 
@@ -992,7 +991,11 @@ export default grammar({
 
     _json_on_error: ($) => seq($._json_on_response, keywords('ON ERROR')),
 
-    _json_on_response: ($) => choice(keyword('NULL'), keyword('ERROR'), seq(keyword('DEFAULT'), $._expression)),
+    _json_on_response: ($) => choice(keyword('NULL'), keyword('ERROR'), seq(keyword('DEFAULT'), $._signed_literal)),
+
+    _signed_literal: ($) => choice($._non_null_literal, alias($._signed_num_literal, $.unary_expression)),
+
+    _signed_num_literal: ($) => seq(field('operator', choice('+', '-')), field('operand', $.numeric_literal)),
 
     _joined_table: ($) =>
       choice(
@@ -4177,16 +4180,10 @@ export default grammar({
         seq($._dot_context, $._unreachable)
       ),
 
-    _literal: ($) =>
-      choice(
-        $.null,
-        $.boolean_literal,
-        $.numeric_literal,
-        $.string_literal,
-        $.temporal_literal,
-        $.hex_literal,
-        $.bit_literal
-      ),
+    _literal: ($) => choice($.null, $._non_null_literal),
+
+    _non_null_literal: ($) =>
+      choice($.boolean_literal, $.numeric_literal, $.string_literal, $.temporal_literal, $.hex_literal, $.bit_literal),
 
     null: () => keyword('NULL'),
 

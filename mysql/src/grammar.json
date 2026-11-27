@@ -3428,9 +3428,57 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "_signed_literal"
             }
           ]
+        }
+      ]
+    },
+    "_signed_literal": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_non_null_literal"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_signed_num_literal"
+          },
+          "named": true,
+          "value": "unary_expression"
+        }
+      ]
+    },
+    "_signed_num_literal": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "operator",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "+"
+              },
+              {
+                "type": "STRING",
+                "value": "-"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "operand",
+          "content": {
+            "type": "SYMBOL",
+            "name": "numeric_literal"
+          }
         }
       ]
     },
@@ -44187,6 +44235,15 @@
         },
         {
           "type": "SYMBOL",
+          "name": "_non_null_literal"
+        }
+      ]
+    },
+    "_non_null_literal": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
           "name": "boolean_literal"
         },
         {
@@ -44560,9 +44617,6 @@
     ],
     [
       "check_constraint_body"
-    ],
-    [
-      "function_call"
     ],
     [
       "_select_no_into",
