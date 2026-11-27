@@ -1350,17 +1350,58 @@ export default grammar({
     frame_clause: ($) =>
       seq(
         choice(keyword('RANGE'), keyword('ROWS'), keyword('GROUPS')),
-        choice($.frame_bound, seq(keyword('BETWEEN'), $.frame_bound, keyword('AND'), $.frame_bound)),
+        choice(
+          alias($._frame_unbounded_preceding, $.frame_bound),
+          alias($._frame_current_row, $.frame_bound),
+          alias($._frame_expr_preceding, $.frame_bound),
+          seq(
+            keyword('BETWEEN'),
+            choice(
+              seq(
+                choice(
+                  alias($._frame_unbounded_preceding, $.frame_bound),
+                  alias($._frame_expr_preceding, $.frame_bound)
+                ),
+                keyword('AND'),
+                choice(
+                  alias($._frame_expr_preceding, $.frame_bound),
+                  alias($._frame_current_row, $.frame_bound),
+                  alias($._frame_expr_following, $.frame_bound),
+                  alias($._frame_unbounded_following, $.frame_bound)
+                )
+              ),
+              seq(
+                alias($._frame_current_row, $.frame_bound),
+                keyword('AND'),
+                choice(
+                  alias($._frame_current_row, $.frame_bound),
+                  alias($._frame_expr_following, $.frame_bound),
+                  alias($._frame_unbounded_following, $.frame_bound)
+                )
+              ),
+              seq(
+                alias($._frame_expr_following, $.frame_bound),
+                keyword('AND'),
+                choice(
+                  alias($._frame_expr_following, $.frame_bound),
+                  alias($._frame_unbounded_following, $.frame_bound)
+                )
+              )
+            )
+          )
+        ),
         optional($.frame_exclusion)
       ),
 
-    frame_bound: ($) =>
-      choice(
-        keywords('UNBOUNDED PRECEDING'),
-        keywords('UNBOUNDED FOLLOWING'),
-        keywords('CURRENT ROW'),
-        seq($._expression, choice(keyword('PRECEDING'), keyword('FOLLOWING')))
-      ),
+    _frame_unbounded_preceding: () => keywords('UNBOUNDED PRECEDING'),
+
+    _frame_unbounded_following: () => keywords('UNBOUNDED FOLLOWING'),
+
+    _frame_current_row: () => keywords('CURRENT ROW'),
+
+    _frame_expr_preceding: ($) => seq($._expression, keyword('PRECEDING')),
+
+    _frame_expr_following: ($) => seq($._expression, keyword('FOLLOWING')),
 
     frame_exclusion: () =>
       seq(
