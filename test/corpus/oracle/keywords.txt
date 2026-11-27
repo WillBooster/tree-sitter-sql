@@ -212,7 +212,6 @@ CREATE OR REPLACE FUNCTION read_blob(file BFILE) RETURN BLOB IS
 BEGIN
   RETURN NULL;
 END;
-/
 
 --------------------------------------------------------------------------------
 

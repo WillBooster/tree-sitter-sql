@@ -1,4 +1,4 @@
-// code-gauge-allow-file fileNcss -- tree-sitter compiles one scanner.c covering Oracle comments, literals, numbers, slash terminators, and persistent FK column tries
+// code-gauge-allow-file fileNcss -- tree-sitter compiles one scanner.c covering Oracle comments, literals, numbers, and persistent FK column tries
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/parser.h"
 
@@ -10,7 +10,6 @@ enum TokenType {
   ILLEGAL_TOKEN,
   UNREACHABLE,
   ERROR_SENTINEL,
-  DIVISION_GUARD,
   COMMENT,
   STRING_LITERAL,
   QUOTED_IDENTIFIER,
@@ -18,7 +17,6 @@ enum TokenType {
   WHOLE_NUMBER_LITERAL,
   SIZE_LITERAL,
   BIND_VARIABLE,
-  SLASH_TERMINATOR,
   REL_TABLE_OPEN,
   CAPTURE_NAME,
   COMMIT_TYPELESS_COL,
@@ -105,23 +103,12 @@ static bool next_char(TSLexer *lexer, int32_t *out, bool *has_nul) {
   return true;
 }
 
-static bool skip_spaces(TSLexer *lexer) {
-  TSLexerPosition pos;
-  lexer->get_position(lexer, &pos);
-  bool line_only_hspace = pos.column == 0;
-  for (;;) {
-    int32_t c = lexer->lookahead;
-    if (c == '\n' || c == '\r') {
-      line_only_hspace = true;
-    } else if (c == '\f' || c == '\v') {
-      line_only_hspace = false;
-    } else if (c == 0xFEFF) {
-      if (pos.bytes != 0) line_only_hspace = false;
-    } else if (c != ' ' && c != '\t') {
-      return line_only_hspace;
-    }
-    lexer->advance(lexer, true);
-  }
+static bool is_space(int32_t c) {
+  return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v' || c == 0xFEFF;
+}
+
+static void skip_spaces(TSLexer *lexer) {
+  while (is_space(lexer->lookahead)) lexer->advance(lexer, true);
 }
 
 // During error recovery (`ERROR_SENTINEL` is valid only in `ERROR_STATE`), emitting `COMMENT` triggers `SHIFT_EXTRA`
@@ -151,277 +138,6 @@ static bool scan_block_comment(TSLexer *lexer, const bool *valid_symbols) {
     star = c == '*';
   }
   return emit_illegal(lexer, valid_symbols);
-}
-
-static bool word_equals(const char *buf, unsigned len, const char *kw) {
-  unsigned i = 0;
-  while (kw[i] != '\0') {
-    if (i >= len || buf[i] != kw[i]) return false;
-    i++;
-  }
-  return i == len;
-}
-
-static unsigned read_upper_word(TSLexer *lexer, char *buf, unsigned cap) {
-  unsigned len = 0;
-  while (is_identifier_char(lexer->lookahead)) {
-    int32_t c = lexer->lookahead;
-    if (len < cap) buf[len] = (char)((c >= 'a' && c <= 'z') ? (c - 'a' + 'A') : c);
-    len++;
-    advance(lexer);
-  }
-  return len;
-}
-
-static bool is_lookahead_space(int32_t c) {
-  return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v' || c == 0xFEFF;
-}
-
-static void skip_block_comment_lookahead(TSLexer *lexer) {
-  advance(lexer);
-  bool star = false;
-  while (!at_eof(lexer)) {
-    int32_t ch = lexer->lookahead;
-    advance(lexer);
-    if (star && ch == '/') return;
-    star = ch == '*';
-  }
-}
-
-static int skip_line_comment_lookahead(TSLexer *lexer) {
-  advance(lexer);
-  if (lexer->lookahead != '-') return -1;
-  while (!at_eof(lexer) && lexer->lookahead != '\n') advance(lexer);
-  return 1;
-}
-
-static int skip_slash_lookahead(TSLexer *lexer, bool line_only_hspace) {
-  advance(lexer);
-  if (lexer->lookahead == '*') {
-    skip_block_comment_lookahead(lexer);
-    return 1;
-  }
-  if (!line_only_hspace) return -1;
-  while (lexer->lookahead == ' ' || lexer->lookahead == '\t') advance(lexer);
-  return (at_eof(lexer) || lexer->lookahead == '\n' || lexer->lookahead == '\r') ? 2 : -1;
-}
-
-static int skip_one_comment_lookahead(TSLexer *lexer, bool line_only_hspace) {
-  if (lexer->lookahead == '-') return skip_line_comment_lookahead(lexer);
-  if (lexer->lookahead == '/') return skip_slash_lookahead(lexer, line_only_hspace);
-  return 0;
-}
-
-static int skip_ws_and_comments_lookahead(TSLexer *lexer) {
-  bool line_only_hspace = false;
-  for (;;) {
-    while (is_lookahead_space(lexer->lookahead)) {
-      int32_t c = lexer->lookahead;
-      if (c == '\n' || c == '\r') {
-        line_only_hspace = true;
-      } else if (c != ' ' && c != '\t') {
-        line_only_hspace = false;
-      }
-      advance(lexer);
-    }
-    int res = skip_one_comment_lookahead(lexer, line_only_hspace);
-    if (res != 1) return res;
-    line_only_hspace = false;
-  }
-}
-
-static bool word_in_list(const char *w, unsigned len, const char *const *list, unsigned count) {
-  for (unsigned i = 0; i < count; i++) {
-    if (word_equals(w, len, list[i])) return true;
-  }
-  return false;
-}
-
-static const char *const RESERVED_STMT_STARTERS[] = {
-  "SELECT", "WITH",  "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP",
-  "RENAME", "COMMENT", "GRANT", "REVOKE", "LOCK",  "SET",    "AUDIT", "NOAUDIT",
-};
-
-static const char *const SQL_CONT_KEYWORDS[] = {
-  "FROM",        "WHERE",      "GROUP",   "HAVING",  "ORDER",           "FETCH",       "OFFSET",  "UNION",
-  "INTERSECT",   "MINUS",      "EXCEPT",  "AS",      "IS",              "IN",          "NOT",     "AND",
-  "OR",          "LIKE",       "LIKEC",   "LIKE2",   "LIKE4",           "BETWEEN",     "AT",      "COLLATE",
-  "MEMBER",      "SUBMULTISET","MULTISET","DAY",     "YEAR",            "KEEP",        "OVER",    "WITHIN",
-  "FILTER",      "QUALIFY",    "WINDOW",  "INTO",    "RETURNING",       "RETURN",      "MODEL",   "CONNECT",
-  "START",       "PIVOT",      "UNPIVOT", "CROSS",   "INNER",           "LEFT",        "RIGHT",   "FULL",
-  "NATURAL",     "JOIN",       "ON",      "USING",   "MATCH_RECOGNIZE", "WHEN",        "THEN",    "ELSE",
-  "END",
-};
-
-static const char *const SELECT_BOUNDARY_KEYWORDS[] = {
-  "BULK",  "INTO",  "FROM",      "WHERE", "CONNECT", "START",  "GROUP", "HAVING", "WINDOW", "QUALIFY",
-  "MODEL", "UNION", "INTERSECT", "MINUS", "EXCEPT",  "ORDER",  "OFFSET","FETCH",  "FOR",    "WITH",
-};
-
-static bool is_reserved_stmt_starter(const char *w, unsigned len) {
-  return word_in_list(w, len, RESERVED_STMT_STARTERS, sizeof(RESERVED_STMT_STARTERS) / sizeof(*RESERVED_STMT_STARTERS));
-}
-
-static bool advance_quoted_ident_lookahead(TSLexer *lexer) {
-  advance(lexer);
-  if (at_eof(lexer) || lexer->lookahead == '"') return false;
-  while (!at_eof(lexer) && lexer->lookahead != '"') advance(lexer);
-  if (lexer->lookahead != '"') return false;
-  advance(lexer);
-  return true;
-}
-
-static bool read_ident_or_quoted_lookahead(
-  TSLexer *lexer, char *buf, unsigned cap, unsigned *out_len, bool *is_quoted
-) {
-  if (lexer->lookahead == '"') {
-    *is_quoted = true;
-    *out_len = 0;
-    return advance_quoted_ident_lookahead(lexer);
-  }
-  if (!is_identifier_start(lexer->lookahead)) return false;
-  *is_quoted = false;
-  *out_len = read_upper_word(lexer, buf, cap);
-  return true;
-}
-
-static bool is_select_boundary_word(TSLexer *lexer, const char *w3, unsigned len3) {
-  if (
-    !word_in_list(
-      w3, len3, SELECT_BOUNDARY_KEYWORDS, sizeof(SELECT_BOUNDARY_KEYWORDS) / sizeof(*SELECT_BOUNDARY_KEYWORDS)
-    )
-  ) {
-    return false;
-  }
-  if (!word_equals(w3, len3, "FOR") && !word_equals(w3, len3, "WITH")) return true;
-  if (skip_ws_and_comments_lookahead(lexer) != 0 || !is_identifier_start(lexer->lookahead)) return false;
-  char w4[12];
-  unsigned len4 = read_upper_word(lexer, w4, sizeof(w4));
-  if (word_equals(w3, len3, "FOR")) return word_equals(w4, len4, "UPDATE");
-  return word_equals(w4, len4, "READ") || word_equals(w4, len4, "CHECK");
-}
-
-static bool semicolon_stays_in_plsql(TSLexer *lexer) {
-  advance(lexer);
-  if (skip_ws_and_comments_lookahead(lexer) != 0 || !is_identifier_start(lexer->lookahead)) return false;
-  char w4[12];
-  unsigned len4 = read_upper_word(lexer, w4, sizeof(w4));
-  return word_equals(w4, len4, "END") || word_equals(w4, len4, "ELSIF") || word_equals(w4, len4, "EXCEPTION");
-}
-
-static bool followed_by_select_boundary(TSLexer *lexer, bool allow_plsql_semicolon) {
-  int sk = skip_ws_and_comments_lookahead(lexer);
-  if (sk != 0) return true;
-  if (at_eof(lexer) || lexer->lookahead == ',' || lexer->lookahead == ')') return true;
-  if (lexer->lookahead == ';') return !(allow_plsql_semicolon && semicolon_stays_in_plsql(lexer));
-  if (!is_identifier_start(lexer->lookahead)) return false;
-  char w3[16];
-  unsigned len3 = read_upper_word(lexer, w3, sizeof(w3));
-  return is_select_boundary_word(lexer, w3, len3);
-}
-
-static bool call_follower_valid(TSLexer *lexer) {
-  char buf[20];
-  unsigned len = 0;
-  bool is_quoted = false;
-  if (!read_ident_or_quoted_lookahead(lexer, buf, sizeof(buf), &len, &is_quoted)) return false;
-  if (
-    !is_quoted && word_in_list(buf, len, SQL_CONT_KEYWORDS, sizeof(SQL_CONT_KEYWORDS) / sizeof(*SQL_CONT_KEYWORDS))
-  ) {
-    return false;
-  }
-  for (;;) {
-    if (skip_ws_and_comments_lookahead(lexer) != 0) return false;
-    if (lexer->lookahead != '.' && lexer->lookahead != '@') return lexer->lookahead == '(';
-    advance(lexer);
-    if (skip_ws_and_comments_lookahead(lexer) != 0) return false;
-    if (!read_ident_or_quoted_lookahead(lexer, buf, sizeof(buf), &len, &is_quoted)) return false;
-  }
-}
-
-static bool plsql_block_follower_valid(TSLexer *lexer, bool is_begin) {
-  if (lexer->lookahead == '$') return true;
-  if (lexer->lookahead == '<') {
-    advance(lexer);
-    return lexer->lookahead == '<';
-  }
-  char w2[20];
-  unsigned len2 = 0;
-  bool is_quoted = false;
-  if (!read_ident_or_quoted_lookahead(lexer, w2, sizeof(w2), &len2, &is_quoted)) return false;
-  if (!is_quoted && word_in_list(w2, len2, SQL_CONT_KEYWORDS, sizeof(SQL_CONT_KEYWORDS) / sizeof(*SQL_CONT_KEYWORDS))) {
-    return false;
-  }
-  return !followed_by_select_boundary(lexer, is_begin);
-}
-
-static bool matches_reserved_stmt_follower(const char *w, unsigned len, const char *w2, unsigned len2) {
-  static const char *const ANALYZE_FOLLOWERS[] = {"TABLE", "INDEX", "CLUSTER"};
-  if (word_equals(w, len, "MERGE")) return word_equals(w2, len2, "INTO");
-  if (word_equals(w, len, "TRUNCATE")) return word_equals(w2, len2, "TABLE") || word_equals(w2, len2, "CLUSTER");
-  if (word_equals(w, len, "ANALYZE")) return word_in_list(w2, len2, ANALYZE_FOLLOWERS, 3);
-  if (word_equals(w, len, "PURGE")) return word_equals(w2, len2, "TABLE") || word_equals(w2, len2, "INDEX");
-  if (word_equals(w, len, "FLASHBACK")) return word_equals(w2, len2, "TABLE");
-  if (word_equals(w, len, "COMMIT")) return word_equals(w2, len2, "COMMENT");
-  if (word_equals(w, len, "ROLLBACK")) return word_equals(w2, len2, "TO");
-  return false;
-}
-
-static bool matches_nonreserved_stmt_follower(const char *w, unsigned len, const char *w2, unsigned len2) {
-  static const char *const PURGE_NR[] = {"RECYCLEBIN", "DBA_RECYCLEBIN", "TABLESPACE"};
-  static const char *const FLASHBACK_NR[] = {"DATABASE", "STANDBY", "PLUGGABLE"};
-  static const char *const COMMIT_NR[] = {"WORK", "WRITE", "FORCE"};
-  if (word_equals(w, len, "PURGE")) return word_in_list(w2, len2, PURGE_NR, 3);
-  if (word_equals(w, len, "FLASHBACK")) return word_in_list(w2, len2, FLASHBACK_NR, 3);
-  if (word_equals(w, len, "EXPLAIN")) return word_equals(w2, len2, "PLAN");
-  if (word_equals(w, len, "ADMINISTER")) return word_equals(w2, len2, "KEY");
-  if (word_equals(w, len, "ASSOCIATE") || word_equals(w, len, "DISASSOCIATE")) {
-    return word_equals(w2, len2, "STATISTICS");
-  }
-  if (word_equals(w, len, "COMMIT")) return word_in_list(w2, len2, COMMIT_NR, 3);
-  if (word_equals(w, len, "ROLLBACK")) return word_equals(w2, len2, "WORK") || word_equals(w2, len2, "FORCE");
-  return false;
-}
-
-static bool nonreserved_starts_stmt(TSLexer *lexer, const char *w, unsigned len) {
-  if (word_equals(w, len, "SAVEPOINT")) return false;
-  if (skip_ws_and_comments_lookahead(lexer) != 0 || at_eof(lexer) || lexer->lookahead == ';') return false;
-  if (word_equals(w, len, "CALL")) return call_follower_valid(lexer);
-  if (word_equals(w, len, "DECLARE")) return plsql_block_follower_valid(lexer, false);
-  if (word_equals(w, len, "BEGIN")) return plsql_block_follower_valid(lexer, true);
-  if (!is_identifier_start(lexer->lookahead)) return false;
-  char w2[20];
-  unsigned len2 = read_upper_word(lexer, w2, sizeof(w2));
-  if (matches_reserved_stmt_follower(w, len, w2, len2)) return true;
-  if (!matches_nonreserved_stmt_follower(w, len, w2, len2)) return false;
-  return !followed_by_select_boundary(lexer, false);
-}
-
-static bool slash_precedes_new_unit(TSLexer *lexer) {
-  int skipped = skip_ws_and_comments_lookahead(lexer);
-  if (skipped != 0) return skipped > 0;
-  if (at_eof(lexer) || lexer->lookahead == ';') return true;
-  if (lexer->lookahead == '<') {
-    advance(lexer);
-    return lexer->lookahead == '<';
-  }
-  if (!is_identifier_start(lexer->lookahead)) return false;
-  char w[16];
-  unsigned len = read_upper_word(lexer, w, sizeof(w));
-  if (is_reserved_stmt_starter(w, len)) return true;
-  return nonreserved_starts_stmt(lexer, w, len);
-}
-
-static bool scan_slash(TSLexer *lexer, const bool *valid_symbols, bool line_only_hspace) {
-  advance(lexer);
-  if (lexer->lookahead == '*') return scan_block_comment(lexer, valid_symbols);
-  if (!line_only_hspace || !valid_symbols[SLASH_TERMINATOR]) return false;
-  lexer->mark_end(lexer);
-  while (lexer->lookahead == ' ' || lexer->lookahead == '\t') advance(lexer);
-  if (!at_eof(lexer) && lexer->lookahead != '\n' && lexer->lookahead != '\r') return false;
-  if (valid_symbols[DIVISION_GUARD] && !slash_precedes_new_unit(lexer)) return false;
-  lexer->result_symbol = SLASH_TERMINATOR;
-  return true;
 }
 
 static bool scan_standard_string(TSLexer *lexer, const bool *valid_symbols) {
@@ -711,17 +427,33 @@ static bool is_exponent_start(int32_t unit, int32_t next) {
   return (unit == 'e' || unit == 'E') && (next == '+' || next == '-' || is_digit(next));
 }
 
+static enum TokenType numeric_token_type(const bool *valid_symbols, bool is_integer) {
+  return is_integer && valid_symbols[WHOLE_NUMBER_LITERAL] && !valid_symbols[NUMERIC_LITERAL]
+           ? WHOLE_NUMBER_LITERAL
+           : NUMERIC_LITERAL;
+}
+
+static bool finish_size_or_exponent(TSLexer *lexer, const bool *valid_symbols, bool *out_done, bool *out_result) {
+  int32_t unit = lexer->lookahead;
+  advance(lexer);
+  if (!is_exponent_start(unit, lexer->lookahead)) {
+    bool clean_end = !is_identifier_char(lexer->lookahead);
+    if (!clean_end) skip_identifier_chars(lexer);
+    *out_done = true;
+    *out_result = emit_token(lexer, valid_symbols, SIZE_LITERAL, clean_end);
+    return true;
+  }
+  *out_done = false;
+  return scan_exponent_digits(lexer);
+}
+
 static bool finish_number_tail(TSLexer *lexer, const bool *valid_symbols, bool allow_size_unit, bool is_integer) {
   if (allow_size_unit && is_size_unit(lexer->lookahead)) {
-    int32_t unit = lexer->lookahead;
-    advance(lexer);
-    if (!is_exponent_start(unit, lexer->lookahead)) {
-      bool clean_end = !is_identifier_char(lexer->lookahead);
-      if (!clean_end) skip_identifier_chars(lexer);
-      return emit_token(lexer, valid_symbols, SIZE_LITERAL, clean_end);
-    }
+    bool done = false;
+    bool result = false;
+    if (!finish_size_or_exponent(lexer, valid_symbols, &done, &result)) return emit_illegal(lexer, valid_symbols);
+    if (done) return result;
     is_integer = false;
-    if (!scan_exponent_digits(lexer)) return emit_illegal(lexer, valid_symbols);
   } else if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
     is_integer = false;
     advance(lexer);
@@ -733,11 +465,7 @@ static bool finish_number_tail(TSLexer *lexer, const bool *valid_symbols, bool a
   }
   bool clean_end = !is_identifier_char(lexer->lookahead);
   if (!clean_end) skip_identifier_chars(lexer);
-  enum TokenType sym =
-    is_integer && valid_symbols[WHOLE_NUMBER_LITERAL] && !valid_symbols[NUMERIC_LITERAL]
-      ? WHOLE_NUMBER_LITERAL
-      : NUMERIC_LITERAL;
-  return emit_token(lexer, valid_symbols, sym, clean_end);
+  return emit_token(lexer, valid_symbols, numeric_token_type(valid_symbols, is_integer), clean_end);
 }
 
 static bool scan_number(TSLexer *lexer, const bool *valid_symbols, bool after_dot) {
@@ -749,8 +477,7 @@ static bool scan_number(TSLexer *lexer, const bool *valid_symbols, bool after_do
   advance(lexer);
   // Leave `..` intact for PL/SQL range bounds such as `FOR i IN 1..10 LOOP`.
   if (lexer->lookahead == '.') {
-    enum TokenType sym =
-      valid_symbols[WHOLE_NUMBER_LITERAL] && !valid_symbols[NUMERIC_LITERAL] ? WHOLE_NUMBER_LITERAL : NUMERIC_LITERAL;
+    enum TokenType sym = numeric_token_type(valid_symbols, true);
     lexer->result_symbol = valid_symbols[sym] ? sym : error_token(valid_symbols);
     return true;
   }
@@ -817,7 +544,7 @@ void tree_sitter_oracle_external_scanner_deserialize(void *payload, const char *
   }
 }
 
-static bool scan_nul_or_comment(TSLexer *lexer, const bool *valid_symbols, bool line_only_hspace, bool *result) {
+static bool scan_nul_or_comment(TSLexer *lexer, const bool *valid_symbols, bool *result) {
   int32_t c = lexer->lookahead;
   if (c == 0) {
     if (lexer->eof(lexer)) return false;
@@ -831,16 +558,17 @@ static bool scan_nul_or_comment(TSLexer *lexer, const bool *valid_symbols, bool 
     return true;
   }
   if (c == '/') {
-    *result = scan_slash(lexer, valid_symbols, line_only_hspace);
+    advance(lexer);
+    *result = lexer->lookahead == '*' && scan_block_comment(lexer, valid_symbols);
     return true;
   }
   return false;
 }
 
 bool tree_sitter_oracle_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
-  bool line_only_hspace = skip_spaces(lexer);
+  skip_spaces(lexer);
   bool result = false;
-  if (scan_nul_or_comment(lexer, valid_symbols, line_only_hspace, &result)) return result;
+  if (scan_nul_or_comment(lexer, valid_symbols, &result)) return result;
   if (scan_rel_table_step((Scanner *)payload, lexer, valid_symbols)) return true;
   int32_t c = lexer->lookahead;
   if (c == '\'') return scan_standard_string(lexer, valid_symbols);

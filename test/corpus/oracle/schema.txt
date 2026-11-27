@@ -365,7 +365,7 @@ DROP TABLE IF EXISTS old_staging CASCADE CONSTRAINTS PURGE;
       (identifier))))
 
 ================================================================================
-PL/SQL types, packages, procedures, functions, triggers, and slash terminators
+PL/SQL types, packages, procedures, functions, and triggers
 :language(oracle)
 ================================================================================
 
@@ -374,7 +374,6 @@ CREATE OR REPLACE TYPE item_obj AS OBJECT (
   name VARCHAR2(100),
   MEMBER FUNCTION summary RETURN VARCHAR2
 ) NOT FINAL;
-/
 
 CREATE OR REPLACE TYPE BODY item_obj AS
   MEMBER FUNCTION summary RETURN VARCHAR2 IS
@@ -382,14 +381,12 @@ CREATE OR REPLACE TYPE BODY item_obj AS
     RETURN TO_CHAR(self.id) || ':' || self.name;
   END;
 END;
-/
 
 CREATE OR REPLACE PACKAGE pkg_orders AUTHID CURRENT_USER AS
   e_bad_qty EXCEPTION;
   FUNCTION calc_tax(p_amount NUMBER) RETURN NUMBER DETERMINISTIC;
   PROCEDURE process_batch(p_limit IN NUMBER DEFAULT 100);
 END pkg_orders;
-/
 
 CREATE OR REPLACE PACKAGE BODY pkg_orders AS
   FUNCTION calc_tax(p_amount NUMBER) RETURN NUMBER DETERMINISTIC IS
@@ -422,7 +419,6 @@ CREATE OR REPLACE PACKAGE BODY pkg_orders AS
       RAISE;
   END process_batch;
 END pkg_orders;
-/
 
 CREATE OR REPLACE TRIGGER trg_orders_biu
   BEFORE INSERT OR UPDATE OF status ON orders
@@ -435,7 +431,6 @@ BEGIN
   END IF;
   EXECUTE IMMEDIATE 'BEGIN NULL; END;';
 END trg_orders_biu;
-/
 
 --------------------------------------------------------------------------------
 
@@ -753,7 +748,6 @@ CREATE OR REPLACE TRIGGER trg_emp_compound
     v_count := v_count + 1;
   END AFTER EACH ROW;
 END trg_emp_compound;
-/
 
 --------------------------------------------------------------------------------
 

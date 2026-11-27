@@ -651,7 +651,6 @@ JSON_SERIALIZE with duplicate PRETTY modifier in PL/SQL
 BEGIN
   v_out := JSON_SERIALIZE(v_doc PRETTY ASCII PRETTY);
 END;
-/
 
 --------------------------------------------------------------------------------
 
@@ -724,4 +723,16 @@ XMLSERIALIZE with unsupported return type, computed VERSION, or non-integer INDE
 SELECT XMLSERIALIZE(CONTENT XMLELEMENT("a") AS NVARCHAR2(30)) FROM dual;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+SQL*Plus standalone slash command after statement is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT 1 FROM dual
+/
+
+--------------------------------------------------------------------------------
+
 

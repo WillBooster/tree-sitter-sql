@@ -861,14 +861,15 @@ GROUP BY ALL;
       (group_by_clause))))
 
 ================================================================================
-Standalone slash line separators between SQL queries
+Multiline division before Unicode and non-reserved identifiers
 :language(oracle)
 ================================================================================
 
-SELECT 1 FROM dual
+SELECT x
 /
-SELECT 2 FROM dual
+ŃREATE FROM t ORDER BY 6
 /
+begin NULLS FIRST;
 
 --------------------------------------------------------------------------------
 
@@ -877,20 +878,18 @@ SELECT 2 FROM dual
     (select_core
       (select_list
         (select_item
-          (numeric_literal)))
+          (binary_expression
+            (identifier)
+            (identifier))))
       (from_clause
         (table_reference
           (object_name
-            (identifier))))))
-  (select_statement
-    (select_core
-      (select_list
-        (select_item
-          (numeric_literal)))
-      (from_clause
-        (table_reference
-          (object_name
-            (identifier)))))))
+            (identifier)))))
+    (order_by_clause
+      (ordering_term
+        (binary_expression
+          (numeric_literal)
+          (identifier))))))
 
 ================================================================================
 CONNECT BY before START WITH, HAVING before GROUP BY, and unaliased partitioned outer joins

@@ -21,7 +21,6 @@ EXCEPTION
   WHEN NO_DATA_FOUND OR TOO_MANY_ROWS THEN
     ROLLBACK;
 END;
-/
 
 --------------------------------------------------------------------------------
 
@@ -159,8 +158,7 @@ EXPLAIN PLAN SET STATEMENT_ID = 'q1' INTO plan_table FOR SELECT * FROM hr.employ
 ANALYZE TABLE hr.employees VALIDATE STRUCTURE CASCADE;
 AUDIT SELECT TABLE, UPDATE TABLE BY hr WHENEVER NOT SUCCESSFUL;
 NOAUDIT POLICY ora_secureconfig BY app_user;
-CALL pkg_orders.process_batch(50)
-/
+CALL pkg_orders.process_batch(50);
 
 --------------------------------------------------------------------------------
 
@@ -280,7 +278,6 @@ BEGIN
   <<done_label>>
   RETURN;
 END gen_rows;
-/
 
 --------------------------------------------------------------------------------
 
@@ -434,7 +431,6 @@ BEGIN
   translate;
   json(1) := 2;
 END;
-/
 
 --------------------------------------------------------------------------------
 
@@ -486,7 +482,6 @@ BEGIN
     END LOOP;
   $END
 END;
-/
 
 --------------------------------------------------------------------------------
 

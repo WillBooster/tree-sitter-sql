@@ -76,22 +76,8 @@
       ]
     },
     "_statement_terminator": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": ";"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_slash_terminator"
-          },
-          "named": false,
-          "value": "/"
-        }
-      ]
+      "type": "STRING",
+      "value": ";"
     },
     "_sql_statement": {
       "type": "CHOICE",
@@ -15158,10 +15144,6 @@
                     {
                       "type": "STRING",
                       "value": "/"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "_division_guard"
                     }
                   ]
                 }
@@ -66711,10 +66693,6 @@
                     {
                       "type": "STRING",
                       "value": "/"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "_division_guard"
                     }
                   ]
                 }
@@ -73145,10 +73123,6 @@
                     {
                       "type": "STRING",
                       "value": "/"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "_division_guard"
                     }
                   ]
                 }
@@ -79649,10 +79623,6 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_division_guard"
-    },
-    {
-      "type": "SYMBOL",
       "name": "comment"
     },
     {
@@ -79678,10 +79648,6 @@
     {
       "type": "SYMBOL",
       "name": "bind_variable"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_slash_terminator"
     },
     {
       "type": "SYMBOL",

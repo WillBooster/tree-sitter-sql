@@ -43,9 +43,9 @@ helpers in `common/common.mjs`:
 - `oracle` covers Oracle Database 23ai SQL and embedded PL/SQL units (`CREATE TRIGGER`, `CREATE FUNCTION`,
   `CREATE PROCEDURE`, `CREATE PACKAGE`, `CREATE TYPE`, anonymous `DECLARE`/`BEGIN` blocks, and inline `WITH` functions
   and procedures), hierarchical queries (`START WITH` / `CONNECT BY`), `(+)` outer joins, `PIVOT` / `UNPIVOT`,
-  `MATCH_RECOGNIZE`, `MODEL`, multi-table `INSERT ALL`/`FIRST`, `MERGE`, alternative-quoted literals (`q'[...]'`,
-  `nq'<...>'`), and standalone `/` terminators after PL/SQL units. Client SQL*Plus directives (`REM`, `SET`, `CONNECT`,
-  `PROMPT`, `SPOOL`, `@`) are rejected as syntax errors.
+  `MATCH_RECOGNIZE`, `MODEL`, multi-table `INSERT ALL`/`FIRST`, `MERGE`, and alternative-quoted literals (`q'[...]'`,
+  `nq'<...>'`). Client SQL*Plus directives (`REM`, `SET`, `CONNECT`, `PROMPT`, `SPOOL`, `@`, standalone `/`) are rejected
+  as syntax errors.
 
 ## Support Scope
 

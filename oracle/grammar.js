@@ -369,20 +369,14 @@ const createReplaceableHead = ($, beforeObject, objectKeyword) =>
 
 const COMPARISON_OPERATOR = () => choice('=', '!=', '<>', '^=', '~=', '<', '<=', '>', '>=');
 
-/**
- * @param {GrammarSymbols<string>} $
- * @returns {[number, RuleOrLiteral, 'left' | 'right'][]}
- */
-const sqlArithmeticOperators = ($) => [
+/** @returns {[number, RuleOrLiteral, 'left' | 'right'][]} */
+const sqlArithmeticOperators = () => [
   [PREC.ADDITIVE, choice('+', '-', '||'), 'left'],
-  [PREC.MULTIPLICATIVE, choice('*', '/', $._division_guard), 'left'],
+  [PREC.MULTIPLICATIVE, choice('*', '/'), 'left'],
 ];
 
-/**
- * @param {GrammarSymbols<string>} $
- * @returns {[number, RuleOrLiteral, 'left' | 'right'][]}
- */
-const plsqlArithmeticOperators = ($) => [...sqlArithmeticOperators($), [PREC.EXPONENT, '**', 'right']];
+/** @returns {[number, RuleOrLiteral, 'left' | 'right'][]} */
+const plsqlArithmeticOperators = () => [...sqlArithmeticOperators(), [PREC.EXPONENT, '**', 'right']];
 
 /**
  * @param {RuleOrLiteral} operand
@@ -615,7 +609,7 @@ const buildOperatorAndPredicateRules = (k, ref, pub, def, isPlsql) => [
   [
     k('_scalar_binary_expression'),
     /** @param {GrammarSymbols<string>} $ */ ($) =>
-      binaryExpression(ref($, '_scalar_expression'), isPlsql ? plsqlArithmeticOperators($) : sqlArithmeticOperators($)),
+      binaryExpression(ref($, '_scalar_expression'), isPlsql ? plsqlArithmeticOperators() : sqlArithmeticOperators()),
   ],
   [
     k('_comparison_expression'),
@@ -1404,7 +1398,6 @@ export default grammar({
     $._illegal_token,
     $._unreachable,
     $._error_sentinel,
-    $._division_guard,
     $.comment,
     $.string_literal,
     $.quoted_identifier,
@@ -1412,7 +1405,6 @@ export default grammar({
     $._whole_number_literal,
     $.size_literal,
     $.bind_variable,
-    $._slash_terminator,
     $._rel_table_open,
     $._capture_name,
     $._commit_typeless_col,
@@ -1473,7 +1465,7 @@ export default grammar({
 
     _terminated_plsql_statement: ($) => seq($._plsql_statement, repeat($._statement_terminator)),
 
-    _statement_terminator: ($) => choice(';', alias($._slash_terminator, '/')),
+    _statement_terminator: () => ';',
 
     _sql_statement: ($) =>
       choice(
@@ -2893,7 +2885,7 @@ export default grammar({
     _default_unary_expression: ($) =>
       prec.right(PREC.UNARY, seq(field('operator', choice('+', '-')), field('operand', $._default_expression))),
 
-    _default_binary_expression: ($) => binaryExpression($._default_expression, sqlArithmeticOperators($)),
+    _default_binary_expression: ($) => binaryExpression($._default_expression, sqlArithmeticOperators()),
 
     _default_at_time_zone_expression: ($) =>
       prec.left(
