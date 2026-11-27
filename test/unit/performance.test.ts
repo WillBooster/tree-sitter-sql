@@ -21,7 +21,7 @@ const DialectSuites: Record<string, DialectChecks> = {
     readVolumeCases: [
       [
         'unclosed backslash-escaped string',
-        (lines) => `SELECT 'a\\'b\n${'SELECT a, b FROM c;\n'.repeat(lines)}`,
+        (lines) => `SELECT 'a\n${"SELECT \\'b;\n".repeat(lines)}`,
         'string_literal',
       ],
       ['unclosed versioned comment', (lines) => 'SELECT /*!50700 (a\n'.repeat(lines), 'comment'],
@@ -53,7 +53,7 @@ const DialectSuites: Record<string, DialectChecks> = {
       ['parenthesis in module argument', (lines) => 'CREATE VIRTUAL TABLE t USING m((a\n'.repeat(lines)],
       [
         'quote in module argument',
-        (lines) => `CREATE VIRTUAL TABLE t USING m(a, 'b\n${'CREATE VIRTUAL TABLE u USING m(a, b);\n'.repeat(lines)}`,
+        (lines) => `CREATE VIRTUAL TABLE t USING m(a, 'b\n${'CREATE VIRTUAL TABLE u USING m(a, [b\n'.repeat(lines)}`,
         'string_literal',
       ],
     ],
