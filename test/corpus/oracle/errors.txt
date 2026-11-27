@@ -714,3 +714,14 @@ FORALL statement with unsupported FOR-loop REVERSE control
 BEGIN FORALL i IN REVERSE 1..3 INSERT INTO t VALUES (a(i)); END;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+XMLSERIALIZE with unsupported return type, computed VERSION, or non-integer INDENT SIZE
+:error
+:language(oracle)
+================================================================================
+
+SELECT XMLSERIALIZE(CONTENT XMLELEMENT("a") AS NVARCHAR2(30)) FROM dual;
+
+--------------------------------------------------------------------------------
+

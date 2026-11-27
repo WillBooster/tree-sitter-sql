@@ -1180,13 +1180,18 @@ function buildXmlExpressionRules(k, ref, pub, def) {
         seq(
           choice(keyword('DOCUMENT'), keyword('CONTENT')),
           field('value', ref($, '_expression')),
-          optional(seq(keyword('AS'), field('type', $.type_name))),
+          optional(seq(keyword('AS'), field('type', alias($._xmlserialize_return_type, $.type_name)))),
           optional(seq(keyword('ENCODING'), ref($, '_expression'))),
-          optional(seq(keyword('VERSION'), ref($, '_expression'))),
+          optional(seq(keyword('VERSION'), $.string_literal)),
           optional(
             choice(
               keywords('NO INDENT'),
-              prec.right(seq(keyword('INDENT'), optional(seq(keyword('SIZE'), '=', ref($, '_expression')))))
+              prec.right(
+                seq(
+                  keyword('INDENT'),
+                  optional(seq(keyword('SIZE'), '=', alias($._whole_number_literal, $.numeric_literal)))
+                )
+              )
             )
           ),
           optional($._xmlserialize_tail_defaults)
@@ -1404,6 +1409,7 @@ export default grammar({
     $.string_literal,
     $.quoted_identifier,
     $.numeric_literal,
+    $._whole_number_literal,
     $.size_literal,
     $.bind_variable,
     $._slash_terminator,
@@ -7051,6 +7057,15 @@ export default grammar({
     _json_null_clause: () => seq(choice(keyword('NULL'), keyword('ABSENT')), keywords('ON NULL')),
 
     _json_returning_clause: ($) => seq(keyword('RETURNING'), $.type_name),
+
+    _xmlserialize_return_type: ($) =>
+      prec.right(
+        choice(
+          seq(choice(keyword('VARCHAR2'), keyword('VARCHAR')), optional($._char_len_parens)),
+          keyword('CLOB'),
+          keyword('BLOB')
+        )
+      ),
 
     _json_serialize_returning: ($) => seq(keyword('RETURNING'), alias($._json_serialize_return_type, $.type_name)),
 

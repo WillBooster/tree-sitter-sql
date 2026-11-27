@@ -65806,8 +65806,13 @@
                   "type": "FIELD",
                   "name": "type",
                   "content": {
-                    "type": "SYMBOL",
-                    "name": "type_name"
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_xmlserialize_return_type"
+                    },
+                    "named": true,
+                    "value": "type_name"
                   }
                 }
               ]
@@ -65860,7 +65865,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "_expression"
+                  "name": "string_literal"
                 }
               ]
             },
@@ -65933,8 +65938,13 @@
                                 "value": "="
                               },
                               {
-                                "type": "SYMBOL",
-                                "name": "_expression"
+                                "type": "ALIAS",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "_whole_number_literal"
+                                },
+                                "named": true,
+                                "value": "numeric_literal"
                               }
                             ]
                           },
@@ -72225,8 +72235,13 @@
                   "type": "FIELD",
                   "name": "type",
                   "content": {
-                    "type": "SYMBOL",
-                    "name": "type_name"
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_xmlserialize_return_type"
+                    },
+                    "named": true,
+                    "value": "type_name"
                   }
                 }
               ]
@@ -72279,7 +72294,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "_plsql_expression"
+                  "name": "string_literal"
                 }
               ]
             },
@@ -72352,8 +72367,13 @@
                                 "value": "="
                               },
                               {
-                                "type": "SYMBOL",
-                                "name": "_plsql_expression"
+                                "type": "ALIAS",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "_whole_number_literal"
+                                },
+                                "named": true,
+                                "value": "numeric_literal"
                               }
                             ]
                           },
@@ -77980,6 +78000,73 @@
         }
       ]
     },
+    "_xmlserialize_return_type": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[Vv][Aa][Rr][Cc][Hh][Aa][Rr]2"
+                    },
+                    "named": false,
+                    "value": "VARCHAR2"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[Vv][Aa][Rr][Cc][Hh][Aa][Rr]"
+                    },
+                    "named": false,
+                    "value": "VARCHAR"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_char_len_parens"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Cc][Ll][Oo][Bb]"
+            },
+            "named": false,
+            "value": "CLOB"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Bb][Ll][Oo][Bb]"
+            },
+            "named": false,
+            "value": "BLOB"
+          }
+        ]
+      }
+    },
     "_json_serialize_returning": {
       "type": "SEQ",
       "members": [
@@ -79579,6 +79666,10 @@
     {
       "type": "SYMBOL",
       "name": "numeric_literal"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_whole_number_literal"
     },
     {
       "type": "SYMBOL",

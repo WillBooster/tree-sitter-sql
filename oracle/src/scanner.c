@@ -15,6 +15,7 @@ enum TokenType {
   STRING_LITERAL,
   QUOTED_IDENTIFIER,
   NUMERIC_LITERAL,
+  WHOLE_NUMBER_LITERAL,
   SIZE_LITERAL,
   BIND_VARIABLE,
   SLASH_TERMINATOR,
@@ -710,7 +711,7 @@ static bool is_exponent_start(int32_t unit, int32_t next) {
   return (unit == 'e' || unit == 'E') && (next == '+' || next == '-' || is_digit(next));
 }
 
-static bool finish_number_tail(TSLexer *lexer, const bool *valid_symbols, bool allow_size_unit) {
+static bool finish_number_tail(TSLexer *lexer, const bool *valid_symbols, bool allow_size_unit, bool is_integer) {
   if (allow_size_unit && is_size_unit(lexer->lookahead)) {
     int32_t unit = lexer->lookahead;
     advance(lexer);
@@ -719,31 +720,42 @@ static bool finish_number_tail(TSLexer *lexer, const bool *valid_symbols, bool a
       if (!clean_end) skip_identifier_chars(lexer);
       return emit_token(lexer, valid_symbols, SIZE_LITERAL, clean_end);
     }
+    is_integer = false;
     if (!scan_exponent_digits(lexer)) return emit_illegal(lexer, valid_symbols);
   } else if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
+    is_integer = false;
     advance(lexer);
     if (!scan_exponent_digits(lexer)) return emit_illegal(lexer, valid_symbols);
   }
-  if (is_float_suffix(lexer->lookahead)) advance(lexer);
+  if (is_float_suffix(lexer->lookahead)) {
+    is_integer = false;
+    advance(lexer);
+  }
   bool clean_end = !is_identifier_char(lexer->lookahead);
   if (!clean_end) skip_identifier_chars(lexer);
-  return emit_token(lexer, valid_symbols, NUMERIC_LITERAL, clean_end);
+  enum TokenType sym =
+    is_integer && valid_symbols[WHOLE_NUMBER_LITERAL] && !valid_symbols[NUMERIC_LITERAL]
+      ? WHOLE_NUMBER_LITERAL
+      : NUMERIC_LITERAL;
+  return emit_token(lexer, valid_symbols, sym, clean_end);
 }
 
 static bool scan_number(TSLexer *lexer, const bool *valid_symbols, bool after_dot) {
   bool allow_size_unit = !after_dot && valid_symbols[SIZE_LITERAL] && !valid_symbols[ERROR_SENTINEL];
   while (is_digit(lexer->lookahead)) advance(lexer);
-  if (after_dot) return finish_number_tail(lexer, valid_symbols, false);
+  if (after_dot) return finish_number_tail(lexer, valid_symbols, false, false);
   lexer->mark_end(lexer);
-  if (lexer->lookahead != '.') return finish_number_tail(lexer, valid_symbols, allow_size_unit);
+  if (lexer->lookahead != '.') return finish_number_tail(lexer, valid_symbols, allow_size_unit, true);
   advance(lexer);
   // Leave `..` intact for PL/SQL range bounds such as `FOR i IN 1..10 LOOP`.
   if (lexer->lookahead == '.') {
-    lexer->result_symbol = valid_symbols[NUMERIC_LITERAL] ? NUMERIC_LITERAL : error_token(valid_symbols);
+    enum TokenType sym =
+      valid_symbols[WHOLE_NUMBER_LITERAL] && !valid_symbols[NUMERIC_LITERAL] ? WHOLE_NUMBER_LITERAL : NUMERIC_LITERAL;
+    lexer->result_symbol = valid_symbols[sym] ? sym : error_token(valid_symbols);
     return true;
   }
   while (is_digit(lexer->lookahead)) advance(lexer);
-  return finish_number_tail(lexer, valid_symbols, false);
+  return finish_number_tail(lexer, valid_symbols, false, false);
 }
 
 static bool scan_bind_variable(TSLexer *lexer, const bool *valid_symbols) {
