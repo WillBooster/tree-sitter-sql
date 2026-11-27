@@ -45265,6 +45265,10 @@
     "named": false
   },
   {
+    "type": "APPLICATION",
+    "named": false
+  },
+  {
     "type": "APPLY",
     "named": false
   },
@@ -45306,6 +45310,10 @@
   },
   {
     "type": "ASSEMBLY",
+    "named": false
+  },
+  {
+    "type": "ASSERTION",
     "named": false
   },
   {
@@ -45945,6 +45953,10 @@
     "named": false
   },
   {
+    "type": "DIRECTIVE",
+    "named": false
+  },
+  {
     "type": "DIRECTORY",
     "named": false
   },
@@ -46369,6 +46381,10 @@
     "named": false
   },
   {
+    "type": "GRANTS",
+    "named": false
+  },
+  {
     "type": "GRAPH",
     "named": false
   },
@@ -46778,6 +46794,10 @@
   },
   {
     "type": "LOGGING",
+    "named": false
+  },
+  {
+    "type": "LOGICAL",
     "named": false
   },
   {
@@ -48302,6 +48322,10 @@
   },
   {
     "type": "TOPLEVEL",
+    "named": false
+  },
+  {
+    "type": "TRACKING",
     "named": false
   },
   {

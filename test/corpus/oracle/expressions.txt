@@ -1010,6 +1010,10 @@ JSON_SERIALIZE without SQL/JSON path argument
 ================================================================================
 
 SELECT JSON_SERIALIZE(doc RETURNING CLOB PRETTY ORDERED) FROM emp;
+SELECT
+  JSON_SERIALIZE(doc ASCII PRETTY ORDERED EMPTY ARRAY ON ERROR),
+  JSON_SERIALIZE(doc RETURNING VARCHAR2(32 CHAR) TRUNCATE NULL ON ERROR)
+FROM emp;
 
 --------------------------------------------------------------------------------
 
@@ -1021,6 +1025,21 @@ SELECT JSON_SERIALIZE(doc RETURNING CLOB PRETTY ORDERED) FROM emp;
           (json_function_expression
             (identifier)
             (type_name))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))))))
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (json_function_expression
+            (identifier)))
+        (select_item
+          (json_function_expression
+            (identifier)
+            (type_name
+              (numeric_literal)))))
       (from_clause
         (table_reference
           (object_name

@@ -16,8 +16,15 @@ enum TokenType {
   CUSTOM_OPERATOR,
   PLUS,
   MINUS,
+  ICONST,
+  QUOTED_ROLE_OPTION,
   ILLEGAL_TOKEN,
   UNREACHABLE,
+};
+
+static const char *const ROLE_OPTION_IDENTS[] = {
+    "superuser", "nosuperuser", "createdb",      "nocreatedb",  "createrole",  "nocreaterole", "noinherit",
+    "login",     "nologin",     "replication",   "noreplication", "bypassrls", "nobypassrls",
 };
 
 typedef struct {
@@ -59,6 +66,10 @@ static bool emit_result(TSLexer *lexer, const bool *valid_symbols, enum TokenTyp
   if (chosen == ILLEGAL_TOKEN && !valid_symbols[ILLEGAL_TOKEN]) return false;
   lexer->result_symbol = chosen;
   return true;
+}
+
+static bool is_error_recovery(const bool *valid_symbols) {
+  return valid_symbols[UNREACHABLE] && valid_symbols[BIT_STRING_LITERAL];
 }
 
 static bool scan_line_comment_body(TSLexer *lexer, bool skip) {
@@ -263,20 +274,63 @@ static bool parse_hex_run(const CharArray *buf, unsigned *idx, unsigned digits, 
   return true;
 }
 
-static bool step_unicode_char(const CharArray *buf, unsigned *idx, int32_t esc, bool *expecting_low) {
-  int32_t c = buf->contents[(*idx)++];
-  if (c != esc) return !*expecting_low;
-  if (*idx >= buf->size) return false;
-  if (buf->contents[*idx] == esc) return (*idx)++, !*expecting_low;
-  uint32_t cp = 0;
-  bool ok = buf->contents[*idx] == '+' ? ((*idx)++, parse_hex_run(buf, idx, 6, &cp)) : parse_hex_run(buf, idx, 4, &cp);
-  return ok && step_codepoint(cp, expecting_low);
+static bool is_role_option_ident(const CharArray *buf) {
+  for (unsigned i = 0; i < sizeof ROLE_OPTION_IDENTS / sizeof *ROLE_OPTION_IDENTS; i++) {
+    const char *kw = ROLE_OPTION_IDENTS[i];
+    unsigned len = (unsigned)strlen(kw);
+    if (buf->size != len) continue;
+    bool match = true;
+    for (unsigned j = 0; j < len; j++) {
+      if (buf->contents[j] != (int32_t)kw[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) return true;
+  }
+  return false;
 }
 
-static bool validate_unicode_escapes(const CharArray *buf, int32_t esc) {
+static void push_decoded_codepoint(CharArray *decoded, uint32_t cp, uint32_t *high_surrogate) {
+  if (decoded == NULL) return;
+  if (cp >= 0xD800 && cp <= 0xDBFF) {
+    *high_surrogate = cp;
+    return;
+  }
+  if (*high_surrogate != 0) {
+    cp = 0x10000 + ((*high_surrogate - 0xD800) << 10) + (cp - 0xDC00);
+    *high_surrogate = 0;
+  }
+  array_push(decoded, (int32_t)cp);
+}
+
+static bool step_unicode_char(
+    const CharArray *buf, unsigned *idx, int32_t esc, bool *expecting_low, CharArray *decoded, uint32_t *high_sur) {
+  int32_t c = buf->contents[(*idx)++];
+  if (c != esc) {
+    if (*expecting_low) return false;
+    if (decoded != NULL) array_push(decoded, c);
+    return true;
+  }
+  if (*idx >= buf->size) return false;
+  if (buf->contents[*idx] == esc) {
+    (*idx)++;
+    if (*expecting_low) return false;
+    if (decoded != NULL) array_push(decoded, esc);
+    return true;
+  }
+  uint32_t cp = 0;
+  bool ok = buf->contents[*idx] == '+' ? ((*idx)++, parse_hex_run(buf, idx, 6, &cp)) : parse_hex_run(buf, idx, 4, &cp);
+  if (!ok || !step_codepoint(cp, expecting_low)) return false;
+  push_decoded_codepoint(decoded, cp, high_sur);
+  return true;
+}
+
+static bool decode_unicode_escapes(const CharArray *buf, int32_t esc, CharArray *decoded) {
   bool expecting_low = false;
+  uint32_t high_sur = 0;
   for (unsigned i = 0; i < buf->size;) {
-    if (!step_unicode_char(buf, &i, esc, &expecting_low)) return false;
+    if (!step_unicode_char(buf, &i, esc, &expecting_low, decoded, &high_sur)) return false;
   }
   return !expecting_low;
 }
@@ -307,9 +361,14 @@ static bool scan_unicode_literal(TSLexer *lexer, const bool *valid_symbols, bool
     array_delete(&body);
     return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
   }
-  bool valid = validate_unicode_escapes(&body, esc);
+  bool check_role = is_ident && valid_symbols[QUOTED_ROLE_OPTION] && !is_error_recovery(valid_symbols);
+  CharArray decoded = array_new();
+  bool valid = decode_unicode_escapes(&body, esc, check_role ? &decoded : NULL);
+  enum TokenType sym =
+      !is_ident ? STRING_LITERAL : ((check_role && is_role_option_ident(&decoded)) ? QUOTED_ROLE_OPTION : QUOTED_IDENTIFIER);
+  array_delete(&decoded);
   array_delete(&body);
-  return emit_result(lexer, valid_symbols, is_ident ? QUOTED_IDENTIFIER : STRING_LITERAL, valid);
+  return emit_result(lexer, valid_symbols, sym, valid);
 }
 
 static bool scan_dollar_body(TSLexer *lexer, const CharArray *tag) {
@@ -373,13 +432,17 @@ static bool scan_dollar(TSLexer *lexer, const bool *valid_symbols) {
   return emit_result(lexer, valid_symbols, STRING_LITERAL, ok);
 }
 
-static bool scan_digits(TSLexer *lexer, bool (*valid_digit)(int32_t), bool after_digit) {
+static bool scan_digits_accum(
+    TSLexer *lexer, bool (*valid_digit)(int32_t), unsigned base, bool after_digit, uint64_t *accum) {
   bool valid = true;
   while (valid_digit(lexer->lookahead) || lexer->lookahead == '_') {
     if (lexer->lookahead == '_') {
       if (!after_digit) valid = false;
       after_digit = false;
     } else {
+      if (accum != NULL && *accum <= (uint64_t)INT32_MAX) {
+        *accum = *accum * base + (uint64_t)hex_value(lexer->lookahead);
+      }
       after_digit = true;
     }
     advance(lexer);
@@ -395,40 +458,70 @@ static bool finish_number(TSLexer *lexer, bool valid) {
 
 static bool scan_fraction_and_exponent(TSLexer *lexer) {
   bool valid = true;
-  if (is_digit(lexer->lookahead) || lexer->lookahead == '_') valid = scan_digits(lexer, is_digit, false);
+  if (is_digit(lexer->lookahead) || lexer->lookahead == '_') {
+    valid = scan_digits_accum(lexer, is_digit, 10, false, NULL);
+  }
   if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
     advance(lexer);
     if (lexer->lookahead == '+' || lexer->lookahead == '-') advance(lexer);
     if (!is_digit(lexer->lookahead)) return finish_number(lexer, false);
-    valid = scan_digits(lexer, is_digit, false) && valid;
+    valid = scan_digits_accum(lexer, is_digit, 10, false, NULL) && valid;
   }
   return finish_number(lexer, valid);
 }
 
-static bool scan_decimal_number(TSLexer *lexer, bool after_digit) {
-  bool valid = scan_digits(lexer, is_digit, after_digit);
+static bool scan_decimal_number(TSLexer *lexer, bool after_digit, uint64_t initial, bool *out_int32) {
+  uint64_t val = initial;
+  bool valid = scan_digits_accum(lexer, is_digit, 10, after_digit, &val);
+  lexer->mark_end(lexer);
   if (lexer->lookahead == '.') {
     advance(lexer);
-    if (lexer->lookahead == '.') return valid;
+    if (lexer->lookahead == '.') {
+      *out_int32 = valid && val <= (uint64_t)INT32_MAX;
+      return valid;
+    }
+    *out_int32 = false;
+    bool ok = scan_fraction_and_exponent(lexer) && valid;
+    lexer->mark_end(lexer);
+    return ok;
   }
-  return scan_fraction_and_exponent(lexer) && valid;
+  if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
+    *out_int32 = false;
+    bool ok = scan_fraction_and_exponent(lexer) && valid;
+    lexer->mark_end(lexer);
+    return ok;
+  }
+  bool ok = finish_number(lexer, valid);
+  lexer->mark_end(lexer);
+  *out_int32 = ok && val <= (uint64_t)INT32_MAX;
+  return ok;
 }
 
-static bool scan_radix_number(TSLexer *lexer, bool (*valid_digit)(int32_t)) {
+static bool scan_radix_number(
+    TSLexer *lexer, bool (*valid_digit)(int32_t), unsigned base, bool *out_int32) {
   advance(lexer);
   if (lexer->lookahead == '_') advance(lexer);
-  if (!valid_digit(lexer->lookahead)) return finish_number(lexer, false);
-  return finish_number(lexer, scan_digits(lexer, valid_digit, false));
+  if (!valid_digit(lexer->lookahead)) {
+    *out_int32 = false;
+    bool ok = finish_number(lexer, false);
+    lexer->mark_end(lexer);
+    return ok;
+  }
+  uint64_t val = 0;
+  bool ok = finish_number(lexer, scan_digits_accum(lexer, valid_digit, base, false, &val));
+  lexer->mark_end(lexer);
+  *out_int32 = ok && val <= (uint64_t)INT32_MAX;
+  return ok;
 }
 
-static bool scan_number(TSLexer *lexer) {
-  if (lexer->lookahead != '0') return scan_decimal_number(lexer, false);
+static bool scan_number(TSLexer *lexer, bool *out_int32) {
+  if (lexer->lookahead != '0') return scan_decimal_number(lexer, false, 0, out_int32);
   advance(lexer);
   int32_t c = lexer->lookahead;
-  if (c == 'x' || c == 'X') return scan_radix_number(lexer, is_hex_digit);
-  if (c == 'o' || c == 'O') return scan_radix_number(lexer, is_oct_digit);
-  if (c == 'b' || c == 'B') return scan_radix_number(lexer, is_bin_digit);
-  return scan_decimal_number(lexer, true);
+  if (c == 'x' || c == 'X') return scan_radix_number(lexer, is_hex_digit, 16, out_int32);
+  if (c == 'o' || c == 'O') return scan_radix_number(lexer, is_oct_digit, 8, out_int32);
+  if (c == 'b' || c == 'B') return scan_radix_number(lexer, is_bin_digit, 2, out_int32);
+  return scan_decimal_number(lexer, true, 0, out_int32);
 }
 
 static uint32_t current_byte(TSLexer *lexer) {
@@ -497,10 +590,6 @@ static bool scan_custom_operator_tail(Scanner *scanner, TSLexer *lexer, const bo
       pm_run_end);
 }
 
-static bool is_error_recovery(const bool *valid_symbols) {
-  return valid_symbols[UNREACHABLE] && valid_symbols[BIT_STRING_LITERAL];
-}
-
 static bool scan_operator_or_comment(
     Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, uint32_t start, bool *skipped_comment) {
   int32_t first = lexer->lookahead;
@@ -541,12 +630,30 @@ static bool scan_prefixed_literal(TSLexer *lexer, const bool *valid_symbols, int
                      scan_string_segments(lexer, prefix == 'e' || prefix == 'E', NULL));
 }
 
-static bool scan_illegal_number(TSLexer *lexer, const bool *valid_symbols, bool leading_dot) {
-  bool valid = leading_dot ? (advance(lexer), !is_digit(lexer->lookahead) || scan_fraction_and_exponent(lexer))
-                           : scan_number(lexer);
+static bool scan_number_or_iconst(TSLexer *lexer, const bool *valid_symbols, bool leading_dot) {
+  bool want_iconst = valid_symbols[ICONST] && !is_error_recovery(valid_symbols);
+  if (leading_dot) {
+    advance(lexer);
+    if (!is_digit(lexer->lookahead)) return false;
+    bool valid = scan_fraction_and_exponent(lexer);
+    if (valid && !want_iconst) return false;
+    lexer->mark_end(lexer);
+    return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
+  }
+  bool is_int32 = false;
+  bool valid = scan_number(lexer, &is_int32);
+  if (want_iconst) return emit_result(lexer, valid_symbols, ICONST, is_int32);
   if (valid) return false;
-  lexer->mark_end(lexer);
   return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
+}
+
+static bool scan_double_quoted_token(TSLexer *lexer, const bool *valid_symbols) {
+  bool check_role = valid_symbols[QUOTED_ROLE_OPTION] && !is_error_recovery(valid_symbols);
+  CharArray body = array_new();
+  bool ok = scan_double_quoted(lexer, check_role ? &body : NULL);
+  enum TokenType sym = (check_role && is_role_option_ident(&body)) ? QUOTED_ROLE_OPTION : QUOTED_IDENTIFIER;
+  array_delete(&body);
+  return emit_result(lexer, valid_symbols, sym, ok);
 }
 
 void *tree_sitter_postgresql_external_scanner_create(void) { return ts_calloc(1, sizeof(Scanner)); }
@@ -574,10 +681,10 @@ static bool scan_nul_run(TSLexer *lexer, const bool *valid_symbols) {
 static bool scan_non_op_token(TSLexer *lexer, const bool *valid_symbols, int32_t c) {
   if (c == 0) return scan_nul_run(lexer, valid_symbols);
   if (c == '\'') return emit_result(lexer, valid_symbols, STRING_LITERAL, scan_string_segments(lexer, false, NULL));
-  if (c == '"') return emit_result(lexer, valid_symbols, QUOTED_IDENTIFIER, scan_double_quoted(lexer, NULL));
+  if (c == '"') return scan_double_quoted_token(lexer, valid_symbols);
   if (c > 0 && c < 0x80 && strchr("eEnNbBxXuU", c) != NULL) return scan_prefixed_literal(lexer, valid_symbols, c);
   if (c == '$') return scan_dollar(lexer, valid_symbols);
-  return (c == '.' || is_digit(c)) && scan_illegal_number(lexer, valid_symbols, c == '.');
+  return (c == '.' || is_digit(c)) && scan_number_or_iconst(lexer, valid_symbols, c == '.');
 }
 
 bool tree_sitter_postgresql_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {

@@ -352,6 +352,8 @@ export default grammar({
     $.custom_operator,
     '+',
     '-',
+    $._iconst,
+    $._quoted_role_option,
     $._illegal_token,
     $._unreachable,
   ],
@@ -1219,7 +1221,7 @@ export default grammar({
             ),
             seq(
               keyword('WITH'),
-              parens(seq(keyword('MODULUS'), $.numeric_literal, ',', keyword('REMAINDER'), $.numeric_literal))
+              parens(seq(keyword('MODULUS'), $._iconst_literal, ',', keyword('REMAINDER'), $._iconst_literal))
             )
           )
         )
@@ -1473,9 +1475,9 @@ export default grammar({
         seq(
           keyword('ALTER'),
           optional(keyword('COLUMN')),
-          choice($._identifier, $.numeric_literal),
+          choice($._identifier, $._iconst_literal),
           keywords('SET STATISTICS'),
-          choice($._signed_integer, keyword('DEFAULT'))
+          choice($._signed_iconst, keyword('DEFAULT'))
         ),
         seq(
           keyword('ALTER'),
@@ -2282,17 +2284,18 @@ export default grammar({
         keyword('NOREPLICATION'),
         keyword('BYPASSRLS'),
         keyword('NOBYPASSRLS'),
+        alias($._quoted_role_option, $.quoted_identifier),
         seq(keyword('ENCRYPTED'), keyword('PASSWORD'), $.string_literal),
         seq(keyword('PASSWORD'), choice($.string_literal, keyword('NULL'))),
         seq(keywords('VALID UNTIL'), $.string_literal),
-        seq(keywords('CONNECTION LIMIT'), $._signed_integer),
+        seq(keywords('CONNECTION LIMIT'), $._signed_iconst),
         seq(keyword('USER'), commaSep1($._role_spec))
       ),
 
     _create_role_option: ($) =>
       choice(
         $._alter_role_option,
-        seq(keyword('SYSID'), $.numeric_literal),
+        seq(keyword('SYSID'), $._iconst_literal),
         seq(choice(keyword('ADMIN'), keyword('ROLE')), commaSep1($._role_spec)),
         seq(keyword('IN'), choice(keyword('ROLE'), keyword('GROUP')), commaSep1($._role_spec))
       ),
@@ -2614,14 +2617,14 @@ export default grammar({
       choice(
         seq(
           keyword('OPERATOR'),
-          $.numeric_literal,
+          $._iconst_literal,
           $._any_operator,
           optional(parens(commaSep1($.type_name))),
           optional(choice(keywords('FOR SEARCH'), seq(keywords('FOR ORDER BY'), $.qualified_name)))
         ),
         seq(
           keyword('FUNCTION'),
-          $.numeric_literal,
+          $._iconst_literal,
           optional(parens(commaSep1($.type_name))),
           alias($._func_qualified_name, $.qualified_name),
           optional($._routine_arg_types)
@@ -2662,7 +2665,7 @@ export default grammar({
     _opfamily_drop_or_add: ($) =>
       choice(
         $._opclass_item,
-        seq(choice(keyword('OPERATOR'), keyword('FUNCTION')), $.numeric_literal, parens(commaSep1($.type_name)))
+        seq(choice(keyword('OPERATOR'), keyword('FUNCTION')), $._iconst_literal, parens(commaSep1($.type_name)))
       ),
 
     create_cast_statement: ($) =>
@@ -2838,7 +2841,7 @@ export default grammar({
             optional($.if_exists),
             $.qualified_name,
             keywords('SET STATISTICS'),
-            choice($._signed_integer, keyword('DEFAULT'))
+            choice($._signed_iconst, keyword('DEFAULT'))
           )
         )
       ),
@@ -3549,11 +3552,11 @@ export default grammar({
         keyword('PRIOR'),
         keyword('FIRST'),
         keyword('LAST'),
-        seq(choice(keyword('ABSOLUTE'), keyword('RELATIVE')), $._signed_integer),
-        $._signed_integer,
+        seq(choice(keyword('ABSOLUTE'), keyword('RELATIVE')), $._signed_iconst),
+        $._signed_iconst,
         keyword('ALL'),
         prec.right(
-          seq(choice(keyword('FORWARD'), keyword('BACKWARD')), optional(choice($._signed_integer, keyword('ALL'))))
+          seq(choice(keyword('FORWARD'), keyword('BACKWARD')), optional(choice($._signed_iconst, keyword('ALL'))))
         )
       ),
 
@@ -3589,8 +3592,8 @@ export default grammar({
           $._simple_type,
           optional(
             choice(
-              repeat1(seq('[', optional($.numeric_literal), ']')),
-              seq(keyword('ARRAY'), optional(seq('[', $.numeric_literal, ']')))
+              repeat1(seq('[', optional($._iconst_literal), ']')),
+              seq(keyword('ARRAY'), optional(seq('[', $._iconst_literal, ']')))
             )
           )
         )
@@ -3606,7 +3609,7 @@ export default grammar({
         keyword('BIGINT'),
         keyword('REAL'),
         keywords('DOUBLE PRECISION'),
-        seq(keyword('FLOAT'), optional(parens($.numeric_literal))),
+        seq(keyword('FLOAT'), optional(parens($._iconst_literal))),
         seq(choice(keyword('NUMERIC'), keyword('DECIMAL'), keyword('DEC')), optional($._type_modifiers)),
         keyword('BOOLEAN'),
         seq(
@@ -3623,12 +3626,12 @@ export default grammar({
             keyword('CHAR'),
             keyword('NCHAR')
           ),
-          optional(parens($.numeric_literal))
+          optional(parens($._iconst_literal))
         ),
         seq(choice(keywords('BIT VARYING'), keyword('BIT')), optional(parens($.numeric_literal))),
         seq(
           choice(keyword('TIMESTAMP'), keyword('TIME')),
-          optional(parens($.numeric_literal)),
+          optional(parens($._iconst_literal)),
           optional(seq(choice(keyword('WITH'), keyword('WITHOUT')), keywords('TIME ZONE')))
         ),
         keyword('JSON'),
@@ -3640,7 +3643,7 @@ export default grammar({
     _type_modifiers: ($) => parens(commaSep1($._expression)),
 
     _interval_qualifier: ($) =>
-      choice(seq($._interval_fields, optional(parens($.numeric_literal))), parens($.numeric_literal)),
+      choice(seq($._interval_fields, optional(parens($._iconst_literal))), parens($._iconst_literal)),
 
     _interval_fields: () =>
       choice(
@@ -3783,7 +3786,7 @@ export default grammar({
             keyword('LOCALTIME'),
             keyword('LOCALTIMESTAMP')
           ),
-          optional(parens($.numeric_literal))
+          optional(parens($._iconst_literal))
         )
       ),
 
@@ -4623,6 +4626,14 @@ export default grammar({
           new RegExp(`(${DIGITS}(\\.(${DIGITS})?)?|\\.${DIGITS})([eE][+-]?${DIGITS})?`)
         )
       ),
+
+    _iconst_literal: ($) => alias($._iconst, $.numeric_literal),
+
+    _signed_iconst: ($) =>
+      choice($._iconst_literal, alias($._signed_iconst_literal, $.unary_expression), prec(1, $._illegal)),
+
+    _signed_iconst_literal: ($) =>
+      seq(field('operator', choice('+', '-')), field('operand', choice($._iconst_literal, $._illegal))),
 
     _signed_integer: ($) =>
       choice($.numeric_literal, alias($._signed_numeric_literal, $.unary_expression), prec(1, $._illegal)),

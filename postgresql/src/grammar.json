@@ -10306,7 +10306,7 @@
                             },
                             {
                               "type": "SYMBOL",
-                              "name": "numeric_literal"
+                              "name": "_iconst_literal"
                             },
                             {
                               "type": "STRING",
@@ -10323,7 +10323,7 @@
                             },
                             {
                               "type": "SYMBOL",
-                              "name": "numeric_literal"
+                              "name": "_iconst_literal"
                             }
                           ]
                         },
@@ -13228,7 +13228,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "numeric_literal"
+                  "name": "_iconst_literal"
                 }
               ]
             },
@@ -13260,7 +13260,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_signed_integer"
+                  "name": "_signed_iconst"
                 },
                 {
                   "type": "ALIAS",
@@ -24902,6 +24902,15 @@
           "value": "NOBYPASSRLS"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_quoted_role_option"
+          },
+          "named": true,
+          "value": "quoted_identifier"
+        },
+        {
           "type": "SEQ",
           "members": [
             {
@@ -25020,7 +25029,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_signed_integer"
+              "name": "_signed_iconst"
             }
           ]
         },
@@ -25086,7 +25095,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "numeric_literal"
+              "name": "_iconst_literal"
             }
           ]
         },
@@ -29034,7 +29043,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "numeric_literal"
+              "name": "_iconst_literal"
             },
             {
               "type": "SYMBOL",
@@ -29179,7 +29188,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "numeric_literal"
+              "name": "_iconst_literal"
             },
             {
               "type": "CHOICE",
@@ -29722,7 +29731,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "numeric_literal"
+              "name": "_iconst_literal"
             },
             {
               "type": "SEQ",
@@ -32153,7 +32162,7 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "_signed_integer"
+                      "name": "_signed_iconst"
                     },
                     {
                       "type": "ALIAS",
@@ -41947,13 +41956,13 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_signed_integer"
+              "name": "_signed_iconst"
             }
           ]
         },
         {
           "type": "SYMBOL",
-          "name": "_signed_integer"
+          "name": "_signed_iconst"
         },
         {
           "type": "ALIAS",
@@ -42001,7 +42010,7 @@
                     "members": [
                       {
                         "type": "SYMBOL",
-                        "name": "_signed_integer"
+                        "name": "_signed_iconst"
                       },
                       {
                         "type": "ALIAS",
@@ -42286,7 +42295,7 @@
                           "members": [
                             {
                               "type": "SYMBOL",
-                              "name": "numeric_literal"
+                              "name": "_iconst_literal"
                             },
                             {
                               "type": "BLANK"
@@ -42324,7 +42333,7 @@
                               },
                               {
                                 "type": "SYMBOL",
-                                "name": "numeric_literal"
+                                "name": "_iconst_literal"
                               },
                               {
                                 "type": "STRING",
@@ -42479,7 +42488,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "numeric_literal"
+                      "name": "_iconst_literal"
                     },
                     {
                       "type": "STRING",
@@ -42787,7 +42796,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "numeric_literal"
+                      "name": "_iconst_literal"
                     },
                     {
                       "type": "STRING",
@@ -42907,7 +42916,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "numeric_literal"
+                      "name": "_iconst_literal"
                     },
                     {
                       "type": "STRING",
@@ -43077,7 +43086,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "numeric_literal"
+                      "name": "_iconst_literal"
                     },
                     {
                       "type": "STRING",
@@ -43101,7 +43110,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "numeric_literal"
+              "name": "_iconst_literal"
             },
             {
               "type": "STRING",
@@ -44039,7 +44048,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "numeric_literal"
+                      "name": "_iconst_literal"
                     },
                     {
                       "type": "STRING",
@@ -60318,6 +60327,80 @@
         ]
       }
     },
+    "_iconst_literal": {
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "_iconst"
+      },
+      "named": true,
+      "value": "numeric_literal"
+    },
+    "_signed_iconst": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_iconst_literal"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_signed_iconst_literal"
+          },
+          "named": true,
+          "value": "unary_expression"
+        },
+        {
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "_illegal"
+          }
+        }
+      ]
+    },
+    "_signed_iconst_literal": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "operator",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "+"
+              },
+              {
+                "type": "STRING",
+                "value": "-"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "operand",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_iconst_literal"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_illegal"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "_signed_integer": {
       "type": "CHOICE",
       "members": [
@@ -60462,6 +60545,14 @@
     {
       "type": "STRING",
       "value": "-"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_iconst"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_quoted_role_option"
     },
     {
       "type": "SYMBOL",

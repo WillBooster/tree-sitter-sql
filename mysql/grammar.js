@@ -585,8 +585,6 @@ const commonStatements = ($) => [
   $.call_statement,
   $.do_statement,
   $.handler_statement,
-  $.signal_statement,
-  $.resignal_statement,
 ];
 
 export default grammar({
@@ -611,6 +609,9 @@ export default grammar({
     $._host_name,
     $._statement_terminator,
     $._end_of_input,
+    $._sqlstate_literal,
+    $._signal_first_item_name,
+    $._signal_next_item_name,
     $._illegal_token,
     $._dot_context,
     $._unreachable,
@@ -657,7 +658,8 @@ export default grammar({
 
     _illegal: ($) => seq($._illegal_token, $._unreachable),
 
-    _statement: ($) => choice(...commonStatements($), $.get_diagnostics_statement),
+    _statement: ($) =>
+      choice(...commonStatements($), $.get_diagnostics_statement, $.signal_statement, $.resignal_statement),
 
     // =========================================================================
     // Queries & SELECT
@@ -2385,6 +2387,8 @@ export default grammar({
         $.fetch_statement,
         $.close_statement,
         alias($._sp_get_diagnostics_statement, $.get_diagnostics_statement),
+        alias($._sp_signal_statement, $.signal_statement),
+        alias($._sp_resignal_statement, $.resignal_statement),
         ...commonStatements($)
       ),
 
@@ -2406,7 +2410,7 @@ export default grammar({
           seq(
             field('condition', $._identifier),
             keywords('CONDITION FOR'),
-            choice(seq(keyword('SQLSTATE'), optional(keyword('VALUE')), $.string_literal), $.numeric_literal)
+            choice($._sqlstate_clause, $.numeric_literal)
           ),
           seq(field('cursor', $._identifier), keywords('CURSOR FOR'), alias($._subquery_select, $.select_statement)),
           seq(
@@ -2421,7 +2425,7 @@ export default grammar({
 
     _handler_condition_value: ($) =>
       choice(
-        seq(keyword('SQLSTATE'), optional(keyword('VALUE')), $.string_literal),
+        $._sqlstate_clause,
         keyword('SQLEXCEPTION'),
         keyword('SQLWARNING'),
         keywords('NOT FOUND'),
@@ -2501,28 +2505,39 @@ export default grammar({
 
     close_statement: ($) => seq(keyword('CLOSE'), field('cursor', $._identifier)),
 
-    signal_statement: ($) =>
-      seq(keyword('SIGNAL'), $._signal_condition, optional(seq(keyword('SET'), commaSep1($.signal_information_item)))),
+    signal_statement: ($) => seq(keyword('SIGNAL'), $._sqlstate_clause, optional($._signal_set_clause)),
 
-    resignal_statement: ($) =>
+    resignal_statement: ($) => seq(keyword('RESIGNAL'), optional($._sqlstate_clause), optional($._signal_set_clause)),
+
+    _sp_signal_statement: ($) =>
+      seq(keyword('SIGNAL'), choice($._sqlstate_clause, $._identifier), optional($._signal_set_clause)),
+
+    _sp_resignal_statement: ($) =>
+      seq(keyword('RESIGNAL'), optional(choice($._sqlstate_clause, $._identifier)), optional($._signal_set_clause)),
+
+    _sqlstate_clause: ($) =>
+      seq(keyword('SQLSTATE'), optional(keyword('VALUE')), alias($._sqlstate_literal, $.string_literal)),
+
+    _signal_set_clause: ($) =>
       seq(
-        keyword('RESIGNAL'),
-        optional($._signal_condition),
-        optional(seq(keyword('SET'), commaSep1($.signal_information_item)))
+        keyword('SET'),
+        alias($._first_signal_information_item, $.signal_information_item),
+        repeat(seq(',', $.signal_information_item))
       ),
 
-    _signal_condition: ($) =>
-      choice(seq(keyword('SQLSTATE'), optional(keyword('VALUE')), $.string_literal), $._identifier),
+    _first_signal_information_item: ($) =>
+      seq(field('name', alias($._signal_first_item_name, $.identifier)), '=', field('value', $._signal_allowed_expr)),
 
     signal_information_item: ($) =>
-      seq(field('name', $._signal_item_name), '=', field('value', $._signal_allowed_expr)),
+      seq(field('name', alias($._signal_next_item_name, $.identifier)), '=', field('value', $._signal_allowed_expr)),
 
     _signal_allowed_expr: ($) => choice($._literal, $.user_variable, $.system_variable, $.column_reference),
 
-    _signal_item_name: ($) => choice(...SIGNAL_CONDITION_ITEMS.map((word) => alias(keyword(word), $.identifier))),
-
     _diagnostics_condition_item_name: ($) =>
-      choice($._signal_item_name, alias(keyword('RETURNED_SQLSTATE'), $.identifier)),
+      choice(
+        ...SIGNAL_CONDITION_ITEMS.map((word) => alias(keyword(word), $.identifier)),
+        alias(keyword('RETURNED_SQLSTATE'), $.identifier)
+      ),
 
     get_diagnostics_statement: ($) =>
       seq(

@@ -636,3 +636,64 @@ GET DIAGNOSTICS CONDITION 1 @ret_state = RETURNED_SQLSTATE;
     (numeric_literal)
     (user_variable)
     (identifier)))
+
+
+================================================================================
+SIGNAL and RESIGNAL SQLSTATE values, distinct items, and routine condition names
+:language(mysql)
+================================================================================
+
+SIGNAL SQLSTATE VALUE '42S02' SET MESSAGE_TEXT = 'Missing table', MYSQL_ERRNO = 1146, TABLE_NAME = 'orders';
+RESIGNAL SQLSTATE 'HY000' SET CLASS_ORIGIN = 'ISO 9075', SUBCLASS_ORIGIN = 'MySQL';
+CREATE PROCEDURE p_sig()
+BEGIN
+  DECLARE bad_input CONDITION FOR SQLSTATE '45000';
+  DECLARE EXIT HANDLER FOR SQLSTATE '23000', bad_input RESIGNAL bad_input SET MESSAGE_TEXT = 'Handled';
+  SIGNAL bad_input SET MESSAGE_TEXT = 'Bad input', COLUMN_NAME = 'amount';
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (signal_statement
+    (string_literal)
+    (signal_information_item
+      (identifier)
+      (string_literal))
+    (signal_information_item
+      (identifier)
+      (numeric_literal))
+    (signal_information_item
+      (identifier)
+      (string_literal)))
+  (resignal_statement
+    (string_literal)
+    (signal_information_item
+      (identifier)
+      (string_literal))
+    (signal_information_item
+      (identifier)
+      (string_literal)))
+  (create_procedure_statement
+    (qualified_name
+      (identifier))
+    (compound_statement
+      (declare_statement
+        (identifier)
+        (string_literal))
+      (declare_statement
+        (string_literal)
+        (identifier)
+        (resignal_statement
+          (identifier)
+          (signal_information_item
+            (identifier)
+            (string_literal))))
+      (signal_statement
+        (identifier)
+        (signal_information_item
+          (identifier)
+          (string_literal))
+        (signal_information_item
+          (identifier)
+          (string_literal))))))

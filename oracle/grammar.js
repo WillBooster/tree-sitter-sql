@@ -965,7 +965,12 @@ function buildJsonExpressionRules(k, ref, pub, def, baseIdentifier) {
     [
       k('_json_serialize_body'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
-        seq(ref($, '_expression'), optional(keywords('FORMAT JSON')), repeat(ref($, '_json_serialize_option'))),
+        seq(
+          ref($, '_expression'),
+          optional($._json_serialize_returning),
+          optional($._json_ser_mods_15),
+          optional($._json_serialize_on_error)
+        ),
     ],
     [
       k('_json_transform_body'),
@@ -1068,18 +1073,6 @@ function buildJsonExpressionRules(k, ref, pub, def, baseIdentifier) {
           keyword('ascii'),
           keyword('TRUNCATE'),
           seq(choice(keyword('KEEP'), keyword('OMIT')), keyword('QUOTES'))
-        ),
-    ],
-    [
-      k('_json_serialize_option'),
-      /** @param {GrammarSymbols<string>} $ */ ($) =>
-        choice(
-          $._json_returning_clause,
-          ref($, '_json_on_error_or_empty'),
-          keyword('PRETTY'),
-          keyword('ascii'),
-          keyword('ORDERED'),
-          keyword('TRUNCATE')
         ),
     ],
     [
@@ -1371,6 +1364,27 @@ function sqlOnlyExpressionRules() {
   };
 }
 
+/** @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
+function buildJsonSerializeModifierRules() {
+  const mods = ['PRETTY', 'ascii', 'ORDERED', 'TRUNCATE'];
+  /** @type {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
+  const out = {};
+  for (let mask = 1; mask < 1 << mods.length; mask++) {
+    out[`_json_ser_mods_${mask}`] = ($) => {
+      /** @type {RuleOrLiteral[]} */
+      const alts = [];
+      for (let i = 0; i < mods.length; i++) {
+        if (!(mask & (1 << i))) continue;
+        const rem = mask & ~(1 << i);
+        const kw = keyword(mods[i]);
+        alts.push(rem === 0 ? kw : seq(kw, optional($[`_json_ser_mods_${rem}`])));
+      }
+      return alts.length === 1 ? alts[0] : choice(...alts);
+    };
+  }
+  return out;
+}
+
 export default grammar({
   name: 'oracle',
 
@@ -1388,6 +1402,14 @@ export default grammar({
     $.size_literal,
     $.bind_variable,
     $._slash_terminator,
+    $._rel_table_open,
+    $._rel_col_ident,
+    $._rel_col_quoted,
+    $._rel_col_has_type,
+    $._fk_col_ident,
+    $._fk_col_quoted,
+    $._rel_table_close_resolved,
+    $._rel_table_close_unresolved,
   ],
 
   word: ($) => $.identifier,
@@ -2574,8 +2596,16 @@ export default grammar({
         field('name', $.object_name),
         optional($._table_sharing_clause),
         choice(
-          seq('(', choice($._table_elements_no_fk, $._table_elements_has_fk), ')', optional($._table_props_opt_as)),
-          seq('(', $._table_elements_needs_fk, ')', $._table_props_req_as),
+          seq(
+            '(',
+            $._rel_table_open,
+            commaSep1($._rel_table_element),
+            ')',
+            choice(
+              seq($._rel_table_close_resolved, optional($._table_props_opt_as)),
+              seq($._rel_table_close_unresolved, $._table_props_req_as)
+            )
+          ),
           seq(
             keyword('OF'),
             field('object_type', $.type_name),
@@ -2621,28 +2651,17 @@ export default grammar({
         choice(keyword('METADATA'), keyword('DATA'), keywords('EXTENDED DATA'), keyword('NONE'))
       ),
 
-    _table_elements_no_fk: ($) =>
-      choice($._plain_table_element, seq($._table_elements_no_fk, ',', $._plain_table_element)),
-
-    _table_elements_needs_fk: ($) =>
+    _rel_table_element: ($) =>
       choice(
-        $._typeless_table_element,
-        seq($._table_elements_no_fk, ',', $._typeless_table_element),
-        seq($._table_elements_needs_fk, ',', choice($._plain_table_element, $._typeless_table_element))
+        alias($._rel_column_definition, $.column_definition),
+        $.period_definition,
+        alias($._non_fk_table_constraint, $.table_constraint),
+        alias($._rel_fk_table_constraint, $.table_constraint),
+        $.supplemental_log_clause,
+        $.table_domain_clause
       ),
 
-    _table_elements_has_fk: ($) =>
-      choice(
-        $._fk_table_element,
-        seq(choice($._table_elements_no_fk, $._table_elements_needs_fk), ',', $._fk_table_element),
-        seq(
-          $._table_elements_has_fk,
-          ',',
-          choice($._plain_table_element, $._fk_table_element, $._typeless_table_element)
-        )
-      ),
-
-    _table_element: ($) => choice($._plain_table_element, $._fk_table_element),
+    _table_element: ($) => choice($._plain_table_element, alias($._fk_table_constraint, $.table_constraint)),
 
     _plain_table_element: ($) =>
       choice(
@@ -2652,10 +2671,6 @@ export default grammar({
         $.supplemental_log_clause,
         $.table_domain_clause
       ),
-
-    _fk_table_element: ($) => alias($._fk_table_constraint, $.table_constraint),
-
-    _typeless_table_element: ($) => alias($._typeless_column_definition, $.column_definition),
 
     table_domain_clause: ($) => seq(keyword('DOMAIN'), field('domain', $.object_name), $.column_list),
 
@@ -2696,8 +2711,9 @@ export default grammar({
         )
       ),
 
-    // In `CREATE TABLE (...)` without `AS subquery` or a table-level `FOREIGN KEY` constraint, every column requires an
-    // explicit `type_name`, a `DOMAIN` association, a virtual column expression, or an inline `REFERENCES` constraint.
+    // In `CREATE TABLE (...)`, columns that omit `type_name`, `DOMAIN`, a virtual expression, and inline `REFERENCES`
+    // remain unresolved in the scanner's normalized-name trie unless matched by a table-level `FOREIGN KEY (...)`
+    // column list or closed on the `AS subquery` (CTAS) branch.
     column_definition: ($) =>
       prec.right(
         seq(
@@ -2711,8 +2727,32 @@ export default grammar({
         )
       ),
 
-    _typeless_column_definition: ($) =>
-      prec.right(seq(field('name', $._column_name), repeat($._non_ref_column_attribute))),
+    _rel_column_definition: ($) =>
+      prec.right(
+        seq(
+          field('name', $._rel_column_name),
+          choice(
+            seq(
+              choice(seq(field('type', $.type_name), optional($.column_domain_clause)), $.column_domain_clause),
+              repeat($._column_attribute),
+              $._rel_col_has_type
+            ),
+            seq(
+              repeat($._non_ref_column_attribute),
+              optional(
+                seq(
+                  choice($.virtual_column_clause, $._inline_references_constraint),
+                  repeat($._column_attribute),
+                  $._rel_col_has_type
+                )
+              )
+            )
+          )
+        )
+      ),
+
+    _rel_column_name: ($) =>
+      choice(alias($._rel_col_ident, $.identifier), alias($._rel_col_quoted, $.quoted_identifier), prec(1, $._illegal)),
 
     _modify_column_definition: ($) =>
       prec.right(
@@ -2897,6 +2937,22 @@ export default grammar({
           repeat($._constraint_state)
         )
       ),
+
+    _rel_fk_table_constraint: ($) =>
+      prec.right(
+        seq(
+          optional($.constraint_name),
+          keywords('FOREIGN KEY'),
+          alias($._fk_column_list, $.column_list),
+          $.references_clause,
+          repeat($._constraint_state)
+        )
+      ),
+
+    _fk_column_list: ($) => seq('(', commaSep1($._fk_column_name), ')'),
+
+    _fk_column_name: ($) =>
+      choice(alias($._fk_col_ident, $.identifier), alias($._fk_col_quoted, $.quoted_identifier), prec(1, $._illegal)),
 
     _non_fk_table_constraint: ($) =>
       prec.right(seq(optional($.constraint_name), $._non_fk_table_constraint_kind, repeat($._constraint_state))),
@@ -5902,39 +5958,40 @@ export default grammar({
     _system_privilege_or_role: ($) =>
       choice(
         keywords('ALL PRIVILEGES'),
-        keywords('UNLIMITED TABLESPACE'),
         keywords('SET CONTAINER'),
-        keywords('RESTRICTED SESSION'),
         keywords('BECOME USER'),
         keywords('ON COMMIT REFRESH'),
         seq(optional(keyword('GLOBAL')), keywords('QUERY REWRITE')),
         seq(keyword('FORCE'), optional(keyword('ANY')), keyword('TRANSACTION')),
         keywords('PURGE DBA_RECYCLEBIN'),
-        keywords('INHERIT ANY PRIVILEGES'),
-        keywords('INHERIT ANY REMOTE PRIVILEGES'),
+        seq(keywords('INHERIT ANY'), choice(keyword('PRIVILEGES'), keywords('REMOTE PRIVILEGES'))),
         keywords('TRANSLATE ANY SQL'),
-        keywords('ANALYZE ANY'),
-        keywords('ANALYZE ANY DICTIONARY'),
-        keywords('AUDIT ANY'),
-        keywords('AUDIT SYSTEM'),
-        keywords('EXEMPT ACCESS POLICY'),
-        keywords('EXEMPT IDENTITY POLICY'),
-        keywords('EXEMPT REDACTION POLICY'),
-        keywords('GRANT ANY PRIVILEGE'),
-        keywords('GRANT ANY OBJECT PRIVILEGE'),
-        keywords('GRANT ANY ROLE'),
-        keywords('GRANT ANY SCHEMA PRIVILEGE'),
-        keywords('KEEP DATE TIME'),
-        keywords('KEEP SYSGUID'),
+        seq(keywords('ANALYZE ANY'), optional(keyword('DICTIONARY'))),
+        seq(keyword('AUDIT'), choice(keyword('ANY'), keyword('SYSTEM'))),
+        seq(keyword('EXEMPT'), choice(keyword('ACCESS'), keyword('IDENTITY'), keyword('REDACTION')), keyword('POLICY')),
+        seq(
+          keywords('GRANT ANY'),
+          choice(
+            keyword('PRIVILEGE'),
+            keywords('OBJECT PRIVILEGE'),
+            keyword('ROLE'),
+            keywords('SCHEMA PRIVILEGE'),
+            keywords('DATA ROLE')
+          )
+        ),
+        seq(keyword('KEEP'), choice(keywords('DATE TIME'), keyword('SYSGUID'))),
         keywords('CHANGE NOTIFICATION'),
-        keywords('DEBUG CONNECT SESSION'),
-        keywords('DEBUG CONNECT ANY'),
+        seq(keyword('DEBUG'), choice(keywords('CONNECT SESSION'), keywords('CONNECT ANY'), keywords('ANY PROCEDURE'))),
         keywords('EM EXPRESS CONNECT'),
         keywords('ENABLE DIAGNOSTICS'),
         prec(1, keywords('EXECUTE ASSEMBLY')),
         keywords('EXECUTE DYNAMIC MLE'),
         keywords('FLASHBACK ARCHIVE ADMINISTER'),
         keywords('TEXT DATASTORE ACCESS'),
+        keywords('TABLE RETENTION'),
+        keywords('SET USE DATA GRANTS ONLY'),
+        keywords('RESTRICTED SESSION'),
+        keywords('UNLIMITED TABLESPACE'),
         seq(choice(keyword('EXPORT'), keyword('IMPORT')), keywords('FULL DATABASE')),
         keyword('ADVISOR'),
         keyword('LOGMINING'),
@@ -5949,63 +6006,225 @@ export default grammar({
         keyword('SYSPRELIM'),
         keyword('CONNECT'),
         keyword('RESOURCE'),
+        seq(keyword('ADMINISTER'), $._administer_privilege_target),
+        $._exact_object_system_privilege,
+        $._name
+      ),
+
+    _administer_privilege_target: () =>
+      choice(
+        seq(optional(keyword('ANY')), keywords('SQL TUNING SET')),
+        keywords('ANY DATA GRANT'),
+        keywords('DATABASE TRIGGER'),
+        keywords('FINE GRAINED AUDIT POLICY'),
+        keywords('KEY MANAGEMENT'),
+        keywords('REDACTION POLICY'),
+        keywords('RESOURCE MANAGER'),
+        keywords('ROW LEVEL SECURITY POLICY'),
+        keywords('SQL FIREWALL'),
+        keywords('SQL MANAGEMENT OBJECT')
+      ),
+
+    _exact_object_system_privilege: ($) =>
+      choice(
+        seq(keyword('CREATE'), $._sys_priv_create_tail),
+        seq(keyword('ALTER'), $._sys_priv_alter_tail),
+        seq(keyword('DROP'), $._sys_priv_drop_tail),
         seq(
-          keyword('ADMINISTER'),
+          keywords('EXECUTE ANY'),
+          choice($._sys_priv_crud_exec_obj, keyword('ASSEMBLY'), keyword('CLASS'), keyword('PROGRAM'))
+        ),
+        seq(keywords('SELECT ANY'), $._sys_priv_select_any_target),
+        seq(
+          choice(keywords('INSERT ANY'), keywords('DELETE ANY')),
+          choice(keyword('TABLE'), keywords('CUBE DIMENSION'), keywords('MEASURE FOLDER'))
+        ),
+        seq(
+          keywords('UPDATE ANY'),
           choice(
-            seq(optional(keyword('ANY')), keywords('SQL TUNING SET')),
-            keywords('DATABASE TRIGGER'),
-            keywords('FINE GRAINED AUDIT POLICY'),
-            keywords('KEY MANAGEMENT'),
-            keywords('REDACTION POLICY'),
-            keywords('RESOURCE MANAGER'),
-            keywords('ROW LEVEL SECURITY POLICY'),
-            keywords('SQL FIREWALL'),
-            keywords('SQL MANAGEMENT OBJECT')
+            keyword('TABLE'),
+            keyword('CUBE'),
+            keywords('CUBE DIMENSION'),
+            keywords('CUBE BUILD PROCESS'),
+            keywords('END USER CONTEXT')
           )
         ),
+        seq(
+          keywords('READ ANY'),
+          choice(keyword('TABLE'), keywords('PROPERTY GRAPH'), keywords('FILE GROUP'), keywords('ANALYTIC VIEW CACHE'))
+        ),
+        keywords('WRITE ANY ANALYTIC VIEW CACHE'),
+        seq(keywords('COMMENT ANY'), choice(keyword('TABLE'), keywords('MINING MODEL'), keywords('PROPERTY GRAPH'))),
+        seq(keywords('UNDER ANY'), choice(keyword('TABLE'), keyword('TYPE'), keyword('VIEW'))),
+        seq(
+          choice(keyword('BACKUP'), keyword('FLASHBACK'), keyword('LOCK'), keyword('REDEFINE')),
+          keywords('ANY TABLE')
+        ),
+        keywords('MERGE ANY VIEW'),
+        seq(choice(keyword('DEQUEUE'), keyword('ENQUEUE')), keywords('ANY QUEUE')),
         seq(
           keyword('MANAGE'),
           choice(
             keyword('TABLESPACE'),
             keyword('SCHEDULER'),
-            seq(optional(keyword('ANY')), keywords('FILE GROUP')),
-            keywords('ANY QUEUE')
+            keywords('ANY QUEUE'),
+            seq(optional(keyword('ANY')), keywords('FILE GROUP'))
           )
         ),
-        seq(keyword('BACKUP'), keywords('ANY TABLE')),
-        seq(
-          choice(keyword('CREATE'), keyword('ALTER'), keyword('DROP')),
-          optional(keyword('ANY')),
-          optional(keyword('PUBLIC')),
-          $._system_privilege_object
-        ),
-        seq($._sys_priv_any_verb, keyword('ANY'), $._system_privilege_object),
-        seq(keyword('ALTER'), choice(keyword('DATABASE'), keyword('SYSTEM'), keywords('RESOURCE COST'))),
-        $._name
+        seq(keywords('USE ANY'), choice(keywords('JOB RESOURCE'), keywords('SQL TRANSLATION PROFILE')))
       ),
 
-    _sys_priv_any_verb: () =>
+    _sys_priv_create_tail: ($) =>
       choice(
-        keyword('SELECT'),
-        keyword('INSERT'),
-        keyword('UPDATE'),
-        keyword('DELETE'),
-        keyword('READ'),
-        keyword('WRITE'),
-        keyword('EXECUTE'),
-        keyword('FLASHBACK'),
-        keyword('LOCK'),
-        keyword('COMMENT'),
-        keyword('UNDER'),
-        keyword('MERGE'),
-        keyword('REDEFINE'),
-        keyword('DEBUG'),
-        keyword('USE'),
-        keyword('ENQUEUE'),
-        keyword('DEQUEUE')
+        seq(
+          keyword('ANY'),
+          choice(
+            $._sys_priv_shared_crud_obj,
+            $._sys_priv_any_crud_obj,
+            $._sys_priv_any_cd_obj,
+            keyword('CREDENTIAL'),
+            keywords('NOTIFICATION DIRECTIVE'),
+            keywords('VALIDATION DIRECTIVE'),
+            keyword('JOB'),
+            keyword('SYNONYM'),
+            keyword('VIEW')
+          )
+        ),
+        seq(keyword('PUBLIC'), choice(keywords('DATABASE LINK'), keyword('SYNONYM'))),
+        keywords('EXTERNAL JOB'),
+        $._sys_priv_shared_crud_obj,
+        $._sys_priv_direct_crud_obj,
+        $._sys_priv_direct_cd_obj,
+        keyword('CREDENTIAL'),
+        keywords('DATA GRANT'),
+        keywords('DATABASE LINK'),
+        keywords('NOTIFICATION DIRECTIVE'),
+        keyword('JOB'),
+        keywords('PLUGGABLE DATABASE'),
+        keyword('ROLE'),
+        keyword('SESSION'),
+        keyword('SYNONYM'),
+        keyword('VIEW')
       ),
 
-    _system_privilege_object: () =>
+    _sys_priv_alter_tail: ($) =>
+      choice(
+        seq(
+          keyword('ANY'),
+          choice(
+            $._sys_priv_shared_crud_obj,
+            $._sys_priv_any_crud_obj,
+            keywords('NOTIFICATION DIRECTIVE'),
+            keyword('ROLE')
+          )
+        ),
+        seq(optional(keyword('PUBLIC')), keywords('DATABASE LINK')),
+        keyword('DATABASE'),
+        keyword('SYSTEM'),
+        keywords('RESOURCE COST'),
+        keyword('SESSION'),
+        $._sys_priv_direct_crud_obj
+      ),
+
+    _sys_priv_drop_tail: ($) =>
+      choice(
+        seq(
+          keyword('ANY'),
+          choice(
+            $._sys_priv_shared_crud_obj,
+            $._sys_priv_any_crud_obj,
+            $._sys_priv_any_cd_obj,
+            keywords('DATA GRANT'),
+            keywords('NOTIFICATION DIRECTIVE'),
+            keyword('ROLE'),
+            keyword('SYNONYM'),
+            keyword('VIEW')
+          )
+        ),
+        seq(keyword('PUBLIC'), choice(keywords('DATABASE LINK'), keyword('SYNONYM'))),
+        $._sys_priv_direct_crud_obj,
+        $._sys_priv_direct_cd_obj
+      ),
+
+    _sys_priv_select_any_target: () =>
+      choice(
+        keyword('TABLE'),
+        keyword('SEQUENCE'),
+        keyword('DICTIONARY'),
+        keyword('TRANSACTION'),
+        keywords('MINING MODEL'),
+        keyword('CUBE'),
+        keywords('CUBE DIMENSION'),
+        keywords('CUBE BUILD PROCESS'),
+        keywords('MEASURE FOLDER'),
+        keywords('END USER CONTEXT')
+      ),
+
+    _sys_priv_shared_crud_obj: ($) =>
+      choice(
+        $._sys_priv_crud_obj,
+        $._sys_priv_crud_exec_obj,
+        $._sys_priv_olap_crud_obj,
+        keywords('MINING MODEL'),
+        keywords('PROPERTY GRAPH'),
+        keyword('SEQUENCE'),
+        keyword('MLE'),
+        keyword('ASSEMBLY')
+      ),
+
+    _sys_priv_crud_obj: () =>
+      choice(
+        keywords('ANALYTIC VIEW'),
+        keyword('ASSERTION'),
+        keywords('ATTRIBUTE DIMENSION'),
+        keyword('CLUSTER'),
+        keyword('DIMENSION'),
+        keyword('HIERARCHY'),
+        keywords('MATERIALIZED VIEW'),
+        keywords('SQL TRANSLATION PROFILE'),
+        keyword('TABLE'),
+        keyword('TRIGGER')
+      ),
+
+    _sys_priv_crud_exec_obj: () =>
+      choice(
+        keyword('DOMAIN'),
+        keywords('EVALUATION CONTEXT'),
+        keyword('INDEXTYPE'),
+        keyword('LIBRARY'),
+        keyword('OPERATOR'),
+        keyword('PROCEDURE'),
+        keyword('RULE'),
+        keywords('RULE SET'),
+        keyword('TYPE')
+      ),
+
+    _sys_priv_olap_crud_obj: () =>
+      choice(keyword('CUBE'), keywords('CUBE DIMENSION'), keywords('CUBE BUILD PROCESS'), keywords('MEASURE FOLDER')),
+
+    _sys_priv_any_crud_obj: () => choice(keyword('INDEX'), keyword('OUTLINE'), keywords('SQL PROFILE')),
+
+    _sys_priv_any_cd_obj: () => choice(keyword('CONTEXT'), keyword('DIRECTORY'), keyword('EDITION')),
+
+    _sys_priv_direct_crud_obj: () =>
+      choice(
+        keywords('END USER'),
+        keywords('LOCKDOWN PROFILE'),
+        keyword('PROFILE'),
+        keywords('ROLLBACK SEGMENT'),
+        keyword('TABLESPACE'),
+        keyword('USER')
+      ),
+
+    _sys_priv_direct_cd_obj: () =>
+      choice(
+        keywords('APPLICATION IDENTITY'),
+        keywords('DATA ROLE'),
+        keywords('END USER CONTEXT'),
+        keywords('LOGICAL PARTITION TRACKING')
+      ),
+
+    _traditional_audit_object: () =>
       choice(
         keyword('TABLE'),
         keywords('EXTERNAL TABLE'),
@@ -6448,7 +6667,7 @@ export default grammar({
         keyword('AUDIT'),
         keyword('RENAME'),
         prec(1, $._system_privilege_or_role),
-        prec(-1, $._system_privilege_object),
+        prec(-1, $._traditional_audit_object),
         seq(keyword('PUBLIC'), choice(keyword('SYNONYM'), keywords('DATABASE LINK'))),
         keywords('ALL STATEMENTS'),
         keywords('NOT EXISTS'),
@@ -6456,7 +6675,7 @@ export default grammar({
         keywords('SYSTEM AUDIT'),
         keywords('DIRECT_PATH LOAD'),
         keyword('NETWORK'),
-        prec(-1, seq($._audit_stmt_verb, $._system_privilege_object))
+        prec(-1, seq($._audit_stmt_verb, $._traditional_audit_object))
       ),
 
     _audit_stmt_verb: () =>
@@ -6780,6 +6999,28 @@ export default grammar({
     _json_null_clause: () => seq(choice(keyword('NULL'), keyword('ABSENT')), keywords('ON NULL')),
 
     _json_returning_clause: ($) => seq(keyword('RETURNING'), $.type_name),
+
+    _json_serialize_returning: ($) => seq(keyword('RETURNING'), alias($._json_serialize_return_type, $.type_name)),
+
+    _json_serialize_return_type: ($) =>
+      prec.right(
+        choice(
+          seq(choice(keyword('VARCHAR2'), keyword('VARCHAR')), optional($._char_len_parens)),
+          seq(keyword('RAW'), optional(seq('(', $.numeric_literal, ')'))),
+          keyword('CLOB'),
+          keyword('BLOB'),
+          keyword('JSON'),
+          keyword('BOOLEAN')
+        )
+      ),
+
+    _json_serialize_on_error: () =>
+      seq(
+        choice(keyword('ERROR'), keyword('NULL'), seq(keyword('EMPTY'), choice(keyword('ARRAY'), keyword('OBJECT')))),
+        keywords('ON ERROR')
+      ),
+
+    ...buildJsonSerializeModifierRules(),
 
     _json_wrapper_clause: ($) => seq($._json_wrapper_head, keyword('WRAPPER')),
 

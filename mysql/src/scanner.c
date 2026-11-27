@@ -23,14 +23,24 @@ enum TokenType {
   HOST_NAME,
   STATEMENT_TERMINATOR,
   END_OF_INPUT,
+  SQLSTATE_LITERAL,
+  SIGNAL_FIRST_ITEM_NAME,
+  SIGNAL_NEXT_ITEM_NAME,
   ILLEGAL_TOKEN,
   DOT_CONTEXT,
   UNREACHABLE,
 };
 
 typedef struct {
+  uint16_t signal_item_mask;
   bool in_version_comment;
 } Scanner;
+
+static const char *const MYSQL_SIGNAL_ITEMS[] = {
+  "class_origin",       "subclass_origin", "constraint_catalog", "constraint_schema",
+  "constraint_name",    "catalog_name",    "schema_name",        "table_name",
+  "column_name",        "cursor_name",     "message_text",       "mysql_errno",
+};
 
 // MySQL 8.4 character sets recognized as `_charset` introducers even when separated by whitespace from the literal.
 static const char *const MYSQL_CHARSETS[] = {
@@ -434,20 +444,116 @@ static bool scan_host_name(TSLexer *lexer, const bool *valid_symbols) {
   return emit(lexer, HOST_NAME);
 }
 
+static int32_t decode_mysql_escape_char(int32_t e, bool *valid_sqlstate) {
+  switch (e) {
+    case '0':
+      return 0;
+    case 'b':
+      return '\b';
+    case 'n':
+      return '\n';
+    case 'r':
+      return '\r';
+    case 't':
+      return '\t';
+    case 'Z':
+      return 0x1A;
+    case '%':
+    case '_':
+      *valid_sqlstate = false;
+      return e;
+    default:
+      return e;
+  }
+}
+
+static bool is_sqlstate_char(int32_t c) { return is_digit(c) || (c >= 'A' && c <= 'Z'); }
+
+static bool step_sqlstate_char(TSLexer *lexer, int32_t quote, int32_t *out, bool *closed, bool *valid) {
+  int32_t c = lexer->lookahead;
+  advance(lexer);
+  if (c == '\\') {
+    if (at_eof(lexer)) return false;
+    int32_t e = lexer->lookahead;
+    advance(lexer);
+    *out = decode_mysql_escape_char(e, valid);
+    return true;
+  }
+  if (c != quote) return (*out = c), true;
+  if (lexer->lookahead != quote) return (*closed = true), true;
+  advance(lexer);
+  *out = quote;
+  return true;
+}
+
+static bool scan_sqlstate_literal(TSLexer *lexer, int32_t quote) {
+  advance(lexer);
+  char buf[6] = {0};
+  unsigned len = 0;
+  bool valid = true;
+  while (!at_eof(lexer)) {
+    int32_t d = 0;
+    bool closed = false;
+    if (!step_sqlstate_char(lexer, quote, &d, &closed, &valid)) return emit(lexer, ILLEGAL_TOKEN);
+    if (closed) {
+      bool ok = valid && len == 5 && !(buf[0] == '0' && buf[1] == '0');
+      return emit(lexer, ok ? SQLSTATE_LITERAL : ILLEGAL_TOKEN);
+    }
+    if (!is_sqlstate_char(d)) valid = false;
+    if (len < 5) buf[len] = (char)d;
+    len++;
+  }
+  return emit(lexer, ILLEGAL_TOKEN);
+}
+
+static int find_signal_item_index(const char *word) {
+  for (unsigned i = 0; i < sizeof MYSQL_SIGNAL_ITEMS / sizeof *MYSQL_SIGNAL_ITEMS; i++) {
+    if (strcmp(word, MYSQL_SIGNAL_ITEMS[i]) == 0) return (int)i;
+  }
+  return -1;
+}
+
+static bool scan_signal_item_name(Scanner *scanner, TSLexer *lexer, bool is_first) {
+  char word[24];
+  unsigned len = 0;
+  while (is_ascii_alpha(lexer->lookahead) || lexer->lookahead == '_') {
+    int32_t c = lexer->lookahead;
+    if (len + 1 < sizeof word) word[len] = (c >= 'A' && c <= 'Z') ? (char)(c - 'A' + 'a') : (char)c;
+    len++;
+    advance(lexer);
+  }
+  word[len < sizeof word ? len : sizeof word - 1] = 0;
+  if (len == 0 || len >= sizeof word || is_identifier_char(lexer->lookahead)) return false;
+  int idx = find_signal_item_index(word);
+  if (idx < 0) return false;
+  uint16_t bit = (uint16_t)(1u << idx);
+  if (is_first) {
+    scanner->signal_item_mask = bit;
+    return emit(lexer, SIGNAL_FIRST_ITEM_NAME);
+  }
+  if ((scanner->signal_item_mask & bit) != 0) return emit(lexer, ILLEGAL_TOKEN);
+  scanner->signal_item_mask |= bit;
+  return emit(lexer, SIGNAL_NEXT_ITEM_NAME);
+}
+
 void *tree_sitter_mysql_external_scanner_create(void) { return ts_calloc(1, sizeof(Scanner)); }
 
 void tree_sitter_mysql_external_scanner_destroy(void *payload) { ts_free(payload); }
 
 unsigned tree_sitter_mysql_external_scanner_serialize(void *payload, char *buffer) {
   const Scanner *scanner = (const Scanner *)payload;
-  if (!scanner->in_version_comment) return 0;
-  buffer[0] = 1;
-  return 1;
+  if (!scanner->in_version_comment && scanner->signal_item_mask == 0) return 0;
+  buffer[0] = scanner->in_version_comment ? 1 : 0;
+  buffer[1] = (char)(scanner->signal_item_mask & 0xFF);
+  buffer[2] = (char)((scanner->signal_item_mask >> 8) & 0xFF);
+  return 3;
 }
 
 void tree_sitter_mysql_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
   Scanner *scanner = (Scanner *)payload;
   scanner->in_version_comment = (length > 0 && buffer[0] != 0);
+  scanner->signal_item_mask =
+      length >= 3 ? (uint16_t)((uint8_t)buffer[1] | ((uint16_t)(uint8_t)buffer[2] << 8)) : 0;
 }
 
 static bool scan_version_comment_end(Scanner *scanner, TSLexer *lexer) {
@@ -460,11 +566,17 @@ static bool scan_version_comment_end(Scanner *scanner, TSLexer *lexer) {
 
 static bool scan_top_level_semicolon(Scanner *scanner, TSLexer *lexer) {
   advance(lexer);
+  scanner->signal_item_mask = 0;
   if (scanner->in_version_comment) {
     scanner->in_version_comment = false;
     return emit(lexer, ILLEGAL_TOKEN);
   }
   return emit(lexer, STATEMENT_TERMINATOR);
+}
+
+static bool scan_quote_or_sqlstate(TSLexer *lexer, int32_t quote, const bool *valid_symbols) {
+  if (valid_symbols[SQLSTATE_LITERAL] && !valid_symbols[UNREACHABLE]) return scan_sqlstate_literal(lexer, quote);
+  return scan_string_token(lexer, quote, valid_symbols[STRING_SEGMENT] ? STRING_SEGMENT : ILLEGAL_TOKEN);
 }
 
 static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
@@ -479,7 +591,7 @@ static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *va
       return scan_slash_comment(scanner, lexer, comment_symbol);
     case '\'':
     case '"':
-      return scan_string_token(lexer, c, valid_symbols[STRING_SEGMENT] ? STRING_SEGMENT : ILLEGAL_TOKEN);
+      return scan_quote_or_sqlstate(lexer, c, valid_symbols);
     case '`':
       return scan_backtick_body(lexer, false, valid_symbols[QUOTED_IDENTIFIER] ? QUOTED_IDENTIFIER : ILLEGAL_TOKEN);
     case 'n':
@@ -495,6 +607,10 @@ static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *va
       return !valid_symbols[DOT_CONTEXT] && !valid_symbols[UNREACHABLE] &&
              scan_charset_introducer(lexer, valid_symbols[CHARSET_INTRODUCER]);
     default:
+      if (is_ascii_alpha(c) && !valid_symbols[UNREACHABLE] &&
+          (valid_symbols[SIGNAL_FIRST_ITEM_NAME] || valid_symbols[SIGNAL_NEXT_ITEM_NAME])) {
+        return scan_signal_item_name(scanner, lexer, valid_symbols[SIGNAL_FIRST_ITEM_NAME]);
+      }
       return (is_digit(c) || c == '.') && !valid_symbols[UNREACHABLE] &&
              scan_digit_or_float(lexer, valid_symbols[USER_VARIABLE], valid_symbols[DIGIT_IDENTIFIER]);
   }
@@ -505,6 +621,7 @@ bool tree_sitter_mysql_external_scanner_scan(void *payload, TSLexer *lexer, cons
   skip_spaces(lexer);
 
   if (at_eof(lexer)) {
+    scanner->signal_item_mask = 0;
     if (scanner->in_version_comment && !valid_symbols[UNREACHABLE]) {
       scanner->in_version_comment = false;
       return emit(lexer, ILLEGAL_TOKEN);

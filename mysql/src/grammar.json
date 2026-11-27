@@ -611,15 +611,15 @@
         },
         {
           "type": "SYMBOL",
+          "name": "get_diagnostics_statement"
+        },
+        {
+          "type": "SYMBOL",
           "name": "signal_statement"
         },
         {
           "type": "SYMBOL",
           "name": "resignal_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "get_diagnostics_statement"
         }
       ]
     },
@@ -20219,6 +20219,24 @@
           "value": "get_diagnostics_statement"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_signal_statement"
+          },
+          "named": true,
+          "value": "signal_statement"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_resignal_statement"
+          },
+          "named": true,
+          "value": "resignal_statement"
+        },
+        {
           "type": "SYMBOL",
           "name": "select_statement"
         },
@@ -20605,14 +20623,6 @@
         {
           "type": "SYMBOL",
           "name": "handler_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "signal_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "resignal_statement"
         }
       ]
     },
@@ -20782,39 +20792,8 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "ALIAS",
-                          "content": {
-                            "type": "PATTERN",
-                            "value": "[Ss][Qq][Ll][Ss][Tt][Aa][Tt][Ee]"
-                          },
-                          "named": false,
-                          "value": "SQLSTATE"
-                        },
-                        {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "PATTERN",
-                                "value": "[Vv][Aa][Ll][Uu][Ee]"
-                              },
-                              "named": false,
-                              "value": "VALUE"
-                            },
-                            {
-                              "type": "BLANK"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "string_literal"
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "_sqlstate_clause"
                     },
                     {
                       "type": "SYMBOL",
@@ -21030,39 +21009,8 @@
       "type": "CHOICE",
       "members": [
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "ALIAS",
-              "content": {
-                "type": "PATTERN",
-                "value": "[Ss][Qq][Ll][Ss][Tt][Aa][Tt][Ee]"
-              },
-              "named": false,
-              "value": "SQLSTATE"
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Vv][Aa][Ll][Uu][Ee]"
-                  },
-                  "named": false,
-                  "value": "VALUE"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            },
-            {
-              "type": "SYMBOL",
-              "name": "string_literal"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_sqlstate_clause"
         },
         {
           "type": "ALIAS",
@@ -21879,49 +21827,14 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_signal_condition"
+          "name": "_sqlstate_clause"
         },
         {
           "type": "CHOICE",
           "members": [
             {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Ss][Ee][Tt]"
-                  },
-                  "named": false,
-                  "value": "SET"
-                },
-                {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "signal_information_item"
-                    },
-                    {
-                      "type": "REPEAT",
-                      "content": {
-                        "type": "SEQ",
-                        "members": [
-                          {
-                            "type": "STRING",
-                            "value": ","
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "signal_information_item"
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "_signal_set_clause"
             },
             {
               "type": "BLANK"
@@ -21947,7 +21860,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_signal_condition"
+              "name": "_sqlstate_clause"
             },
             {
               "type": "BLANK"
@@ -21958,43 +21871,8 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Ss][Ee][Tt]"
-                  },
-                  "named": false,
-                  "value": "SET"
-                },
-                {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "signal_information_item"
-                    },
-                    {
-                      "type": "REPEAT",
-                      "content": {
-                        "type": "SEQ",
-                        "members": [
-                          {
-                            "type": "STRING",
-                            "value": ","
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "signal_information_item"
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "_signal_set_clause"
             },
             {
               "type": "BLANK"
@@ -22003,47 +21881,198 @@
         }
       ]
     },
-    "_signal_condition": {
-      "type": "CHOICE",
+    "_sp_signal_statement": {
+      "type": "SEQ",
       "members": [
         {
-          "type": "SEQ",
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Ii][Gg][Nn][Aa][Ll]"
+          },
+          "named": false,
+          "value": "SIGNAL"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_sqlstate_clause"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_identifier"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_signal_set_clause"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_sp_resignal_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Rr][Ee][Ss][Ii][Gg][Nn][Aa][Ll]"
+          },
+          "named": false,
+          "value": "RESIGNAL"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_sqlstate_clause"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_identifier"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_signal_set_clause"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_sqlstate_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll][Ss][Tt][Aa][Tt][Ee]"
+          },
+          "named": false,
+          "value": "SQLSTATE"
+        },
+        {
+          "type": "CHOICE",
           "members": [
             {
               "type": "ALIAS",
               "content": {
                 "type": "PATTERN",
-                "value": "[Ss][Qq][Ll][Ss][Tt][Aa][Tt][Ee]"
+                "value": "[Vv][Aa][Ll][Uu][Ee]"
               },
               "named": false,
-              "value": "SQLSTATE"
+              "value": "VALUE"
             },
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Vv][Aa][Ll][Uu][Ee]"
-                  },
-                  "named": false,
-                  "value": "VALUE"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            },
-            {
-              "type": "SYMBOL",
-              "name": "string_literal"
+              "type": "BLANK"
             }
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "_identifier"
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sqlstate_literal"
+          },
+          "named": true,
+          "value": "string_literal"
+        }
+      ]
+    },
+    "_signal_set_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Ee][Tt]"
+          },
+          "named": false,
+          "value": "SET"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_first_signal_information_item"
+          },
+          "named": true,
+          "value": "signal_information_item"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "SYMBOL",
+                "name": "signal_information_item"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "_first_signal_information_item": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_signal_first_item_name"
+            },
+            "named": true,
+            "value": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "="
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_signal_allowed_expr"
+          }
         }
       ]
     },
@@ -22054,8 +22083,13 @@
           "type": "FIELD",
           "name": "name",
           "content": {
-            "type": "SYMBOL",
-            "name": "_signal_item_name"
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_signal_next_item_name"
+            },
+            "named": true,
+            "value": "identifier"
           }
         },
         {
@@ -22093,7 +22127,7 @@
         }
       ]
     },
-    "_signal_item_name": {
+    "_diagnostics_condition_item_name": {
       "type": "CHOICE",
       "members": [
         {
@@ -22263,15 +22297,6 @@
           },
           "named": true,
           "value": "identifier"
-        }
-      ]
-    },
-    "_diagnostics_condition_item_name": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_signal_item_name"
         },
         {
           "type": "ALIAS",
@@ -43521,6 +43546,18 @@
     {
       "type": "SYMBOL",
       "name": "_end_of_input"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_sqlstate_literal"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_signal_first_item_name"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_signal_next_item_name"
     },
     {
       "type": "SYMBOL",

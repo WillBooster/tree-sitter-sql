@@ -1,7 +1,10 @@
+// code-gauge-allow-file fileNcss -- tree-sitter compiles one scanner.c covering Oracle comments, literals, numbers, slash terminators, and persistent FK column tries
+#include "tree_sitter/alloc.h"
 #include "tree_sitter/parser.h"
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 enum TokenType {
   ILLEGAL_TOKEN,
@@ -15,6 +18,59 @@ enum TokenType {
   SIZE_LITERAL,
   BIND_VARIABLE,
   SLASH_TERMINATOR,
+  REL_TABLE_OPEN,
+  REL_COL_IDENT,
+  REL_COL_QUOTED,
+  REL_COL_HAS_TYPE,
+  FK_COL_IDENT,
+  FK_COL_QUOTED,
+  REL_TABLE_CLOSE_RESOLVED,
+  REL_TABLE_CLOSE_UNRESOLVED,
+};
+
+typedef struct {
+  uint32_t lo;
+  uint32_t eq;
+  uint32_t hi;
+  uint8_t ch;
+  uint8_t state;
+} TrieNode;
+
+typedef struct {
+  uint32_t trie_root;
+  uint32_t key_off;
+  uint32_t key_len;
+} TableState;
+
+typedef struct {
+  TrieNode *nodes;
+  uint32_t node_len;
+  uint32_t node_cap;
+  TableState *states;
+  uint32_t state_len;
+  uint32_t state_cap;
+  uint8_t *keys;
+  uint32_t key_len;
+  uint32_t key_cap;
+  uint32_t root;
+  uint32_t unresolved;
+} Scanner;
+
+static const char *const SQL_RESERVED_WORDS[] = {
+  "ACCESS",     "ADD",        "ALL",        "ALTER",      "AND",        "ANY",        "AS",         "ASC",
+  "AUDIT",      "BETWEEN",    "BY",         "CHAR",       "CHECK",      "CLUSTER",    "COLUMN",     "COMMENT",
+  "COMPRESS",   "CONNECT",    "CREATE",     "CURRENT",    "DATE",       "DECIMAL",    "DEFAULT",    "DELETE",
+  "DESC",       "DISTINCT",   "DROP",       "ELSE",       "EXCLUSIVE",  "EXISTS",     "FILE",       "FLOAT",
+  "FOR",        "FROM",       "GRANT",      "GROUP",      "HAVING",     "IDENTIFIED", "IMMEDIATE",  "IN",
+  "INCREMENT",  "INDEX",      "INITIAL",    "INSERT",     "INTEGER",    "INTERSECT",  "INTO",       "IS",
+  "LEVEL",      "LIKE",       "LOCK",       "LONG",       "MAXEXTENTS", "MINUS",      "MLSLABEL",   "MODE",
+  "MODIFY",     "NOAUDIT",    "NOCOMPRESS", "NOT",        "NOWAIT",     "NULL",       "NUMBER",     "OF",
+  "OFFLINE",    "ON",         "ONLINE",     "OPTION",     "OR",         "ORDER",      "PCTFREE",    "PRIOR",
+  "PUBLIC",     "RAW",        "RENAME",     "RESOURCE",   "REVOKE",     "ROW",        "ROWID",      "ROWNUM",
+  "ROWS",       "SELECT",     "SESSION",    "SET",        "SHARE",      "SIZE",       "SMALLINT",   "START",
+  "SUCCESSFUL", "SYNONYM",    "SYSDATE",    "TABLE",      "THEN",       "TO",         "TRIGGER",    "UID",
+  "UNION",      "UNIQUE",     "UPDATE",     "USER",       "VALIDATE",   "VALUES",     "VARCHAR",    "VARCHAR2",
+  "VIEW",       "WHENEVER",   "WHERE",      "WITH",
 };
 
 static bool is_digit(int32_t c) { return c >= '0' && c <= '9'; }
@@ -122,6 +178,28 @@ static bool word_equals(const char *buf, unsigned len, const char *kw) {
     i++;
   }
   return i == len;
+}
+
+static bool bytes_equal_kw(const uint8_t *buf, uint32_t len, const char *kw) {
+  return word_equals((const char *)buf, len, kw);
+}
+
+static bool is_sql_reserved(const uint8_t *w, uint32_t len) {
+  size_t base = 0;
+  size_t count = sizeof(SQL_RESERVED_WORDS) / sizeof(SQL_RESERVED_WORDS[0]);
+  while (count > 0) {
+    size_t half = count >> 1;
+    const char *kw = SQL_RESERVED_WORDS[base + half];
+    int cmp = strncmp((const char *)w, kw, len);
+    if (cmp == 0 && kw[len] == '\0') return true;
+    if (cmp > 0) {
+      base += half + 1;
+      count -= half + 1;
+    } else {
+      count = half;
+    }
+  }
+  return false;
 }
 
 static unsigned read_upper_word(TSLexer *lexer, char *buf, unsigned cap) {
@@ -307,6 +385,348 @@ static bool scan_quoted_name(TSLexer *lexer, const bool *valid_symbols, enum Tok
   return emit_illegal(lexer, valid_symbols);
 }
 
+static void append_key_byte(Scanner *s, uint8_t b) {
+  if (s->key_len >= s->key_cap) {
+    uint32_t next_cap = s->key_cap ? s->key_cap * 2 : 256;
+    s->keys = (uint8_t *)ts_realloc(s->keys, next_cap * sizeof(uint8_t));
+    s->key_cap = next_cap;
+  }
+  s->keys[s->key_len++] = b;
+}
+
+static void append_key_utf8(Scanner *s, int32_t cp) {
+  if (cp < 0x80) {
+    append_key_byte(s, (uint8_t)cp);
+  } else if (cp < 0x800) {
+    append_key_byte(s, (uint8_t)(0xC0 | (cp >> 6)));
+    append_key_byte(s, (uint8_t)(0x80 | (cp & 0x3F)));
+  } else if (cp < 0x10000) {
+    append_key_byte(s, (uint8_t)(0xE0 | (cp >> 12)));
+    append_key_byte(s, (uint8_t)(0x80 | ((cp >> 6) & 0x3F)));
+    append_key_byte(s, (uint8_t)(0x80 | (cp & 0x3F)));
+  } else {
+    append_key_byte(s, (uint8_t)(0xF0 | (cp >> 18)));
+    append_key_byte(s, (uint8_t)(0x80 | ((cp >> 12) & 0x3F)));
+    append_key_byte(s, (uint8_t)(0x80 | ((cp >> 6) & 0x3F)));
+    append_key_byte(s, (uint8_t)(0x80 | (cp & 0x3F)));
+  }
+}
+
+static uint32_t push_trie_node(Scanner *s, TrieNode node) {
+  if (s->node_len == 0) {
+    s->node_cap = 64;
+    s->nodes = (TrieNode *)ts_calloc(s->node_cap, sizeof(TrieNode));
+    s->node_len = 1;
+  } else if (s->node_len >= s->node_cap) {
+    uint32_t next_cap = s->node_cap * 2;
+    s->nodes = (TrieNode *)ts_realloc(s->nodes, next_cap * sizeof(TrieNode));
+    s->node_cap = next_cap;
+  }
+  uint32_t idx = s->node_len++;
+  s->nodes[idx] = node;
+  return idx;
+}
+
+static uint32_t push_table_state(Scanner *s, uint32_t trie_root, uint32_t key_off, uint32_t key_len) {
+  if (s->state_len == 0) {
+    s->state_cap = 32;
+    s->states = (TableState *)ts_calloc(s->state_cap, sizeof(TableState));
+    s->state_len = 1;
+  } else if (s->state_len >= s->state_cap) {
+    uint32_t next_cap = s->state_cap * 2;
+    s->states = (TableState *)ts_realloc(s->states, next_cap * sizeof(TableState));
+    s->state_cap = next_cap;
+  }
+  uint32_t idx = s->state_len++;
+  s->states[idx] = (TableState){trie_root, key_off, key_len};
+  return idx;
+}
+
+static uint8_t trie_get(const Scanner *s, uint32_t root, const uint8_t *key, uint32_t len) {
+  uint32_t cur = root;
+  uint32_t i = 0;
+  while (cur != 0 && i < len) {
+    const TrieNode *n = &s->nodes[cur];
+    uint8_t b = key[i];
+    if (b < n->ch) {
+      cur = n->lo;
+    } else if (b > n->ch) {
+      cur = n->hi;
+    } else {
+      i++;
+      if (i == len) return n->state;
+      cur = n->eq;
+    }
+  }
+  return 0;
+}
+
+static void link_trie_child(Scanner *s, uint32_t parent, uint8_t dir, uint32_t child, uint32_t *new_root) {
+  if (dir == 0) {
+    *new_root = child;
+  } else if (dir == 1) {
+    s->nodes[parent].lo = child;
+  } else if (dir == 2) {
+    s->nodes[parent].eq = child;
+  } else {
+    s->nodes[parent].hi = child;
+  }
+}
+
+static uint32_t trie_set(Scanner *s, uint32_t root, const uint8_t *key, uint32_t len, uint8_t val) {
+  uint32_t new_root = 0;
+  uint32_t parent = 0;
+  uint32_t cur = root;
+  uint8_t dir = 0;
+  uint32_t i = 0;
+  while (i < len) {
+    uint8_t b = key[i];
+    TrieNode copy = cur != 0 ? s->nodes[cur] : (TrieNode){0, 0, 0, b, 0};
+    uint32_t idx = push_trie_node(s, copy);
+    link_trie_child(s, parent, dir, idx, &new_root);
+    parent = idx;
+    if (b < copy.ch) {
+      cur = copy.lo;
+      dir = 1;
+    } else if (b > copy.ch) {
+      cur = copy.hi;
+      dir = 3;
+    } else {
+      i++;
+      if (i == len) {
+        s->nodes[idx].state = val;
+        break;
+      }
+      cur = copy.eq;
+      dir = 2;
+    }
+  }
+  return new_root;
+}
+
+static bool next_word_is(TSLexer *lexer, const char *kw) {
+  if (skip_ws_and_comments_lookahead(lexer) != 0 || !is_identifier_start(lexer->lookahead)) return false;
+  char buf[24];
+  unsigned len = read_upper_word(lexer, buf, sizeof(buf));
+  return word_equals(buf, len, kw);
+}
+
+static bool skip_quoted_lookahead(TSLexer *lexer) {
+  advance(lexer);
+  if (at_eof(lexer) || lexer->lookahead == '"') return false;
+  while (!at_eof(lexer)) {
+    int32_t c = lexer->lookahead;
+    advance(lexer);
+    if (c == '"') return true;
+  }
+  return false;
+}
+
+static bool read_nonreserved_name_lookahead(TSLexer *lexer, char *out, unsigned cap, unsigned *out_len) {
+  *out_len = 0;
+  if (lexer->lookahead == '"') return skip_quoted_lookahead(lexer);
+  if (!is_identifier_start(lexer->lookahead)) return false;
+  unsigned len = read_upper_word(lexer, out, cap);
+  *out_len = len;
+  return len <= cap && !is_sql_reserved((const uint8_t *)out, len);
+}
+
+static bool is_json_type_modifier_parens(TSLexer *lexer) {
+  char inner[16];
+  unsigned len = read_upper_word(lexer, inner, sizeof(inner));
+  if (!word_equals(inner, len, "OBJECT") && !word_equals(inner, len, "ARRAY") && !word_equals(inner, len, "SCALAR")) {
+    return false;
+  }
+  return skip_ws_and_comments_lookahead(lexer) == 0 && lexer->lookahead == ')';
+}
+
+static bool skip_member_segment_lookahead(TSLexer *lexer) {
+  if (skip_ws_and_comments_lookahead(lexer) != 0) return false;
+  if (lexer->lookahead == '"') return skip_quoted_lookahead(lexer);
+  if (!is_identifier_start(lexer->lookahead)) return false;
+  skip_identifier_chars(lexer);
+  return true;
+}
+
+static bool skip_qualified_tail_lookahead(TSLexer *lexer, bool *qualified) {
+  *qualified = false;
+  while (skip_ws_and_comments_lookahead(lexer) == 0 && lexer->lookahead == '.') {
+    *qualified = true;
+    advance(lexer);
+    if (!skip_member_segment_lookahead(lexer)) return false;
+  }
+  return true;
+}
+
+static bool is_table_domain_head(TSLexer *lexer) {
+  if (skip_ws_and_comments_lookahead(lexer) != 0) return false;
+  char seg[32];
+  unsigned seg_len = 0;
+  if (!read_nonreserved_name_lookahead(lexer, seg, sizeof(seg), &seg_len)) return false;
+  if (word_equals(seg, seg_len, "DOMAIN")) return false;
+  bool qualified = false;
+  if (!skip_qualified_tail_lookahead(lexer, &qualified) || lexer->lookahead != '(') return false;
+  advance(lexer);
+  if (skip_ws_and_comments_lookahead(lexer) != 0) return false;
+  if (lexer->lookahead == '"') return true;
+  if (!is_identifier_start(lexer->lookahead)) return false;
+  return qualified || !word_equals(seg, seg_len, "JSON") || !is_json_type_modifier_parens(lexer);
+}
+
+static bool is_table_constraint_head(TSLexer *lexer) {
+  if (skip_ws_and_comments_lookahead(lexer) != 0) return false;
+  char cname[32];
+  unsigned cname_len = 0;
+  if (!read_nonreserved_name_lookahead(lexer, cname, sizeof(cname), &cname_len)) return false;
+  if (word_equals(cname, cname_len, "CONSTRAINT")) return false;
+  if (skip_ws_and_comments_lookahead(lexer) != 0 || !is_identifier_start(lexer->lookahead)) return false;
+  char kw[16];
+  unsigned kw_len = read_upper_word(lexer, kw, sizeof(kw));
+  if (word_equals(kw, kw_len, "FOREIGN") || word_equals(kw, kw_len, "SCOPE") || word_equals(kw, kw_len, "WITH") ||
+      word_equals(kw, kw_len, "REF") || word_equals(kw, kw_len, "CHECK")) {
+    return true;
+  }
+  if (word_equals(kw, kw_len, "PRIMARY")) {
+    return next_word_is(lexer, "KEY") && skip_ws_and_comments_lookahead(lexer) == 0 && lexer->lookahead == '(';
+  }
+  return word_equals(kw, kw_len, "UNIQUE") && skip_ws_and_comments_lookahead(lexer) == 0 && lexer->lookahead == '(';
+}
+
+static bool is_table_clause_head(TSLexer *lexer, const uint8_t *w, uint32_t len) {
+  if (len < 3 || len > 12) return false;
+  if (bytes_equal_kw(w, len, "PERIOD") || bytes_equal_kw(w, len, "SCOPE")) return next_word_is(lexer, "FOR");
+  if (bytes_equal_kw(w, len, "SUPPLEMENTAL")) return next_word_is(lexer, "LOG");
+  if (bytes_equal_kw(w, len, "FOREIGN")) return next_word_is(lexer, "KEY");
+  if (bytes_equal_kw(w, len, "PRIMARY")) {
+    return next_word_is(lexer, "KEY") && skip_ws_and_comments_lookahead(lexer) == 0 && lexer->lookahead == '(';
+  }
+  if (bytes_equal_kw(w, len, "REF")) return skip_ws_and_comments_lookahead(lexer) == 0 && lexer->lookahead == '(';
+  if (bytes_equal_kw(w, len, "DOMAIN")) return is_table_domain_head(lexer);
+  return bytes_equal_kw(w, len, "CONSTRAINT") && is_table_constraint_head(lexer);
+}
+
+static void record_rel_col(Scanner *s, uint32_t key_off, uint32_t key_len) {
+  uint32_t cur_trie = s->root != 0 ? s->states[s->root].trie_root : 0;
+  uint8_t prev = trie_get(s, cur_trie, s->keys + key_off, key_len);
+  if (prev != 0) {
+    s->root = push_table_state(s, cur_trie, 0, 0);
+    return;
+  }
+  uint32_t next_trie = trie_set(s, cur_trie, s->keys + key_off, key_len, 1);
+  s->root = push_table_state(s, next_trie, key_off, key_len);
+  s->unresolved++;
+}
+
+static void record_fk_col(Scanner *s, uint32_t key_off, uint32_t key_len) {
+  uint32_t cur_trie = s->root != 0 ? s->states[s->root].trie_root : 0;
+  uint8_t prev = trie_get(s, cur_trie, s->keys + key_off, key_len);
+  if (prev == 2) return;
+  uint32_t next_trie = trie_set(s, cur_trie, s->keys + key_off, key_len, 2);
+  s->root = push_table_state(s, next_trie, 0, 0);
+  if (prev == 1 && s->unresolved > 0) s->unresolved--;
+}
+
+static void mark_active_col_typed(Scanner *s) {
+  if (s->root == 0) return;
+  TableState st = s->states[s->root];
+  if (st.key_len == 0) return;
+  if (trie_get(s, st.trie_root, s->keys + st.key_off, st.key_len) == 1) {
+    uint32_t next_trie = trie_set(s, st.trie_root, s->keys + st.key_off, st.key_len, 2);
+    s->root = push_table_state(s, next_trie, 0, 0);
+    if (s->unresolved > 0) s->unresolved--;
+  }
+}
+
+static bool scan_rel_table_zero_width(Scanner *s, TSLexer *lexer, const bool *valid_symbols, int32_t c) {
+  if (valid_symbols[REL_TABLE_OPEN]) {
+    s->root = 0;
+    s->unresolved = 0;
+    lexer->mark_end(lexer);
+    lexer->result_symbol = REL_TABLE_OPEN;
+    return true;
+  }
+  if (valid_symbols[REL_COL_HAS_TYPE] && (c == ',' || c == ')')) {
+    mark_active_col_typed(s);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = REL_COL_HAS_TYPE;
+    return true;
+  }
+  if (s->unresolved == 0 && valid_symbols[REL_TABLE_CLOSE_RESOLVED]) {
+    s->root = 0;
+    lexer->mark_end(lexer);
+    lexer->result_symbol = REL_TABLE_CLOSE_RESOLVED;
+    return true;
+  }
+  if (s->unresolved > 0 && valid_symbols[REL_TABLE_CLOSE_UNRESOLVED]) {
+    s->root = 0;
+    s->unresolved = 0;
+    lexer->mark_end(lexer);
+    lexer->result_symbol = REL_TABLE_CLOSE_UNRESOLVED;
+    return true;
+  }
+  return false;
+}
+
+static bool scan_tracked_quoted(Scanner *s, TSLexer *lexer, const bool *valid_symbols, bool is_fk) {
+  uint32_t key_off = s->key_len;
+  advance(lexer);
+  bool has_nul = false;
+  int32_t c = 0;
+  if (!next_char(lexer, &c, &has_nul) || c == '"') return emit_illegal(lexer, valid_symbols);
+  for (;;) {
+    append_key_utf8(s, c);
+    if (!next_char(lexer, &c, &has_nul)) {
+      s->key_len = key_off;
+      return emit_illegal(lexer, valid_symbols);
+    }
+    if (c == '"') break;
+  }
+  if (has_nul) {
+    s->key_len = key_off;
+    return emit_illegal(lexer, valid_symbols);
+  }
+  uint32_t key_len = s->key_len - key_off;
+  if (is_fk) {
+    record_fk_col(s, key_off, key_len);
+  } else {
+    record_rel_col(s, key_off, key_len);
+  }
+  return emit_token(lexer, valid_symbols, is_fk ? FK_COL_QUOTED : REL_COL_QUOTED, true);
+}
+
+static bool scan_ident_prefixed_string(TSLexer *lexer, const bool *valid_symbols, const uint8_t *word, uint32_t len) {
+  if (bytes_equal_kw(word, len, "N")) return scan_standard_string(lexer, valid_symbols);
+  if (bytes_equal_kw(word, len, "Q") || bytes_equal_kw(word, len, "NQ")) return scan_q_string(lexer, valid_symbols);
+  return false;
+}
+
+static bool scan_tracked_ident(Scanner *s, TSLexer *lexer, const bool *valid_symbols, bool is_fk) {
+  uint32_t key_off = s->key_len;
+  while (is_identifier_char(lexer->lookahead)) {
+    int32_t ch = lexer->lookahead;
+    append_key_utf8(s, (ch >= 'a' && ch <= 'z') ? (ch - 'a' + 'A') : ch);
+    advance(lexer);
+  }
+  uint32_t key_len = s->key_len - key_off;
+  const uint8_t *word = s->keys + key_off;
+  if (lexer->lookahead == '\'') {
+    s->key_len = key_off;
+    return scan_ident_prefixed_string(lexer, valid_symbols, word, key_len);
+  }
+  lexer->mark_end(lexer);
+  if (is_sql_reserved(word, key_len) || (!is_fk && is_table_clause_head(lexer, word, key_len))) {
+    s->key_len = key_off;
+    return false;
+  }
+  if (is_fk) {
+    record_fk_col(s, key_off, key_len);
+  } else {
+    record_rel_col(s, key_off, key_len);
+  }
+  lexer->result_symbol = is_fk ? FK_COL_IDENT : REL_COL_IDENT;
+  return true;
+}
+
 static bool scan_exponent_digits(TSLexer *lexer) {
   if (lexer->lookahead == '+' || lexer->lookahead == '-') advance(lexer);
   if (!is_digit(lexer->lookahead)) {
@@ -378,12 +798,7 @@ static bool scan_bind_variable(TSLexer *lexer, const bool *valid_symbols) {
 
 static bool is_prefixed_string_start(int32_t c) { return c == 'q' || c == 'Q' || c == 'n' || c == 'N'; }
 
-static bool scan_punctuation_or_number(TSLexer *lexer, const bool *valid_symbols, bool line_only_hspace, int32_t c) {
-  if (c == '-') {
-    advance(lexer);
-    return lexer->lookahead == '-' ? scan_line_comment(lexer, valid_symbols) : false;
-  }
-  if (c == '/') return scan_slash(lexer, valid_symbols, line_only_hspace);
+static bool scan_number_or_bind(TSLexer *lexer, const bool *valid_symbols, int32_t c) {
   if (c == '.') {
     advance(lexer);
     return is_digit(lexer->lookahead) ? scan_number(lexer, valid_symbols, true) : false;
@@ -392,33 +807,86 @@ static bool scan_punctuation_or_number(TSLexer *lexer, const bool *valid_symbols
   return c == ':' && valid_symbols[BIND_VARIABLE] ? scan_bind_variable(lexer, valid_symbols) : false;
 }
 
-void *tree_sitter_oracle_external_scanner_create(void) { return NULL; }
+void *tree_sitter_oracle_external_scanner_create(void) { return ts_calloc(1, sizeof(Scanner)); }
 
-void tree_sitter_oracle_external_scanner_destroy(void *payload) { (void)payload; }
+void tree_sitter_oracle_external_scanner_destroy(void *payload) {
+  Scanner *s = (Scanner *)payload;
+  if (!s) return;
+  ts_free(s->nodes);
+  ts_free(s->states);
+  ts_free(s->keys);
+  ts_free(s);
+}
 
 unsigned tree_sitter_oracle_external_scanner_serialize(void *payload, char *buffer) {
-  (void)payload;
-  (void)buffer;
-  return 0;
+  const Scanner *s = (const Scanner *)payload;
+  if (!s || (s->root == 0 && s->unresolved == 0)) return 0;
+  memcpy(buffer, &s->root, sizeof(uint32_t));
+  memcpy(buffer + sizeof(uint32_t), &s->unresolved, sizeof(uint32_t));
+  return 2 * sizeof(uint32_t);
 }
 
 void tree_sitter_oracle_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
-  (void)payload;
-  (void)buffer;
-  (void)length;
+  Scanner *s = (Scanner *)payload;
+  if (!s) return;
+  if (length == 2 * sizeof(uint32_t)) {
+    memcpy(&s->root, buffer, sizeof(uint32_t));
+    memcpy(&s->unresolved, buffer + sizeof(uint32_t), sizeof(uint32_t));
+  } else {
+    s->root = 0;
+    s->unresolved = 0;
+  }
+}
+
+static bool scan_rel_table_step(Scanner *s, TSLexer *lexer, const bool *valid_symbols, bool *result) {
+  if (valid_symbols[ERROR_SENTINEL] || s == NULL) return false;
+  int32_t c = lexer->lookahead;
+  if (scan_rel_table_zero_width(s, lexer, valid_symbols, c)) {
+    *result = true;
+    return true;
+  }
+  if (c == '"' && (valid_symbols[REL_COL_QUOTED] || valid_symbols[FK_COL_QUOTED])) {
+    *result = scan_tracked_quoted(s, lexer, valid_symbols, valid_symbols[FK_COL_QUOTED]);
+    return true;
+  }
+  if (is_identifier_start(c) && (valid_symbols[REL_COL_IDENT] || valid_symbols[FK_COL_IDENT])) {
+    *result = scan_tracked_ident(s, lexer, valid_symbols, valid_symbols[FK_COL_IDENT]);
+    return true;
+  }
+  return false;
+}
+
+static bool scan_nul_or_comment(TSLexer *lexer, const bool *valid_symbols, bool line_only_hspace, bool *result) {
+  int32_t c = lexer->lookahead;
+  if (c == 0) {
+    if (lexer->eof(lexer)) {
+      *result = false;
+      return true;
+    }
+    while (!at_eof(lexer) && lexer->lookahead == 0) advance(lexer);
+    *result = emit_illegal(lexer, valid_symbols);
+    return true;
+  }
+  if (c == '-') {
+    advance(lexer);
+    *result = lexer->lookahead == '-' && scan_line_comment(lexer, valid_symbols);
+    return true;
+  }
+  if (c == '/') {
+    *result = scan_slash(lexer, valid_symbols, line_only_hspace);
+    return true;
+  }
+  return false;
 }
 
 bool tree_sitter_oracle_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
-  (void)payload;
   bool line_only_hspace = skip_spaces(lexer);
+  bool result = false;
+  if (scan_nul_or_comment(lexer, valid_symbols, line_only_hspace, &result)) return result;
+  if (scan_rel_table_step((Scanner *)payload, lexer, valid_symbols, &result)) return result;
   int32_t c = lexer->lookahead;
-  if (c == 0) {
-    if (lexer->eof(lexer)) return false;
-    while (!at_eof(lexer) && lexer->lookahead == 0) advance(lexer);
-    return emit_illegal(lexer, valid_symbols);
-  }
   if (c == '\'') return scan_standard_string(lexer, valid_symbols);
   if (is_prefixed_string_start(c)) return scan_prefixed_string(lexer, valid_symbols, c);
   if (c == '"') return scan_quoted_name(lexer, valid_symbols, QUOTED_IDENTIFIER);
-  return scan_punctuation_or_number(lexer, valid_symbols, line_only_hspace, c);
+  return scan_number_or_bind(lexer, valid_symbols, c);
 }

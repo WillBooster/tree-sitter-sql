@@ -471,6 +471,7 @@ System privileges, AUDIT SESSION, RETURNING OLD/NEW, and PL/SQL 23ai features
 ================================================================================
 
 GRANT ADMINISTER DATABASE TRIGGER, DEBUG CONNECT ANY, USE ANY JOB RESOURCE TO app_user;
+GRANT READ ANY ANALYTIC VIEW CACHE, WRITE ANY ANALYTIC VIEW CACHE, CREATE LOGICAL PARTITION TRACKING, DROP LOGICAL PARTITION TRACKING TO app_user;
 AUDIT SESSION BY scott WHENEVER NOT SUCCESSFUL;
 NOAUDIT SESSION;
 UPDATE emp log SET log.sal = 1 RETURNING OLD sal, NEW sal INTO :o, :n;
@@ -490,6 +491,8 @@ END;
 --------------------------------------------------------------------------------
 
 (source_file
+  (grant_statement
+    (identifier))
   (grant_statement
     (identifier))
   (audit_statement

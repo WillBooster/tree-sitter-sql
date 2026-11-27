@@ -1182,3 +1182,31 @@ CREATE TABLE defaults_test (a INT DEFAULT (SELECT arr FROM u)[1], b INT DEFAULT 
   (alter_routine_statement
     (qualified_name
       (identifier))))
+
+
+================================================================================
+Quoted and Unicode-escaped role options and 32-bit role integer limits
+:language(postgresql)
+================================================================================
+
+CREATE ROLE r1 "login" "createdb" U&"\006eologin" U&"!006eo!0069nherit" UESCAPE '!' SYSID 2147483647 CONNECTION LIMIT -1;
+ALTER ROLE r1 WITH "bypassrls" "noreplication" CONNECTION LIMIT +100;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_role_statement
+    (identifier)
+    (quoted_identifier)
+    (quoted_identifier)
+    (quoted_identifier)
+    (quoted_identifier)
+    (numeric_literal)
+    (unary_expression
+      (numeric_literal)))
+  (alter_role_statement
+    (identifier)
+    (quoted_identifier)
+    (quoted_identifier)
+    (unary_expression
+      (numeric_literal))))
