@@ -9710,10 +9710,6 @@
         {
           "type": "quoted_identifier",
           "named": true
-        },
-        {
-          "type": "user_variable",
-          "named": true
         }
       ]
     }

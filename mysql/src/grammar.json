@@ -21853,17 +21853,8 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "_identifier"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "user_variable"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "_identifier"
             },
             {
               "type": "REPEAT",
@@ -21875,17 +21866,8 @@
                     "value": ","
                   },
                   {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "_identifier"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "user_variable"
-                      }
-                    ]
+                    "type": "SYMBOL",
+                    "name": "_identifier"
                   }
                 ]
               }

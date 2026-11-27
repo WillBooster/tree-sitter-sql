@@ -2546,7 +2546,7 @@ export default grammar({
         optional(seq(optional(keyword('NEXT')), keyword('FROM'))),
         field('cursor', $._identifier),
         keyword('INTO'),
-        commaSep1(choice($._identifier, $.user_variable))
+        commaSep1($._identifier)
       ),
 
     close_statement: ($) => seq(keyword('CLOSE'), field('cursor', $._identifier)),

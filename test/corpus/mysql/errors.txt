@@ -860,3 +860,13 @@ BEGIN WORK in stored-program compound statement is invalid
 CREATE PROCEDURE p() BEGIN WORK SELECT 1; END;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Session user variable in cursor FETCH INTO is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() BEGIN FETCH c INTO @x; END;
+
+--------------------------------------------------------------------------------
