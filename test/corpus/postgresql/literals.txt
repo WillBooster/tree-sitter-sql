@@ -85,13 +85,15 @@ C-escape and national character strings
 ================================================================================
 
 SELECT E'line\nbreak', e'quote\'s \\ path', E'part1'
-'part2\'s', N'national', n'abc';
+'part2\'s', E'\x41\007\401\x\X00', N'national', n'abc';
 
 --------------------------------------------------------------------------------
 
 (source_file
   (select_statement
     (select_core
+      (result_column
+        (string_literal))
       (result_column
         (string_literal))
       (result_column

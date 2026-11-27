@@ -284,10 +284,19 @@ const leftBinaryAsym = (left, right, precedence, operator) =>
 const tightLhs = ($) => choice($._tight_expr, $._closed_pattern, $._closed_cmp, $._closed_is);
 
 /** @param {GrammarSymbols<string>} $ */
+const tightRhs = ($) => choice($._tight_expr, $.unary_expression);
+
+/** @param {GrammarSymbols<string>} $ */
 const patternLhs = ($) => choice($._pattern_expr, $._closed_cmp, $._closed_is);
 
 /** @param {GrammarSymbols<string>} $ */
+const patternRhs = ($) => choice($._pattern_expr, $.unary_expression);
+
+/** @param {GrammarSymbols<string>} $ */
 const cmpLhs = ($) => choice($._cmp_expr, $._closed_is);
+
+/** @param {GrammarSymbols<string>} $ */
+const cmpRhs = ($) => choice($._cmp_expr, $.unary_expression);
 
 /** @param {GrammarSymbols<string>} $ */
 const bArithLhs = ($) => choice($._b_arith_expr, $._b_closed_expr);
@@ -887,7 +896,12 @@ export default grammar({
     _assignment_target: ($) =>
       seq(
         $._identifier,
-        repeat(choice(seq('.', $._col_label), seq('[', $._expression, optional(seq(':', $._expression)), ']')))
+        repeat(
+          choice(
+            seq('.', $._col_label),
+            seq('[', choice($._expression, seq(optional($._expression), ':', optional($._expression))), ']')
+          )
+        )
       ),
 
     delete_statement: ($) =>
@@ -1244,19 +1258,22 @@ export default grammar({
 
     foreign_key_match: () => seq(keyword('MATCH'), choice(keyword('FULL'), keyword('PARTIAL'), keyword('SIMPLE'))),
 
-    _fk_action_body: ($) =>
+    _fk_common_action: () =>
       choice(
         keywords('NO ACTION'),
         keyword('RESTRICT'),
         keyword('CASCADE'),
-        seq(keyword('SET'), choice(keyword('NULL'), keyword('DEFAULT')), optional($.column_list))
+        seq(keyword('SET'), choice(keyword('NULL'), keyword('DEFAULT')))
       ),
 
-    _fk_on_delete: ($) => seq(keywords('ON DELETE'), $._fk_action_body),
+    _fk_delete_action: ($) =>
+      choice($._fk_common_action, seq(keyword('SET'), choice(keyword('NULL'), keyword('DEFAULT')), $.column_list)),
 
-    _fk_on_update: ($) => seq(keywords('ON UPDATE'), $._fk_action_body),
+    _fk_on_delete: ($) => seq(keywords('ON DELETE'), $._fk_delete_action),
 
-    foreign_key_action: ($) => seq(keyword('ON'), choice(keyword('DELETE'), keyword('UPDATE')), $._fk_action_body),
+    _fk_on_update: ($) => seq(keywords('ON UPDATE'), $._fk_common_action),
+
+    foreign_key_action: ($) => choice($._fk_on_delete, $._fk_on_update),
 
     _table_constraint: ($) =>
       seq(
@@ -2130,33 +2147,66 @@ export default grammar({
         choice(keyword('ROLE'), keyword('USER'), keyword('GROUP')),
         field('name', $._identifier),
         optional(keyword('WITH')),
-        repeat($._role_option)
+        repeat($._create_role_option)
       ),
 
-    _role_option: ($) =>
+    _alter_role_option: ($) =>
       choice(
-        $._identifier,
+        keyword('SUPERUSER'),
+        keyword('NOSUPERUSER'),
+        keyword('CREATEDB'),
+        keyword('NOCREATEDB'),
+        keyword('CREATEROLE'),
+        keyword('NOCREATEROLE'),
+        keyword('INHERIT'),
+        keyword('NOINHERIT'),
+        keyword('LOGIN'),
+        keyword('NOLOGIN'),
+        keyword('REPLICATION'),
+        keyword('NOREPLICATION'),
+        keyword('BYPASSRLS'),
+        keyword('NOBYPASSRLS'),
         seq(keyword('ENCRYPTED'), keyword('PASSWORD'), $.string_literal),
         seq(keyword('PASSWORD'), choice($.string_literal, keyword('NULL'))),
         seq(keywords('VALID UNTIL'), $.string_literal),
         seq(keywords('CONNECTION LIMIT'), $._signed_integer),
-        seq(keyword('SYSID'), $.numeric_literal),
-        seq(keyword('IN'), choice(keyword('ROLE'), keyword('GROUP')), commaSep1($._role_spec)),
-        seq(choice(keyword('ROLE'), keyword('GROUP'), keyword('ADMIN'), keyword('USER')), commaSep1($._role_spec))
+        seq(keyword('USER'), commaSep1($._role_spec))
       ),
 
+    _create_role_option: ($) =>
+      choice(
+        $._alter_role_option,
+        seq(keyword('SYSID'), $.numeric_literal),
+        seq(choice(keyword('ADMIN'), keyword('ROLE')), commaSep1($._role_spec)),
+        seq(keyword('IN'), choice(keyword('ROLE'), keyword('GROUP')), commaSep1($._role_spec))
+      ),
+
+    _role_set_or_reset: ($) => choice($.set_statement, seq(keyword('RESET'), choice($.qualified_name, keyword('ALL')))),
+
     alter_role_statement: ($) =>
-      seq(
-        keyword('ALTER'),
-        choice(keyword('ROLE'), keyword('USER'), keyword('GROUP')),
-        choice($._role_spec, keyword('ALL')),
-        optional(seq(keywords('IN DATABASE'), $._identifier)),
-        choice(
-          seq(keywords('RENAME TO'), $._identifier),
-          seq(choice(keyword('ADD'), keyword('DROP')), keyword('USER'), commaSep1($._role_spec)),
-          $.set_statement,
-          seq(keyword('RESET'), choice($.qualified_name, keyword('ALL'))),
-          seq(optional(keyword('WITH')), repeat1($._role_option))
+      choice(
+        seq(
+          keyword('ALTER'),
+          choice(keyword('ROLE'), keyword('USER')),
+          choice(
+            seq(
+              $._role_spec,
+              choice(
+                seq(keywords('RENAME TO'), $._identifier),
+                seq(optional(keyword('WITH')), repeat($._alter_role_option)),
+                seq(optional(seq(keywords('IN DATABASE'), $._identifier)), $._role_set_or_reset)
+              )
+            ),
+            seq(keyword('ALL'), optional(seq(keywords('IN DATABASE'), $._identifier)), $._role_set_or_reset)
+          )
+        ),
+        seq(
+          keywords('ALTER GROUP'),
+          $._role_spec,
+          choice(
+            seq(keywords('RENAME TO'), $._identifier),
+            seq(choice(keyword('ADD'), keyword('DROP')), keyword('USER'), commaSep1($._role_spec))
+          )
         )
       ),
 
@@ -2244,13 +2294,22 @@ export default grammar({
 
     _create_generic_options: ($) => seq(keyword('OPTIONS'), parens(commaSep1(seq($._col_label, $.string_literal)))),
 
+    _alter_generic_option_name: ($) =>
+      choice(
+        $._col_label,
+        alias(keyword('ADD'), $.identifier),
+        alias(keyword('SET'), $.identifier),
+        alias(keyword('DROP'), $.identifier)
+      ),
+
     _alter_generic_options: ($) =>
       seq(
         keyword('OPTIONS'),
         parens(
           commaSep1(
             choice(
-              seq(optional(choice(keyword('ADD'), keyword('SET'))), $._col_label, $.string_literal),
+              seq($._alter_generic_option_name, $.string_literal),
+              seq(choice(keyword('ADD'), keyword('SET')), $._col_label, $.string_literal),
               seq(keyword('DROP'), $._col_label)
             )
           )
@@ -3487,7 +3546,9 @@ export default grammar({
     // Expressions
     // =========================================================================
 
-    _expression: ($) => choice($._is_expr, $.unary_expression, $.binary_expression),
+    _expression: ($) => choice($._not_expr, $.binary_expression),
+
+    _not_expr: ($) => choice($._is_expr, $.unary_expression),
 
     _is_expr: ($) => choice($._cmp_expr, alias($._open_is_expression, $.is_expression), $._closed_is),
 
@@ -3805,7 +3866,11 @@ export default grammar({
                   field('from', $._expression),
                   optional(seq(keyword('FOR'), field('for', $._expression)))
                 ),
-                seq(keyword('FOR'), field('for', $._expression))
+                seq(
+                  keyword('FOR'),
+                  field('for', $._expression),
+                  optional(seq(keyword('FROM'), field('from', $._expression)))
+                )
               )
             ),
             prec(
@@ -4154,7 +4219,7 @@ export default grammar({
         PREC.AT,
         seq(
           field('value', tightLhs($)),
-          choice(seq(keywords('AT TIME ZONE'), field('zone', $._tight_expr)), keywords('AT LOCAL'))
+          choice(seq(keywords('AT TIME ZONE'), field('zone', tightRhs($))), keywords('AT LOCAL'))
         )
       ),
 
@@ -4165,14 +4230,14 @@ export default grammar({
       ),
 
     unary_expression: ($) =>
-      prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', $._expression))),
+      prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', $._not_expr))),
 
     _tight_unary_expression: ($) =>
       choice(
-        prec.right(PREC.UNARY, seq(field('operator', choice('+', '-')), field('operand', $._tight_expr))),
+        prec.right(PREC.UNARY, seq(field('operator', choice('+', '-')), field('operand', tightRhs($)))),
         prec.right(
           PREC.OP,
-          seq(field('operator', choice($.custom_operator, $.operator_invocation)), field('operand', $._tight_expr))
+          seq(field('operator', choice($.custom_operator, $.operator_invocation)), field('operand', tightRhs($)))
         )
       ),
 
@@ -4197,14 +4262,14 @@ export default grammar({
     binary_expression: ($) =>
       choice(leftBinary($._expression, PREC.OR, keyword('OR')), leftBinary($._expression, PREC.AND, keyword('AND'))),
 
-    _cmp_binary_expression: ($) => leftBinaryAsym(patternLhs($), $._pattern_expr, PREC.COMPARISON, $._cmp_operator),
+    _cmp_binary_expression: ($) => leftBinaryAsym(patternLhs($), patternRhs($), PREC.COMPARISON, $._cmp_operator),
 
     _tight_binary_expression: ($) =>
       choice(
-        leftBinaryAsym(tightLhs($), $._tight_expr, PREC.OP, choice($.custom_operator, $.operator_invocation)),
-        leftBinaryAsym(tightLhs($), $._tight_expr, PREC.ADDITIVE, choice('+', '-')),
-        leftBinaryAsym(tightLhs($), $._tight_expr, PREC.MULTIPLICATIVE, choice('*', '/', '%')),
-        leftBinaryAsym(tightLhs($), $._tight_expr, PREC.EXPONENT, '^')
+        leftBinaryAsym(tightLhs($), tightRhs($), PREC.OP, choice($.custom_operator, $.operator_invocation)),
+        leftBinaryAsym(tightLhs($), tightRhs($), PREC.ADDITIVE, choice('+', '-')),
+        leftBinaryAsym(tightLhs($), tightRhs($), PREC.MULTIPLICATIVE, choice('*', '/', '%')),
+        leftBinaryAsym(tightLhs($), tightRhs($), PREC.EXPONENT, '^')
       ),
 
     _b_arith_binary_expression: ($) =>
@@ -4254,7 +4319,7 @@ export default grammar({
           optional(choice(keyword('SYMMETRIC'), keyword('ASYMMETRIC'))),
           field('low', $._b_expr),
           keyword('AND'),
-          field('high', $._tight_expr)
+          field('high', tightRhs($))
         )
       ),
 
@@ -4270,14 +4335,14 @@ export default grammar({
       ),
 
     like_expression: ($) =>
-      prec.left(
+      prec.right(
         PREC.PATTERN,
         seq(
           field('left', tightLhs($)),
           optional(keyword('NOT')),
           field('operator', choice(keyword('LIKE'), keyword('ILIKE'), keywords('SIMILAR TO'))),
-          field('right', $._tight_expr),
-          optional(seq(keyword('ESCAPE'), field('escape', $._tight_expr)))
+          field('right', tightRhs($)),
+          optional(seq(keyword('ESCAPE'), field('escape', tightRhs($))))
         )
       ),
 
@@ -4334,7 +4399,7 @@ export default grammar({
           keyword('IS'),
           optional(keyword('NOT')),
           keywords('DISTINCT FROM'),
-          field('right', $._cmp_expr)
+          field('right', cmpRhs($))
         )
       ),
 

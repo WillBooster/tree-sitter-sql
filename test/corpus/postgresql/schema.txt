@@ -1028,3 +1028,54 @@ CREATE OR REPLACE TEMP RECURSIVE VIEW v_rec (n) AS SELECT 1; CREATE UNLOGGED MAT
     (identifier)
     (string_literal)
     (identifier)))
+
+================================================================================
+Unprefixed ADD/SET/DROP option names, ON DELETE SET NULL columns, and ROLE options
+:language(postgresql)
+================================================================================
+
+ALTER SERVER srv OPTIONS (ADD 'a', SET 'b', DROP 'c', ADD host 'd', DROP port); CREATE TABLE posts (tenant INT, author INT, FOREIGN KEY (tenant, author) REFERENCES users (tenant, author) ON DELETE SET NULL (author) ON UPDATE SET DEFAULT); CREATE ROLE app_role WITH CREATEDB NOLOGIN PASSWORD 'secret' CONNECTION LIMIT 5 IN ROLE readers; ALTER ROLE app_role WITH BYPASSRLS VALID UNTIL '2030-01-01';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_server_statement
+    (identifier)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name))
+    (foreign_key_constraint
+      (identifier)
+      (identifier)
+      (foreign_key_clause
+        (qualified_name
+          (identifier))
+        (identifier)
+        (identifier)
+        (foreign_key_action
+          (column_list
+            (identifier)))
+        (foreign_key_action))))
+  (create_role_statement
+    (identifier)
+    (string_literal)
+    (numeric_literal)
+    (identifier))
+  (alter_role_statement
+    (identifier)
+    (string_literal)))

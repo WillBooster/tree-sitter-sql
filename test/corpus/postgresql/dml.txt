@@ -341,3 +341,53 @@ INSERT INTO t (a[1], b.c) VALUES (1, 2); INSERT INTO u VALUES (n.*) ON CONFLICT 
       (row
         (numeric_literal)
         (numeric_literal)))))
+
+================================================================================
+UPDATE and INSERT array slice assignment targets with omitted bounds
+:language(postgresql)
+================================================================================
+
+UPDATE t SET arr[:2] = a, arr[1:] = b, arr[:] = c, arr[1:][:2] = d; INSERT INTO t (arr[:2], arr[1:], arr[:]) VALUES (1, 2, 3);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (qualified_name
+      (identifier))
+    (set_clause
+      (assignment
+        (identifier)
+        (numeric_literal)
+        (column_reference
+          (identifier)))
+      (assignment
+        (identifier)
+        (numeric_literal)
+        (column_reference
+          (identifier)))
+      (assignment
+        (identifier)
+        (column_reference
+          (identifier)))
+      (assignment
+        (identifier)
+        (numeric_literal)
+        (numeric_literal)
+        (column_reference
+          (identifier)))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (numeric_literal)
+      (identifier)
+      (numeric_literal)
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal))))))

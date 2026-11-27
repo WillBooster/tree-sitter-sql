@@ -24339,6 +24339,10 @@
     "named": false
   },
   {
+    "type": "BYPASSRLS",
+    "named": false
+  },
+  {
     "type": "CACHE",
     "named": false
   },
@@ -24496,6 +24500,14 @@
   },
   {
     "type": "CREATE",
+    "named": false
+  },
+  {
+    "type": "CREATEDB",
+    "named": false
+  },
+  {
+    "type": "CREATEROLE",
     "named": false
   },
   {
@@ -25163,6 +25175,10 @@
     "named": false
   },
   {
+    "type": "LOGIN",
+    "named": false
+  },
+  {
     "type": "MAINTAIN",
     "named": false
   },
@@ -25271,7 +25287,31 @@
     "named": false
   },
   {
+    "type": "NOBYPASSRLS",
+    "named": false
+  },
+  {
+    "type": "NOCREATEDB",
+    "named": false
+  },
+  {
+    "type": "NOCREATEROLE",
+    "named": false
+  },
+  {
+    "type": "NOINHERIT",
+    "named": false
+  },
+  {
+    "type": "NOLOGIN",
+    "named": false
+  },
+  {
     "type": "NONE",
+    "named": false
+  },
+  {
+    "type": "NOREPLICATION",
     "named": false
   },
   {
@@ -25280,6 +25320,10 @@
   },
   {
     "type": "NORMALIZED",
+    "named": false
+  },
+  {
+    "type": "NOSUPERUSER",
     "named": false
   },
   {
@@ -25603,6 +25647,10 @@
     "named": false
   },
   {
+    "type": "REPLICATION",
+    "named": false
+  },
+  {
     "type": "RESET",
     "named": false
   },
@@ -25844,6 +25892,10 @@
   },
   {
     "type": "SUBSTRING",
+    "named": false
+  },
+  {
+    "type": "SUPERUSER",
     "named": false
   },
   {

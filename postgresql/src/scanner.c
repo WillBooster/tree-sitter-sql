@@ -131,23 +131,46 @@ static void fail_quote(QuotedState *s) {
   s->expecting_low = false;
 }
 
+static bool scan_unicode_c_escape(TSLexer *lexer, QuotedState *s, unsigned digits) {
+  advance(lexer);
+  uint32_t cp = 0;
+  for (unsigned i = 0; i < digits; i++) {
+    if (!is_hex_digit(lexer->lookahead)) return fail_quote(s), true;
+    cp = (cp << 4) | (uint32_t)hex_value(lexer->lookahead);
+    advance(lexer);
+  }
+  if (!step_codepoint(cp, &s->expecting_low)) fail_quote(s);
+  return true;
+}
+
+static bool scan_hex_byte_escape(TSLexer *lexer) {
+  advance(lexer);
+  if (!is_hex_digit(lexer->lookahead)) return true;
+  uint32_t byte = 0;
+  for (unsigned i = 0; i < 2 && is_hex_digit(lexer->lookahead); i++) {
+    byte = (byte << 4) | (uint32_t)hex_value(lexer->lookahead);
+    advance(lexer);
+  }
+  return byte != 0;
+}
+
+static bool scan_oct_byte_escape(TSLexer *lexer) {
+  uint32_t byte = 0;
+  for (unsigned i = 0; i < 3 && is_oct_digit(lexer->lookahead); i++) {
+    byte = (byte << 3) | (uint32_t)(lexer->lookahead - '0');
+    advance(lexer);
+  }
+  return (byte & 0xFF) != 0;
+}
+
 static bool scan_c_escape(TSLexer *lexer, QuotedState *s) {
   if (at_eof(lexer)) return false;
   int32_t c = lexer->lookahead;
-  if (c == 'u' || c == 'U') {
-    advance(lexer);
-    unsigned digits = c == 'u' ? 4 : 8;
-    uint32_t cp = 0;
-    for (unsigned i = 0; i < digits; i++) {
-      if (!is_hex_digit(lexer->lookahead)) return fail_quote(s), true;
-      cp = (cp << 4) | (uint32_t)hex_value(lexer->lookahead);
-      advance(lexer);
-    }
-    if (!step_codepoint(cp, &s->expecting_low)) fail_quote(s);
-    return true;
-  }
+  if (c == 'u' || c == 'U') return scan_unicode_c_escape(lexer, s, c == 'u' ? 4 : 8);
   if (s->expecting_low || c == 0) fail_quote(s);
-  advance(lexer);
+  bool ok =
+      c == 'x' ? scan_hex_byte_escape(lexer) : (is_oct_digit(c) ? scan_oct_byte_escape(lexer) : (advance(lexer), true));
+  if (!ok) fail_quote(s);
   return true;
 }
 

@@ -1234,3 +1234,63 @@ SELECT a AT TIME ZONE b COLLATE "C" AT TIME ZONE c, a IS NULL IS NULL, a IN (1) 
         (table
           (qualified_name
             (identifier)))))))
+
+
+================================================================================
+Prefix NOT on right operands and SUBSTRING FOR before FROM
+:language(postgresql)
+================================================================================
+
+SELECT a = NOT b, 1 + NOT 2 + 3, 'a' LIKE NOT 'b' LIKE 'c' ESCAPE 'd', a BETWEEN 1 AND NOT b, a IS DISTINCT FROM NOT b, substring('hello' FOR 3 FROM 2) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (unary_expression
+            (column_reference
+              (identifier)))))
+      (result_column
+        (binary_expression
+          (numeric_literal)
+          (unary_expression
+            (binary_expression
+              (numeric_literal)
+              (numeric_literal)))))
+      (result_column
+        (like_expression
+          (string_literal)
+          (unary_expression
+            (like_expression
+              (string_literal)
+              (string_literal)
+              (string_literal)))))
+      (result_column
+        (between_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (unary_expression
+            (column_reference
+              (identifier)))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (unary_expression
+            (column_reference
+              (identifier)))))
+      (result_column
+        (substring_expression
+          (string_literal)
+          (numeric_literal)
+          (numeric_literal)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
