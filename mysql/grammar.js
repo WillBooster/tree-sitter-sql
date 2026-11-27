@@ -453,6 +453,7 @@ const UNUSED_RESERVED_WORDS = [
   'ACCESSIBLE',
   'ASENSITIVE',
   'CUBE',
+  'GROUPS',
   'INSENSITIVE',
   'IO_AFTER_GTIDS',
   'IO_BEFORE_GTIDS',
@@ -1378,22 +1379,47 @@ function buildScopedClauseRules(sp) {
         scopedVis($, sp, 'frame_clause')
       ),
     [k('partition_by_clause')]: ($) => seq(keywords('PARTITION BY'), commaSep1(scopedHid($, sp, '_expression'))),
-    [k('frame_clause')]: ($) =>
-      seq(
-        choice(keyword('ROWS'), keyword('RANGE'), keyword('GROUPS')),
+    [k('frame_clause')]: ($) => {
+      const unboundedPre = alias($._frame_unbounded_preceding, $.frame_bound);
+      const unboundedFol = alias($._frame_unbounded_following, $.frame_bound);
+      const currentRow = alias($._frame_current_row, $.frame_bound);
+      const extent = (/** @type {RuleOrLiteral} */ pre, /** @type {RuleOrLiteral} */ fol) =>
         choice(
-          scopedVis($, sp, 'frame_bound'),
-          seq(keyword('BETWEEN'), scopedVis($, sp, 'frame_bound'), keyword('AND'), scopedVis($, sp, 'frame_bound'))
-        )
-      ),
-    [k('frame_bound')]: ($) =>
-      choice(
-        keywords('CURRENT ROW'),
+          unboundedPre,
+          currentRow,
+          pre,
+          seq(
+            keyword('BETWEEN'),
+            choice(
+              seq(choice(unboundedPre, pre), keyword('AND'), choice(pre, currentRow, fol, unboundedFol)),
+              seq(currentRow, keyword('AND'), choice(currentRow, fol, unboundedFol)),
+              seq(fol, keyword('AND'), choice(fol, unboundedFol))
+            )
+          )
+        );
+      return choice(
         seq(
-          choice(keyword('UNBOUNDED'), scopedHid($, sp, '_expression')),
-          choice(keyword('PRECEDING'), keyword('FOLLOWING'))
+          keyword('ROWS'),
+          extent(alias($._rows_frame_preceding, $.frame_bound), alias($._rows_frame_following, $.frame_bound))
+        ),
+        seq(
+          keyword('RANGE'),
+          extent(
+            alias(scopedHid($, sp, '_range_frame_preceding'), $.frame_bound),
+            alias(scopedHid($, sp, '_range_frame_following'), $.frame_bound)
+          )
         )
+      );
+    },
+    [k('_range_frame_offset')]: ($) =>
+      choice(
+        $.numeric_literal,
+        $.placeholder,
+        scopedVis($, sp, 'interval_expression'),
+        seq($._overflow_int_literal, $._unreachable)
       ),
+    [k('_range_frame_preceding')]: ($) => seq(scopedHid($, sp, '_range_frame_offset'), keyword('PRECEDING')),
+    [k('_range_frame_following')]: ($) => seq(scopedHid($, sp, '_range_frame_offset'), keyword('FOLLOWING')),
     [k('order_by_clause')]: ($) => seq(keywords('ORDER BY'), commaSep1(scopedVis($, sp, 'ordering_term'))),
     [k('ordering_term')]: ($) =>
       seq(field('value', scopedHid($, sp, '_expression')), optional(choice(keyword('ASC'), keyword('DESC')))),
@@ -4313,6 +4339,23 @@ export default grammar({
       ),
 
     _distinct_keyword: () => choice(keyword('DISTINCT'), keyword('DISTINCTROW')),
+
+    _frame_unbounded_preceding: () => keywords('UNBOUNDED PRECEDING'),
+
+    _frame_unbounded_following: () => keywords('UNBOUNDED FOLLOWING'),
+
+    _frame_current_row: () => keywords('CURRENT ROW'),
+
+    _rows_frame_offset: ($) =>
+      choice(
+        alias($._uint64_literal, $.numeric_literal),
+        $.placeholder,
+        seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
+      ),
+
+    _rows_frame_preceding: ($) => seq($._rows_frame_offset, keyword('PRECEDING')),
+
+    _rows_frame_following: ($) => seq($._rows_frame_offset, keyword('FOLLOWING')),
 
     _stable_integer: ($) =>
       choice(
