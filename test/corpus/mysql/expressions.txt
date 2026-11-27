@@ -969,3 +969,29 @@ WHERE MATCH title, t.body AGAINST ('db' IN BOOLEAN MODE);
             (identifier)
             (identifier))
           (string_literal))))))
+
+
+================================================================================
+Quoted string alias after typed temporal literal
+:language(mysql)
+================================================================================
+
+SELECT DATE '2020-01-01' 'created', TIME '12:00:00' 'clock', TIMESTAMP '2020-01-01 00:00:00' AS 'ts';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (temporal_literal
+          (string_literal))
+        (string_literal))
+      (result_column
+        (temporal_literal
+          (string_literal))
+        (string_literal))
+      (result_column
+        (temporal_literal
+          (string_literal))
+        (string_literal)))))

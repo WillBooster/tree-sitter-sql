@@ -4143,7 +4143,7 @@ export default grammar({
         1,
         seq(
           choice(...TEMPORAL_LITERAL_KEYWORDS.map(keyword)),
-          field('value', alias($._plain_string_literal, $.string_literal))
+          field('value', alias($._string_segment, $.string_literal))
         )
       ),
 

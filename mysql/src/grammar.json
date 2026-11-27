@@ -43323,7 +43323,7 @@
               "type": "ALIAS",
               "content": {
                 "type": "SYMBOL",
-                "name": "_plain_string_literal"
+                "name": "_string_segment"
               },
               "named": true,
               "value": "string_literal"
