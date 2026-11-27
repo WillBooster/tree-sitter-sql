@@ -7653,6 +7653,28 @@
           "value": "WHERE"
         },
         {
+          "type": "FIELD",
+          "name": "condition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expression"
+          }
+        }
+      ]
+    },
+    "_plsql_where_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ww][Hh][Ee][Rr][Ee]"
+          },
+          "named": false,
+          "value": "WHERE"
+        },
+        {
           "type": "CHOICE",
           "members": [
             {
@@ -11082,6 +11104,68 @@
         }
       ]
     },
+    "_plsql_update_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "with_clause"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Uu][Pp][Dd][Aa][Tt][Ee]"
+          },
+          "named": false,
+          "value": "UPDATE"
+        },
+        {
+          "type": "FIELD",
+          "name": "table",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_dml_target"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_dml_alias"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "set_clause"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_plsql_dml_from_where_tail"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
     "_dml_from_where_tail": {
       "type": "CHOICE",
       "members": [
@@ -11121,6 +11205,71 @@
             {
               "type": "SYMBOL",
               "name": "where_clause"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_dml_returning_or_error_tail"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_dml_returning_or_error_tail"
+        }
+      ]
+    },
+    "_plsql_dml_from_where_tail": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "from_clause"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_plsql_dml_where_tail"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_plsql_dml_where_tail"
+        }
+      ]
+    },
+    "_plsql_dml_where_tail": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_plsql_where_clause"
+              },
+              "named": true,
+              "value": "where_clause"
             },
             {
               "type": "CHOICE",
@@ -11447,6 +11596,81 @@
             {
               "type": "SYMBOL",
               "name": "_dml_from_where_tail"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_plsql_delete_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "with_clause"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Dd][Ee][Ll][Ee][Tt][Ee]"
+          },
+          "named": false,
+          "value": "DELETE"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Ff][Rr][Oo][Mm]"
+              },
+              "named": false,
+              "value": "FROM"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "table",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_dml_target"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_dml_alias"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_plsql_dml_from_where_tail"
             },
             {
               "type": "BLANK"
@@ -42919,8 +43143,13 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "update_statement"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_plsql_update_statement"
+                  },
+                  "named": true,
+                  "value": "update_statement"
                 },
                 {
                   "type": "STRING",
@@ -42932,8 +43161,13 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "delete_statement"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_plsql_delete_statement"
+                  },
+                  "named": true,
+                  "value": "delete_statement"
                 },
                 {
                   "type": "STRING",

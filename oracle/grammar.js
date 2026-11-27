@@ -2160,7 +2160,9 @@ export default grammar({
         seq(choice(keyword('LEFT'), keyword('RIGHT'), keyword('FULL')), optional(keyword('OUTER')))
       ),
 
-    where_clause: ($) =>
+    where_clause: ($) => seq(keyword('WHERE'), field('condition', $._expression)),
+
+    _plsql_where_clause: ($) =>
       seq(
         keyword('WHERE'),
         choice(field('condition', $._expression), seq(keywords('CURRENT OF'), field('cursor', $._plsql_name)))
@@ -2459,10 +2461,29 @@ export default grammar({
         optional($._dml_from_where_tail)
       ),
 
+    _plsql_update_statement: ($) =>
+      seq(
+        optional($.with_clause),
+        keyword('UPDATE'),
+        field('table', $._dml_target),
+        optional($._dml_alias),
+        $.set_clause,
+        optional($._plsql_dml_from_where_tail)
+      ),
+
     _dml_from_where_tail: ($) => choice(seq($.from_clause, optional($._dml_where_tail)), $._dml_where_tail),
 
     _dml_where_tail: ($) =>
       choice(seq($.where_clause, optional($._dml_returning_or_error_tail)), $._dml_returning_or_error_tail),
+
+    _plsql_dml_from_where_tail: ($) =>
+      choice(seq($.from_clause, optional($._plsql_dml_where_tail)), $._plsql_dml_where_tail),
+
+    _plsql_dml_where_tail: ($) =>
+      choice(
+        seq(alias($._plsql_where_clause, $.where_clause), optional($._dml_returning_or_error_tail)),
+        $._dml_returning_or_error_tail
+      ),
 
     _dml_returning_or_error_tail: ($) =>
       choice(seq($.returning_into_clause, optional($.error_logging_clause)), $.error_logging_clause),
@@ -2494,6 +2515,16 @@ export default grammar({
         field('table', $._dml_target),
         optional($._dml_alias),
         optional($._dml_from_where_tail)
+      ),
+
+    _plsql_delete_statement: ($) =>
+      seq(
+        optional($.with_clause),
+        keyword('DELETE'),
+        optional(keyword('FROM')),
+        field('table', $._dml_target),
+        optional($._dml_alias),
+        optional($._plsql_dml_from_where_tail)
       ),
 
     merge_statement: ($) =>
@@ -5280,8 +5311,8 @@ export default grammar({
           $.conditional_error_directive,
           seq(alias($._plsql_select_statement, $.select_statement), ';'),
           seq($.insert_statement, ';'),
-          seq($.update_statement, ';'),
-          seq($.delete_statement, ';'),
+          seq(alias($._plsql_update_statement, $.update_statement), ';'),
+          seq(alias($._plsql_delete_statement, $.delete_statement), ';'),
           seq($.merge_statement, ';'),
           seq($.commit_statement, ';'),
           seq($.rollback_statement, ';'),
