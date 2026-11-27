@@ -286,3 +286,58 @@ MERGE INTO inventory AS i USING incoming AS s ON i.sku = s.sku WHEN MATCHED AND 
           (identifier)))
       (table_columns
         (identifier)))))
+
+================================================================================
+INSERT and MERGE target column indirection and whole-row VALUES
+:language(postgresql)
+================================================================================
+
+INSERT INTO t (a[1], b.c) VALUES (1, 2); INSERT INTO u VALUES (n.*) ON CONFLICT DO NOTHING; MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (a.b, c[1]) VALUES (1, 2);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (numeric_literal)
+      (identifier)
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (numeric_literal)
+          (numeric_literal)))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (table_columns
+            (identifier)))))
+    (on_conflict_clause))
+  (merge_statement
+    (qualified_name
+      (identifier))
+    (table
+      (qualified_name
+        (identifier)))
+    (binary_expression
+      (column_reference
+        (identifier)
+        (identifier))
+      (column_reference
+        (identifier)
+        (identifier)))
+    (merge_when_clause
+      (column_list
+        (identifier)
+        (identifier)
+        (identifier)
+        (numeric_literal))
+      (row
+        (numeric_literal)
+        (numeric_literal)))))

@@ -291,13 +291,19 @@ Non-reserved keywords Manual and Parallel in MySQL 8.4
 :language(mysql)
 ================================================================================
 
-SELECT manual, parallel FROM manual AS parallel;
+SELECT manual, parallel, master_bind, master_ssl_verify_server_cert FROM manual AS parallel;
 
 --------------------------------------------------------------------------------
 
 (source_file
   (select_statement
     (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
       (result_column
         (column_reference
           (identifier)))

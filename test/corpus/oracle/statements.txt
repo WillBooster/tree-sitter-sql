@@ -337,3 +337,83 @@ END gen_rows;
       (identifier))
     (return_statement)
     (identifier)))
+
+================================================================================
+PL/SQL SELECT INTO with CTE, dynamic RETURNING INTO, and subscripted cursor attributes
+:language(oracle)
+================================================================================
+
+DECLARE
+  file BFILE;
+  v_err NUMBER;
+BEGIN
+  WITH cte AS (SELECT 1 AS n FROM dual) SELECT n INTO v_err FROM cte;
+  EXECUTE IMMEDIATE 'UPDATE emp SET sal = :1 RETURNING empno INTO :2' USING 100 RETURNING INTO v_err;
+  EXECUTE IMMEDIATE 'DELETE FROM emp RETURNING empno INTO :1' RETURNING BULK COLLECT INTO v_ids;
+  v_err := SQL%BULK_EXCEPTIONS(1).ERROR_INDEX;
+  v_err := SQL%BULK_ROWCOUNT(1);
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (anonymous_block
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (select_statement
+      (with_clause
+        (common_table_expression
+          (identifier)
+          (select_statement
+            (select_core
+              (select_list
+                (select_item
+                  (numeric_literal)
+                  (identifier)))
+              (from_clause
+                (table_reference
+                  (object_name
+                    (identifier))))))))
+      (select_core
+        (select_list
+          (select_item
+            (identifier)))
+        (into_clause
+          (identifier))
+        (from_clause
+          (table_reference
+            (object_name
+              (identifier))))))
+    (execute_immediate_statement
+      (string_literal)
+      (numeric_literal)
+      (dynamic_returning_clause
+        (into_clause
+          (identifier))))
+    (execute_immediate_statement
+      (string_literal)
+      (dynamic_returning_clause
+        (into_clause
+          (identifier))))
+    (assignment_statement
+      (identifier)
+      (member_expression
+        (function_call
+          (cursor_attribute
+            (identifier)
+            (identifier))
+          (function_argument
+            (numeric_literal)))
+        (identifier)))
+    (assignment_statement
+      (identifier)
+      (function_call
+        (cursor_attribute
+          (identifier)
+          (identifier))
+        (function_argument
+          (numeric_literal))))))

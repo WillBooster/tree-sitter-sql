@@ -263,12 +263,12 @@ const BIN_DIGITS = '[01](_?[01])*';
 const parens = (rule) => seq('(', rule, ')');
 
 /**
- * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} operand
  * @param {number} precedence
  * @param {RuleOrLiteral} operator
  */
-const binaryOp = ($, precedence, operator) =>
-  prec.left(precedence, seq(field('left', $._expression), field('operator', operator), field('right', $._expression)));
+const leftBinary = (operand, precedence, operator) =>
+  prec.left(precedence, seq(field('left', operand), field('operator', operator), field('right', operand)));
 
 export default grammar({
   name: 'postgresql',
@@ -301,13 +301,14 @@ export default grammar({
   conflicts: ($) => [
     [$.select_statement, $._parenthesized_select],
     [$._type_modifiers, $.function_argument],
-    [$._func_name, $._any_operator],
+    [$._percent_type, $._func_name],
+    [$._percent_type, $._func_name, $._any_operator],
     [$._column_identifier, $._func_identifier],
-    [$.row_expression, $.in_expression],
     [$._non_interval_simple_type],
     [$.distinct_clause],
     [$.table_function],
     [$.rows_from_table],
+    [$._transaction_mode_list],
   ],
 
   rules: {
@@ -326,6 +327,7 @@ export default grammar({
         $.create_type_statement,
         $.create_domain_statement,
         $.create_extension_statement,
+        $.create_language_statement,
         $.create_function_statement,
         $.create_trigger_statement,
         $.create_event_trigger_statement,
@@ -360,6 +362,8 @@ export default grammar({
         $.alter_type_statement,
         $.alter_domain_statement,
         $.alter_extension_statement,
+        $.alter_language_statement,
+        $.alter_large_object_statement,
         $.alter_routine_statement,
         $.alter_trigger_statement,
         $.alter_event_trigger_statement,
@@ -453,7 +457,16 @@ export default grammar({
     _utility_option: ($) =>
       seq(
         choice($._col_label, keyword('ANALYZE'), keyword('ANALYSE'), keyword('VERBOSE'), keyword('FREEZE')),
-        optional(choice($._expression, keyword('ON'), keyword('OFF'), keyword('ALL')))
+        optional(
+          choice(
+            $._expression,
+            ...[...TYPE_FUNC_NAME_KEYWORDS].map((word) => prec(-1, alias(keyword(word), $.identifier))),
+            keyword('ON'),
+            keyword('OFF'),
+            keyword('ALL'),
+            '*'
+          )
+        )
       ),
 
     // =========================================================================
@@ -464,24 +477,47 @@ export default grammar({
 
     _select_body: ($) =>
       prec.right(
-        seq(
-          optional($.with_clause),
-          $._select_set_expr,
-          optional($.order_by_clause),
-          repeat(choice($.limit_clause, $.offset_clause, $.fetch_clause, $.locking_clause))
-        )
+        seq(optional($.with_clause), $._select_set_expr, optional($.order_by_clause), optional($._select_tail))
       ),
 
-    _select_set_expr: ($) =>
-      prec.left(choice($._select_primary, seq($._select_set_expr, $.compound_operator, $._select_set_expr))),
+    _select_limit: ($) =>
+      choice(
+        seq(choice($.limit_clause, $.fetch_clause), optional($.offset_clause)),
+        seq($.offset_clause, optional(choice($.limit_clause, $.fetch_clause)))
+      ),
 
-    compound_operator: () =>
+    _select_tail: ($) =>
+      choice(
+        seq($._select_limit, optional(repeat1($.locking_clause))),
+        seq(repeat1($.locking_clause), optional($._select_limit))
+      ),
+
+    _select_set_expr: ($) => choice($._select_intersect_expr, $.compound_query),
+
+    compound_query: ($) =>
       prec.left(
-        choice(
-          seq(choice(keyword('UNION'), keyword('EXCEPT')), optional(choice(keyword('ALL'), keyword('DISTINCT')))),
-          prec(2, seq(keyword('INTERSECT'), optional(choice(keyword('ALL'), keyword('DISTINCT')))))
+        seq(
+          field('left', $._select_set_expr),
+          field('operator', alias($._union_except_operator, $.compound_operator)),
+          field('right', $._select_intersect_expr)
         )
       ),
+
+    _select_intersect_expr: ($) => choice($._select_primary, alias($._intersect_compound_query, $.compound_query)),
+
+    _intersect_compound_query: ($) =>
+      prec.left(
+        seq(
+          field('left', $._select_intersect_expr),
+          field('operator', alias($._intersect_operator, $.compound_operator)),
+          field('right', $._select_primary)
+        )
+      ),
+
+    _union_except_operator: () =>
+      seq(choice(keyword('UNION'), keyword('EXCEPT')), optional(choice(keyword('ALL'), keyword('DISTINCT')))),
+
+    _intersect_operator: () => seq(keyword('INTERSECT'), optional(choice(keyword('ALL'), keyword('DISTINCT')))),
 
     _select_primary: ($) => choice($.select_core, $.values_clause, $.table_query, $._parenthesized_select),
 
@@ -549,7 +585,7 @@ export default grammar({
     distinct_clause: ($) =>
       choice(keyword('ALL'), seq(keyword('DISTINCT'), optional(seq(keyword('ON'), parens(commaSep1($._expression)))))),
 
-    _target_list: ($) => commaSep1(choice($.result_column, alias('*', $.all_columns), $.table_columns)),
+    _target_list: ($) => commaSep1(choice($.result_column, alias('*', $.all_columns), prec(1, $.table_columns))),
 
     result_column: ($) =>
       seq(
@@ -571,16 +607,16 @@ export default grammar({
         field('table', $.qualified_name)
       ),
 
-    from_clause: ($) => seq(keyword('FROM'), $._join_list),
+    from_clause: ($) => seq(keyword('FROM'), $._from_list),
 
-    _join_list: ($) => prec.left(seq($._table_ref, repeat(choice(seq(',', $._table_ref), $._join)))),
+    _from_list: ($) => commaSep1($._table_ref),
 
-    _join: ($) =>
-      prec.left(
-        choice(
-          seq(choice(keywords('CROSS JOIN'), $.natural_join_operator), $._table_ref),
-          seq($.join_operator, $._table_ref, $.join_constraint)
-        )
+    _table_ref: ($) => choice($._non_join_table_ref, $._joined_table),
+
+    _joined_table: ($) =>
+      choice(
+        prec.left(1, seq($._table_ref, choice(keywords('CROSS JOIN'), $.natural_join_operator), $._table_ref)),
+        prec.left(1, seq($._table_ref, $.join_operator, $._table_ref, $.join_constraint))
       ),
 
     join_operator: () =>
@@ -607,7 +643,7 @@ export default grammar({
         seq(keyword('USING'), $.column_list, optional(seq(keyword('AS'), field('alias', $._identifier))))
       ),
 
-    _table_ref: ($) =>
+    _non_join_table_ref: ($) =>
       choice(
         $.table,
         $.table_function,
@@ -636,7 +672,7 @@ export default grammar({
         optional($._func_table_alias)
       ),
 
-    _table_func_invocation: ($) => choice($.function_call, $.unnest_expression),
+    _table_func_invocation: ($) => choice($._func_expr_windowless, $.unnest_expression),
 
     unnest_expression: ($) => seq(keyword('UNNEST'), parens(commaSep1($._expression))),
 
@@ -653,9 +689,11 @@ export default grammar({
 
     table_func_column: ($) => seq(field('name', $._identifier), field('type', $.type_name), optional($.collate_clause)),
 
-    subquery_table: ($) => seq(optional(keyword('LATERAL')), parens($._preparable_statement), optional($._table_alias)),
+    subquery_table: ($) => seq(optional(keyword('LATERAL')), parens($.select_statement), optional($._table_alias)),
 
-    join_table: ($) => seq(parens($._join_list), optional($._table_alias)),
+    join_table: ($) => seq($._parenthesized_joined_table, optional($._table_alias)),
+
+    _parenthesized_joined_table: ($) => parens(choice($._joined_table, $._parenthesized_joined_table)),
 
     _table_alias: ($) => seq(optional(keyword('AS')), field('alias', $._identifier), optional($.column_list)),
 
@@ -765,21 +803,24 @@ export default grammar({
         keywords('INSERT INTO'),
         field('table', $.qualified_name),
         optional(seq(keyword('AS'), field('alias', $._identifier))),
-        optional($.column_list),
+        optional(alias($._insert_column_list, $.column_list)),
         optional($.overriding_clause),
         choice($.select_statement, keywords('DEFAULT VALUES')),
         optional($.on_conflict_clause),
         optional($.returning_clause)
       ),
 
+    _insert_column_list: ($) => parens(commaSep1($._assignment_target)),
+
     overriding_clause: () => seq(keyword('OVERRIDING'), choice(keyword('SYSTEM'), keyword('USER')), keyword('VALUE')),
 
     on_conflict_clause: ($) =>
       seq(
         keywords('ON CONFLICT'),
-        optional($.conflict_target),
-        keyword('DO'),
-        choice(keyword('NOTHING'), seq(keyword('UPDATE'), $.set_clause, optional($.where_clause)))
+        choice(
+          seq(optional($.conflict_target), keywords('DO NOTHING')),
+          seq($.conflict_target, keywords('DO UPDATE'), $.set_clause, optional($.where_clause))
+        )
       ),
 
     conflict_target: ($) =>
@@ -821,7 +862,7 @@ export default grammar({
     _assignment_target: ($) =>
       seq(
         $._identifier,
-        repeat(choice(seq('.', $._identifier), seq('[', $._expression, optional(seq(':', $._expression)), ']')))
+        repeat(choice(seq('.', $._col_label), seq('[', $._expression, optional(seq(':', $._expression)), ']')))
       ),
 
     delete_statement: ($) =>
@@ -830,7 +871,7 @@ export default grammar({
         keywords('DELETE FROM'),
         $._relation_expr,
         optional(seq(optional(keyword('AS')), field('alias', $._identifier))),
-        optional(seq(keyword('USING'), $._join_list)),
+        optional(seq(keyword('USING'), $._from_list)),
         optional($.where_clause),
         optional($.returning_clause)
       ),
@@ -868,7 +909,7 @@ export default grammar({
             choice(
               seq(
                 keyword('INSERT'),
-                optional($.column_list),
+                optional(alias($._insert_column_list, $.column_list)),
                 optional($.overriding_clause),
                 choice(seq(keyword('VALUES'), $.row), keywords('DEFAULT VALUES'))
               ),
@@ -953,18 +994,63 @@ export default grammar({
 
     storage_parameters: ($) => seq(keyword('WITH'), parens(commaSep1($._reloption_elem))),
 
+    _def_elem: ($) => seq($._col_label, optional(seq('=', $._def_arg))),
+
     _reloption_elem: ($) => seq($._col_label, optional(seq('.', $._col_label)), optional(seq('=', $._def_arg))),
 
     _def_arg: ($) =>
       choice(
         $._term,
         alias($._signed_numeric_literal, $.unary_expression),
-        $.type_name,
+        $._func_type,
         $._any_operator,
+        ...RESERVED_KEYWORDS.filter(
+          (word) =>
+            ![
+              'TRUE',
+              'FALSE',
+              'NULL',
+              'CURRENT_CATALOG',
+              'CURRENT_DATE',
+              'CURRENT_ROLE',
+              'CURRENT_TIME',
+              'CURRENT_TIMESTAMP',
+              'CURRENT_USER',
+              'LOCALTIME',
+              'LOCALTIMESTAMP',
+              'SESSION_USER',
+              'SYSTEM_USER',
+              'USER',
+            ].includes(word)
+        ).map((word) => keyword(word)),
+        ...COL_NAME_KEYWORDS.filter(
+          (word) =>
+            ![
+              'BIGINT',
+              'BIT',
+              'BOOLEAN',
+              'CHAR',
+              'CHARACTER',
+              'DEC',
+              'DECIMAL',
+              'FLOAT',
+              'INT',
+              'INTEGER',
+              'INTERVAL',
+              'JSON',
+              'NATIONAL',
+              'NCHAR',
+              'NONE',
+              'NUMERIC',
+              'REAL',
+              'SETOF',
+              'SMALLINT',
+              'TIME',
+              'TIMESTAMP',
+              'VARCHAR',
+            ].includes(word)
+        ).map((word) => prec(-1, alias(keyword(word), $.identifier))),
         keyword('NONE'),
-        keyword('ALL'),
-        keyword('DEFAULT'),
-        keyword('ON'),
         keyword('OFF')
       ),
 
@@ -1039,16 +1125,10 @@ export default grammar({
       seq(
         field('name', $._identifier),
         field('type', $.type_name),
-        repeat(
-          choice(
-            seq(keyword('COMPRESSION'), choice($._identifier, keyword('DEFAULT'))),
-            seq(keyword('STORAGE'), choice($._identifier, keyword('DEFAULT'))),
-            $.collate_clause,
-            $._foreign_options_clause,
-            $._column_constraint,
-            $._constraint_attribute
-          )
-        )
+        optional(seq(keyword('STORAGE'), choice($._identifier, keyword('DEFAULT')))),
+        optional(seq(keyword('COMPRESSION'), choice($._identifier, keyword('DEFAULT')))),
+        optional($._create_generic_options),
+        repeat(choice($.collate_clause, $._column_constraint, $._constraint_attribute))
       ),
 
     collate_clause: ($) => seq(keyword('COLLATE'), field('collation', $.qualified_name)),
@@ -1084,7 +1164,7 @@ export default grammar({
 
     not_null_constraint: () => keywords('NOT NULL'),
 
-    default_constraint: ($) => prec.left(PREC.ESCAPE, seq(keyword('DEFAULT'), field('value', $._expression))),
+    default_constraint: ($) => seq(keyword('DEFAULT'), field('value', $._b_expr)),
 
     generated_identity_constraint: ($) =>
       seq(
@@ -1126,24 +1206,32 @@ export default grammar({
         keyword('REFERENCES'),
         field('table', $.qualified_name),
         optional(parens(commaSep1($._fk_column))),
-        repeat(choice($.foreign_key_match, $.foreign_key_action))
+        optional($.foreign_key_match),
+        optional(
+          choice(
+            seq(alias($._fk_on_delete, $.foreign_key_action), optional(alias($._fk_on_update, $.foreign_key_action))),
+            seq(alias($._fk_on_update, $.foreign_key_action), optional(alias($._fk_on_delete, $.foreign_key_action)))
+          )
+        )
       ),
 
     _fk_column: ($) => seq(optional(keyword('PERIOD')), $._identifier),
 
     foreign_key_match: () => seq(keyword('MATCH'), choice(keyword('FULL'), keyword('PARTIAL'), keyword('SIMPLE'))),
 
-    foreign_key_action: ($) =>
-      seq(
-        keyword('ON'),
-        choice(keyword('DELETE'), keyword('UPDATE')),
-        choice(
-          keywords('NO ACTION'),
-          keyword('RESTRICT'),
-          keyword('CASCADE'),
-          seq(keyword('SET'), choice(keyword('NULL'), keyword('DEFAULT')), optional($.column_list))
-        )
+    _fk_action_body: ($) =>
+      choice(
+        keywords('NO ACTION'),
+        keyword('RESTRICT'),
+        keyword('CASCADE'),
+        seq(keyword('SET'), choice(keyword('NULL'), keyword('DEFAULT')), optional($.column_list))
       ),
+
+    _fk_on_delete: ($) => seq(keywords('ON DELETE'), $._fk_action_body),
+
+    _fk_on_update: ($) => seq(keywords('ON UPDATE'), $._fk_action_body),
+
+    foreign_key_action: ($) => seq(keyword('ON'), choice(keyword('DELETE'), keyword('UPDATE')), $._fk_action_body),
 
     _table_constraint: ($) =>
       seq(
@@ -1193,33 +1281,38 @@ export default grammar({
 
     // ALTER TABLE / ALTER FOREIGN TABLE
 
-    alter_table_statement: ($) =>
+    _all_in_tablespace_action: ($) =>
       seq(
-        keyword('ALTER'),
-        optional(keyword('FOREIGN')),
-        keyword('TABLE'),
-        optional($.if_exists),
-        $._relation_expr,
-        choice(
-          seq(keyword('RENAME'), optional(keyword('COLUMN')), $._identifier, keyword('TO'), $._identifier),
-          seq(keywords('RENAME CONSTRAINT'), $._identifier, keyword('TO'), $._identifier),
-          seq(keywords('RENAME TO'), $._identifier),
-          seq(keywords('SET SCHEMA'), $._identifier),
-          seq(
-            keywords('ALL IN TABLESPACE'),
-            $._identifier,
-            optional(seq(keywords('OWNED BY'), commaSep1($._role_spec))),
-            keywords('SET TABLESPACE'),
-            $._identifier,
-            optional(keyword('NOWAIT'))
-          ),
-          seq(keywords('ATTACH PARTITION'), $.qualified_name, $.partition_bound_spec),
-          seq(
-            keywords('DETACH PARTITION'),
-            $.qualified_name,
-            optional(choice(keyword('CONCURRENTLY'), keyword('FINALIZE')))
-          ),
-          commaSep1($._alter_table_cmd)
+        keywords('ALL IN TABLESPACE'),
+        $._identifier,
+        optional(seq(keywords('OWNED BY'), commaSep1($._role_spec))),
+        keywords('SET TABLESPACE'),
+        $._identifier,
+        optional(keyword('NOWAIT'))
+      ),
+
+    alter_table_statement: ($) =>
+      choice(
+        seq(keywords('ALTER TABLE'), $._all_in_tablespace_action),
+        seq(
+          keyword('ALTER'),
+          optional(keyword('FOREIGN')),
+          keyword('TABLE'),
+          optional($.if_exists),
+          $._relation_expr,
+          choice(
+            seq(keyword('RENAME'), optional(keyword('COLUMN')), $._identifier, keyword('TO'), $._identifier),
+            seq(keywords('RENAME CONSTRAINT'), $._identifier, keyword('TO'), $._identifier),
+            seq(keywords('RENAME TO'), $._identifier),
+            seq(keywords('SET SCHEMA'), $._identifier),
+            seq(keywords('ATTACH PARTITION'), $.qualified_name, $.partition_bound_spec),
+            seq(
+              keywords('DETACH PARTITION'),
+              $.qualified_name,
+              optional(choice(keyword('CONCURRENTLY'), keyword('FINALIZE')))
+            ),
+            commaSep1($._alter_table_cmd)
+          )
         )
       ),
 
@@ -1232,6 +1325,13 @@ export default grammar({
           optional($.if_exists),
           $._identifier,
           optional($._drop_behavior)
+        ),
+        seq(
+          keyword('ALTER'),
+          optional(keyword('COLUMN')),
+          choice($._identifier, $.numeric_literal),
+          keywords('SET STATISTICS'),
+          choice($._signed_integer, keyword('DEFAULT'))
         ),
         seq(
           keyword('ALTER'),
@@ -1261,12 +1361,11 @@ export default grammar({
               )
             ),
             seq(keywords('DROP IDENTITY'), optional($.if_exists)),
-            seq(keywords('SET STATISTICS'), $._signed_integer),
             seq(keyword('SET'), parens(commaSep1($._reloption_elem))),
             seq(keyword('RESET'), parens(commaSep1($._col_label))),
             seq(keywords('SET STORAGE'), choice($._identifier, keyword('DEFAULT'))),
             seq(keywords('SET COMPRESSION'), choice($._identifier, keyword('DEFAULT'))),
-            $._foreign_options_clause
+            $._alter_generic_options
           )
         ),
         seq(keyword('ADD'), $._table_constraint),
@@ -1302,7 +1401,8 @@ export default grammar({
           keywords('REPLICA IDENTITY'),
           choice(keyword('DEFAULT'), seq(keywords('USING INDEX'), $._identifier), keyword('FULL'), keyword('NOTHING'))
         ),
-        $._foreign_options_clause
+        seq(optional(keyword('NO')), keywords('DEPENDS ON EXTENSION'), $._identifier),
+        $._alter_generic_options
       ),
 
     _drop_behavior: () => choice(keyword('CASCADE'), keyword('RESTRICT')),
@@ -1340,19 +1440,9 @@ export default grammar({
 
     index_element: ($) =>
       seq(
-        choice(
-          field('column', $._identifier),
-          $.function_call,
-          $.extract_expression,
-          $.substring_expression,
-          $.trim_expression,
-          $.position_expression,
-          $.overlay_expression,
-          $.normalize_expression,
-          parens($._expression)
-        ),
+        choice(field('column', $._identifier), $._func_expr_windowless, parens($._expression)),
         optional($.collate_clause),
-        optional(seq($.qualified_name, optional(parens(commaSep1(seq($._col_label, '=', $._def_arg)))))),
+        optional(seq($.qualified_name, optional(parens(commaSep1($._def_elem))))),
         optional(choice(keyword('ASC'), keyword('DESC'))),
         optional(choice(keywords('NULLS FIRST'), keywords('NULLS LAST')))
       ),
@@ -1366,29 +1456,11 @@ export default grammar({
             $.qualified_name,
             choice(
               seq(keywords('RENAME TO'), $._identifier),
-              seq(keywords('SET TABLESPACE'), $._identifier),
               seq(keywords('ATTACH PARTITION'), $.qualified_name),
-              seq(optional(keyword('NO')), keywords('DEPENDS ON EXTENSION'), $._identifier),
-              seq(keyword('SET'), parens(commaSep1($._reloption_elem))),
-              $.storage_parameters,
-              seq(keyword('RESET'), parens(commaSep1($._col_label))),
-              seq(
-                keyword('ALTER'),
-                optional(keyword('COLUMN')),
-                $.numeric_literal,
-                keywords('SET STATISTICS'),
-                $._signed_integer
-              )
+              commaSep1($._alter_table_cmd)
             )
           ),
-          seq(
-            keywords('ALL IN TABLESPACE'),
-            $._identifier,
-            optional(seq(keywords('OWNED BY'), commaSep1($._role_spec))),
-            keywords('SET TABLESPACE'),
-            $._identifier,
-            optional(keyword('NOWAIT'))
-          )
+          $._all_in_tablespace_action
         )
       ),
 
@@ -1443,24 +1515,35 @@ export default grammar({
     // VIEW & MATERIALIZED VIEW
 
     create_view_statement: ($) =>
-      seq(
-        keyword('CREATE'),
-        optional(keywords('OR REPLACE')),
-        optional(choice($.temporary, keyword('RECURSIVE'), keyword('MATERIALIZED'))),
-        keyword('VIEW'),
-        optional($.if_not_exists),
-        field('name', $.qualified_name),
-        optional($.column_list),
-        optional(seq(keyword('USING'), $._identifier)),
-        optional($.storage_parameters),
-        optional(seq(keyword('TABLESPACE'), $._identifier)),
-        keyword('AS'),
-        $.select_statement,
-        optional(
-          choice(
-            seq(keyword('WITH'), optional(choice(keyword('CASCADED'), keyword('LOCAL'))), keywords('CHECK OPTION')),
-            $._with_data_clause
+      choice(
+        seq(
+          keyword('CREATE'),
+          optional(keywords('OR REPLACE')),
+          optional($.temporary),
+          optional(keyword('RECURSIVE')),
+          keyword('VIEW'),
+          field('name', $.qualified_name),
+          optional($.column_list),
+          optional($.storage_parameters),
+          keyword('AS'),
+          $.select_statement,
+          optional(
+            seq(keyword('WITH'), optional(choice(keyword('CASCADED'), keyword('LOCAL'))), keywords('CHECK OPTION'))
           )
+        ),
+        seq(
+          keyword('CREATE'),
+          optional(keyword('UNLOGGED')),
+          keywords('MATERIALIZED VIEW'),
+          optional($.if_not_exists),
+          field('name', $.qualified_name),
+          optional($.column_list),
+          optional(seq(keyword('USING'), $._identifier)),
+          optional($.storage_parameters),
+          optional(seq(keyword('TABLESPACE'), $._identifier)),
+          keyword('AS'),
+          $.select_statement,
+          optional($._with_data_clause)
         )
       ),
 
@@ -1473,65 +1556,49 @@ export default grammar({
       ),
 
     alter_view_statement: ($) =>
-      seq(
-        keyword('ALTER'),
-        optional(keyword('MATERIALIZED')),
-        keyword('VIEW'),
-        choice(
-          seq(
-            optional($.if_exists),
-            $.qualified_name,
-            choice(
-              seq(
-                keyword('ALTER'),
-                optional(keyword('COLUMN')),
-                $._identifier,
-                choice(seq(keywords('SET DEFAULT'), $._expression), keywords('DROP DEFAULT'))
-              ),
-              seq(keywords('OWNER TO'), $._role_spec),
-              seq(keyword('RENAME'), optional(keyword('COLUMN')), $._identifier, keyword('TO'), $._identifier),
-              seq(keywords('RENAME TO'), $._identifier),
-              seq(keywords('SET SCHEMA'), $._identifier),
-              seq(keyword('SET'), parens(commaSep1($._reloption_elem))),
-              $.storage_parameters,
-              seq(keyword('RESET'), parens(commaSep1($._col_label))),
-              seq(keywords('CLUSTER ON'), $._identifier),
-              keywords('SET WITHOUT CLUSTER'),
-              seq(keywords('SET ACCESS METHOD'), choice($._identifier, keyword('DEFAULT'))),
-              seq(keywords('SET TABLESPACE'), $._identifier, optional(keyword('NOWAIT'))),
-              seq(optional(keyword('NO')), keywords('DEPENDS ON EXTENSION'), $._identifier)
-            )
-          ),
-          seq(
-            keywords('ALL IN TABLESPACE'),
-            $._identifier,
-            optional(seq(keywords('OWNED BY'), commaSep1($._role_spec))),
-            keywords('SET TABLESPACE'),
-            $._identifier,
-            optional(keyword('NOWAIT'))
+      choice(
+        seq(keywords('ALTER MATERIALIZED VIEW'), $._all_in_tablespace_action),
+        seq(
+          keyword('ALTER'),
+          optional(keyword('MATERIALIZED')),
+          keyword('VIEW'),
+          optional($.if_exists),
+          $.qualified_name,
+          choice(
+            seq(keyword('RENAME'), optional(keyword('COLUMN')), $._identifier, keyword('TO'), $._identifier),
+            seq(keywords('RENAME TO'), $._identifier),
+            seq(keywords('SET SCHEMA'), $._identifier),
+            commaSep1($._alter_table_cmd)
           )
         )
       ),
 
     // SCHEMA
 
+    _schema_target: ($) =>
+      choice(
+        seq(field('name', $._identifier), optional(seq(keyword('AUTHORIZATION'), $._role_spec))),
+        seq(keyword('AUTHORIZATION'), $._role_spec)
+      ),
+
     create_schema_statement: ($) =>
       prec.right(
         seq(
           keywords('CREATE SCHEMA'),
-          optional($.if_not_exists),
           choice(
-            seq(field('name', $._identifier), optional(seq(keyword('AUTHORIZATION'), $._role_spec))),
-            seq(keyword('AUTHORIZATION'), $._role_spec)
-          ),
-          repeat(
-            choice(
-              $.create_table_statement,
-              $.create_view_statement,
-              $.create_index_statement,
-              $.create_sequence_statement,
-              $.create_trigger_statement,
-              $.grant_statement
+            seq($.if_not_exists, $._schema_target),
+            seq(
+              $._schema_target,
+              repeat(
+                choice(
+                  $.create_table_statement,
+                  $.create_view_statement,
+                  $.create_index_statement,
+                  $.create_sequence_statement,
+                  $.create_trigger_statement,
+                  $.grant_statement
+                )
+              )
             )
           )
         )
@@ -1557,10 +1624,10 @@ export default grammar({
               choice(
                 parens(commaSep($.table_func_column)),
                 seq(keyword('ENUM'), parens(commaSep($.string_literal))),
-                seq(keyword('RANGE'), parens(commaSep1($._reloption_elem)))
+                seq(keyword('RANGE'), parens(commaSep1($._def_elem)))
               )
             ),
-            parens(commaSep1($._reloption_elem))
+            parens(commaSep1($._def_elem))
           )
         )
       ),
@@ -1670,7 +1737,7 @@ export default grammar({
     _extension_member_object: ($) =>
       choice(
         seq(keywords('ACCESS METHOD'), $._identifier),
-        seq(keyword('AGGREGATE'), $.qualified_name, $._aggregate_signature),
+        seq(keyword('AGGREGATE'), alias($._func_qualified_name, $.qualified_name), $._aggregate_signature),
         seq(keyword('CAST'), parens(seq($.type_name, keyword('AS'), $.type_name))),
         seq(keyword('COLLATION'), $.qualified_name),
         seq(keyword('CONVERSION'), $.qualified_name),
@@ -1680,7 +1747,7 @@ export default grammar({
         seq(keywords('FOREIGN TABLE'), $.qualified_name),
         seq(
           choice(keyword('FUNCTION'), keyword('PROCEDURE'), keyword('ROUTINE')),
-          $.qualified_name,
+          alias($._func_qualified_name, $.qualified_name),
           optional($._routine_arg_types)
         ),
         seq(optional(keyword('MATERIALIZED')), keyword('VIEW'), $.qualified_name),
@@ -1705,6 +1772,38 @@ export default grammar({
         seq(keyword('TYPE'), $.qualified_name)
       ),
 
+    // LANGUAGE & LARGE OBJECT
+
+    create_language_statement: ($) =>
+      seq(
+        keyword('CREATE'),
+        optional(keywords('OR REPLACE')),
+        optional(keyword('TRUSTED')),
+        optional(keyword('PROCEDURAL')),
+        keyword('LANGUAGE'),
+        field('name', $._identifier),
+        optional(
+          seq(
+            keyword('HANDLER'),
+            $.qualified_name,
+            optional(seq(keyword('INLINE'), $.qualified_name)),
+            optional(choice(seq(keyword('VALIDATOR'), $.qualified_name), keywords('NO VALIDATOR')))
+          )
+        )
+      ),
+
+    alter_language_statement: ($) =>
+      seq(
+        keyword('ALTER'),
+        optional(keyword('PROCEDURAL')),
+        keyword('LANGUAGE'),
+        field('name', $._identifier),
+        choice(seq(keywords('RENAME TO'), $._identifier), seq(keywords('OWNER TO'), $._role_spec))
+      ),
+
+    alter_large_object_statement: ($) =>
+      seq(keywords('ALTER LARGE OBJECT'), $.numeric_literal, keywords('OWNER TO'), $._role_spec),
+
     // FUNCTION / PROCEDURE / ROUTINE
 
     create_function_statement: ($) =>
@@ -1712,25 +1811,24 @@ export default grammar({
         keyword('CREATE'),
         optional(keywords('OR REPLACE')),
         choice(keyword('FUNCTION'), keyword('PROCEDURE')),
-        field('name', $.qualified_name),
+        field('name', alias($._func_qualified_name, $.qualified_name)),
         parens(commaSep($.function_parameter)),
         optional(
-          seq(
-            keyword('RETURNS'),
-            choice(
-              seq(keyword('TABLE'), parens(commaSep1($.table_func_column))),
-              seq(optional(keyword('SETOF')), $.type_name)
-            )
-          )
+          seq(keyword('RETURNS'), choice(seq(keyword('TABLE'), parens(commaSep1($.table_func_column))), $._func_type))
         ),
         repeat($._routine_option),
         optional($.sql_function_body)
       ),
 
+    _arg_class: () => choice(keyword('IN'), keyword('OUT'), keyword('INOUT'), keyword('VARIADIC')),
+
     function_parameter: ($) =>
       seq(
-        optional(choice(keyword('IN'), keyword('OUT'), keyword('INOUT'), keyword('VARIADIC'))),
-        choice(seq(field('name', $._identifier), field('type', $.type_name)), field('type', $.type_name)),
+        choice(
+          seq($._arg_class, optional(field('name', $._func_identifier)), field('type', $._func_type)),
+          seq(field('name', $._func_identifier), optional($._arg_class), field('type', $._func_type)),
+          field('type', $._func_type)
+        ),
         optional(seq(choice(keyword('DEFAULT'), '='), $._expression))
       ),
 
@@ -1772,7 +1870,7 @@ export default grammar({
       seq(
         keyword('ALTER'),
         choice(keyword('FUNCTION'), keyword('PROCEDURE'), keyword('ROUTINE')),
-        $.qualified_name,
+        alias($._func_qualified_name, $.qualified_name),
         optional($._routine_arg_types),
         choice(
           seq(keywords('RENAME TO'), $._identifier),
@@ -1810,7 +1908,7 @@ export default grammar({
         optional(seq(keyword('WHEN'), parens($._expression))),
         keyword('EXECUTE'),
         choice(keyword('FUNCTION'), keyword('PROCEDURE')),
-        $.qualified_name,
+        alias($._func_qualified_name, $.qualified_name),
         parens(commaSep($._expression))
       ),
 
@@ -1836,18 +1934,18 @@ export default grammar({
         )
       ),
 
+    _event_trigger_filter: ($) => seq($._identifier, keyword('IN'), parens(commaSep1($.string_literal))),
+
     create_event_trigger_statement: ($) =>
       seq(
         keywords('CREATE EVENT TRIGGER'),
         field('name', $._identifier),
         keyword('ON'),
         $._identifier,
-        optional(
-          seq(keyword('WHEN'), commaSep1(seq($._identifier, keyword('IN'), parens(commaSep1($.string_literal)))))
-        ),
+        optional(seq(keyword('WHEN'), $._event_trigger_filter, repeat(seq(keyword('AND'), $._event_trigger_filter)))),
         keyword('EXECUTE'),
         choice(keyword('FUNCTION'), keyword('PROCEDURE')),
-        $.qualified_name,
+        alias($._func_qualified_name, $.qualified_name),
         seq('(', ')')
       ),
 
@@ -1931,9 +2029,12 @@ export default grammar({
       seq(
         keywords('CREATE PUBLICATION'),
         field('name', $._identifier),
-        optional(choice(keywords('FOR ALL TABLES'), seq(keyword('FOR'), commaSep1($._publication_obj_spec)))),
+        optional(choice(keywords('FOR ALL TABLES'), seq(keyword('FOR'), $._publication_obj_list))),
         optional($.storage_parameters)
       ),
+
+    _publication_obj_list: ($) =>
+      seq($._publication_obj_spec, repeat(seq(',', choice($._publication_obj_spec, $._publication_obj_cont)))),
 
     _publication_obj_spec: ($) =>
       choice(
@@ -1946,12 +2047,18 @@ export default grammar({
         seq(keywords('TABLES IN SCHEMA'), choice($._identifier, keyword('CURRENT_SCHEMA')))
       ),
 
+    _publication_obj_cont: ($) =>
+      choice(
+        seq($._relation_expr, optional($.column_list), optional(seq(keyword('WHERE'), parens($._expression)))),
+        keyword('CURRENT_SCHEMA')
+      ),
+
     alter_publication_statement: ($) =>
       seq(
         keywords('ALTER PUBLICATION'),
         $._identifier,
         choice(
-          seq(choice(keyword('ADD'), keyword('SET'), keyword('DROP')), commaSep1($._publication_obj_spec)),
+          seq(choice(keyword('ADD'), keyword('SET'), keyword('DROP')), $._publication_obj_list),
           seq(keyword('SET'), parens(commaSep1($._reloption_elem))),
           seq(keywords('OWNER TO'), $._role_spec),
           seq(keywords('RENAME TO'), $._identifier)
@@ -2097,23 +2204,29 @@ export default grammar({
         )
       ),
 
+    _alter_system_set: ($) => seq(keyword('SET'), $._generic_set),
+
     alter_system_statement: ($) =>
       seq(
         keywords('ALTER SYSTEM'),
-        choice($.set_statement, seq(keyword('RESET'), choice($.qualified_name, keyword('ALL'))))
+        choice(
+          alias($._alter_system_set, $.set_statement),
+          seq(keyword('RESET'), choice($.qualified_name, keyword('ALL')))
+        )
       ),
 
     // FOREIGN DATA WRAPPER / SERVER / FOREIGN TABLE / USER MAPPING / IMPORT FOREIGN SCHEMA
 
-    _foreign_options_clause: ($) =>
+    _create_generic_options: ($) => seq(keyword('OPTIONS'), parens(commaSep1(seq($._col_label, $.string_literal)))),
+
+    _alter_generic_options: ($) =>
       seq(
         keyword('OPTIONS'),
         parens(
           commaSep1(
-            seq(
-              optional(choice(keyword('ADD'), keyword('SET'), keyword('DROP'))),
-              $._col_label,
-              optional($.string_literal)
+            choice(
+              seq(optional(choice(keyword('ADD'), keyword('SET'))), $._col_label, $.string_literal),
+              seq(keyword('DROP'), $._col_label)
             )
           )
         )
@@ -2129,7 +2242,7 @@ export default grammar({
             keywords('NO HANDLER'),
             seq(keyword('VALIDATOR'), $.qualified_name),
             keywords('NO VALIDATOR'),
-            $._foreign_options_clause
+            $._create_generic_options
           )
         )
       ),
@@ -2147,7 +2260,7 @@ export default grammar({
               keywords('NO HANDLER'),
               seq(keyword('VALIDATOR'), $.qualified_name),
               keywords('NO VALIDATOR'),
-              $._foreign_options_clause
+              $._alter_generic_options
             )
           )
         )
@@ -2162,7 +2275,7 @@ export default grammar({
         optional(seq(keyword('VERSION'), $.string_literal)),
         keywords('FOREIGN DATA WRAPPER'),
         $._identifier,
-        optional($._foreign_options_clause)
+        optional($._create_generic_options)
       ),
 
     alter_server_statement: ($) =>
@@ -2172,7 +2285,8 @@ export default grammar({
         choice(
           seq(keywords('OWNER TO'), $._role_spec),
           seq(keywords('RENAME TO'), $._identifier),
-          seq(optional(seq(keyword('VERSION'), $.string_literal)), optional($._foreign_options_clause))
+          seq(keyword('VERSION'), $.string_literal, optional($._alter_generic_options)),
+          $._alter_generic_options
         )
       ),
 
@@ -2195,7 +2309,7 @@ export default grammar({
         ),
         keyword('SERVER'),
         $._identifier,
-        optional($._foreign_options_clause)
+        optional($._create_generic_options)
       ),
 
     create_user_mapping_statement: ($) =>
@@ -2206,7 +2320,7 @@ export default grammar({
         choice($._role_spec, keyword('USER')),
         keyword('SERVER'),
         $._identifier,
-        optional($._foreign_options_clause)
+        optional($._create_generic_options)
       ),
 
     alter_user_mapping_statement: ($) =>
@@ -2215,7 +2329,7 @@ export default grammar({
         choice($._role_spec, keyword('USER')),
         keyword('SERVER'),
         $._identifier,
-        $._foreign_options_clause
+        $._alter_generic_options
       ),
 
     import_foreign_schema_statement: ($) =>
@@ -2227,7 +2341,7 @@ export default grammar({
         $._identifier,
         keyword('INTO'),
         $._identifier,
-        optional($._foreign_options_clause)
+        optional($._create_generic_options)
       ),
 
     // AGGREGATE / OPERATOR / CAST / COLLATION / CONVERSION / TRANSFORM / ACCESS METHOD / TEXT SEARCH / STATISTICS
@@ -2241,10 +2355,13 @@ export default grammar({
         )
       ),
 
+    _aggr_arg_class: () => choice(keyword('IN'), keyword('VARIADIC')),
+
     _aggregate_arg: ($) =>
-      seq(
-        optional(choice(keyword('IN'), keyword('VARIADIC'))),
-        choice(seq(field('name', $._identifier), field('type', $.type_name)), field('type', $.type_name))
+      choice(
+        seq($._aggr_arg_class, optional(field('name', $._func_identifier)), field('type', $._func_type)),
+        seq(field('name', $._func_identifier), optional($._aggr_arg_class), field('type', $._func_type)),
+        field('type', $._func_type)
       ),
 
     create_aggregate_statement: ($) =>
@@ -2252,15 +2369,17 @@ export default grammar({
         keyword('CREATE'),
         optional(keywords('OR REPLACE')),
         keyword('AGGREGATE'),
-        field('name', $.qualified_name),
-        optional($._aggregate_signature),
-        parens(commaSep1(seq($._col_label, '=', $._def_arg)))
+        field('name', alias($._func_qualified_name, $.qualified_name)),
+        choice(
+          seq($._aggregate_signature, parens(commaSep1($._def_elem))),
+          parens(seq($._col_label, '=', $._def_arg, repeat(seq(',', $._def_elem))))
+        )
       ),
 
     alter_aggregate_statement: ($) =>
       seq(
         keywords('ALTER AGGREGATE'),
-        $.qualified_name,
+        alias($._func_qualified_name, $.qualified_name),
         $._aggregate_signature,
         choice(
           seq(keywords('RENAME TO'), $._identifier),
@@ -2269,10 +2388,7 @@ export default grammar({
         )
       ),
 
-    create_operator_statement: ($) =>
-      seq(keywords('CREATE OPERATOR'), $._any_operator, parens(commaSep1($._operator_def_elem))),
-
-    _operator_def_elem: ($) => seq($._col_label, '=', choice($._any_operator, $.type_name, keyword('NONE'))),
+    create_operator_statement: ($) => seq(keywords('CREATE OPERATOR'), $._any_operator, parens(commaSep1($._def_elem))),
 
     alter_operator_statement: ($) =>
       seq(
@@ -2282,7 +2398,7 @@ export default grammar({
         choice(
           seq(keywords('OWNER TO'), $._role_spec),
           seq(keywords('SET SCHEMA'), $._identifier),
-          seq(keyword('SET'), parens(commaSep1($._operator_def_elem)))
+          seq(keyword('SET'), parens(commaSep1($._def_elem)))
         )
       ),
 
@@ -2313,7 +2429,7 @@ export default grammar({
           keyword('FUNCTION'),
           $.numeric_literal,
           optional(parens(commaSep1($.type_name))),
-          $.qualified_name,
+          alias($._func_qualified_name, $.qualified_name),
           optional($._routine_arg_types)
         ),
         seq(keyword('STORAGE'), $.type_name)
@@ -2360,7 +2476,11 @@ export default grammar({
         keywords('CREATE CAST'),
         parens(seq($.type_name, keyword('AS'), $.type_name)),
         choice(
-          seq(keywords('WITH FUNCTION'), $.qualified_name, optional($._routine_arg_types)),
+          seq(
+            keywords('WITH FUNCTION'),
+            alias($._func_qualified_name, $.qualified_name),
+            optional($._routine_arg_types)
+          ),
           keywords('WITHOUT FUNCTION'),
           keywords('WITH INOUT')
         ),
@@ -2372,7 +2492,7 @@ export default grammar({
         keywords('CREATE COLLATION'),
         optional($.if_not_exists),
         $.qualified_name,
-        choice(seq(keyword('FROM'), $.qualified_name), parens(commaSep1($._reloption_elem)))
+        choice(seq(keyword('FROM'), $.qualified_name), parens(commaSep1($._def_elem)))
       ),
 
     alter_collation_statement: ($) =>
@@ -2423,8 +2543,16 @@ export default grammar({
         parens(
           commaSep1(
             choice(
-              seq(keywords('FROM SQL WITH FUNCTION'), $.qualified_name, optional($._routine_arg_types)),
-              seq(keywords('TO SQL WITH FUNCTION'), $.qualified_name, optional($._routine_arg_types))
+              seq(
+                keywords('FROM SQL WITH FUNCTION'),
+                alias($._func_qualified_name, $.qualified_name),
+                optional($._routine_arg_types)
+              ),
+              seq(
+                keywords('TO SQL WITH FUNCTION'),
+                alias($._func_qualified_name, $.qualified_name),
+                optional($._routine_arg_types)
+              )
             )
           )
         )
@@ -2445,7 +2573,7 @@ export default grammar({
         keywords('CREATE TEXT SEARCH'),
         choice(keyword('CONFIGURATION'), keyword('DICTIONARY'), keyword('PARSER'), keyword('TEMPLATE')),
         $.qualified_name,
-        parens(commaSep1($._reloption_elem))
+        parens(commaSep1($._def_elem))
       ),
 
     alter_text_search_statement: ($) =>
@@ -2474,7 +2602,7 @@ export default grammar({
             keyword('DICTIONARY'),
             $.qualified_name,
             choice(
-              parens(commaSep1($._reloption_elem)),
+              parens(commaSep1($._def_elem)),
               seq(keywords('RENAME TO'), $._identifier),
               seq(keywords('OWNER TO'), $._role_spec),
               seq(keywords('SET SCHEMA'), $._identifier)
@@ -2495,7 +2623,7 @@ export default grammar({
         optional($.qualified_name),
         optional(parens(commaSep1($._identifier))),
         keyword('ON'),
-        commaSep1(choice($._identifier, parens($._expression))),
+        commaSep1(choice($._identifier, $._func_expr_windowless, parens($._expression))),
         keyword('FROM'),
         $.qualified_name
       ),
@@ -2584,13 +2712,13 @@ export default grammar({
           seq(
             choice(keyword('FUNCTION'), keyword('PROCEDURE'), keyword('ROUTINE')),
             optional($.if_exists),
-            commaSep1(seq($.qualified_name, optional($._routine_arg_types))),
+            commaSep1(seq(alias($._func_qualified_name, $.qualified_name), optional($._routine_arg_types))),
             optional($._drop_behavior)
           ),
           seq(
             keyword('AGGREGATE'),
             optional($.if_exists),
-            commaSep1(seq($.qualified_name, $._aggregate_signature)),
+            commaSep1(seq(alias($._func_qualified_name, $.qualified_name), $._aggregate_signature)),
             optional($._drop_behavior)
           ),
           seq(
@@ -2711,10 +2839,10 @@ export default grammar({
         seq(keyword('CONSTRAINT'), $._identifier, keyword('ON'), optional(keyword('DOMAIN')), $.qualified_name),
         seq(
           choice(keyword('FUNCTION'), keyword('PROCEDURE'), keyword('ROUTINE')),
-          $.qualified_name,
+          alias($._func_qualified_name, $.qualified_name),
           optional($._routine_arg_types)
         ),
-        seq(keyword('AGGREGATE'), $.qualified_name, $._aggregate_signature),
+        seq(keyword('AGGREGATE'), alias($._func_qualified_name, $.qualified_name), $._aggregate_signature),
         seq(
           keyword('OPERATOR'),
           choice(
@@ -2731,6 +2859,19 @@ export default grammar({
 
     // GRANT / REVOKE / ALTER DEFAULT PRIVILEGES
 
+    _grantee: ($) => choice($._role_spec, seq(keyword('GROUP'), $._role_spec)),
+
+    _default_priv_target: () =>
+      choice(
+        keyword('TABLES'),
+        keyword('SEQUENCES'),
+        keyword('FUNCTIONS'),
+        keyword('ROUTINES'),
+        keyword('TYPES'),
+        keyword('SCHEMAS'),
+        keywords('LARGE OBJECTS')
+      ),
+
     grant_statement: ($) =>
       seq(
         keyword('GRANT'),
@@ -2740,7 +2881,7 @@ export default grammar({
             keyword('ON'),
             $._privilege_target,
             keyword('TO'),
-            commaSep1($._role_spec),
+            commaSep1($._grantee),
             optional(keywords('WITH GRANT OPTION')),
             optional(seq(keywords('GRANTED BY'), $._role_spec))
           ),
@@ -2779,7 +2920,7 @@ export default grammar({
             keyword('ON'),
             $._privilege_target,
             keyword('FROM'),
-            commaSep1($._role_spec),
+            commaSep1($._grantee),
             optional(seq(keywords('GRANTED BY'), $._role_spec)),
             optional($._drop_behavior)
           ),
@@ -2807,16 +2948,9 @@ export default grammar({
             keyword('GRANT'),
             $._privileges,
             keywords('ON'),
-            choice(
-              keyword('TABLES'),
-              keyword('SEQUENCES'),
-              keyword('FUNCTIONS'),
-              keyword('ROUTINES'),
-              keyword('TYPES'),
-              keyword('SCHEMAS')
-            ),
+            $._default_priv_target,
             keyword('TO'),
-            commaSep1($._role_spec),
+            commaSep1($._grantee),
             optional(keywords('WITH GRANT OPTION'))
           ),
           seq(
@@ -2824,16 +2958,9 @@ export default grammar({
             optional(keywords('GRANT OPTION FOR')),
             $._privileges,
             keywords('ON'),
-            choice(
-              keyword('TABLES'),
-              keyword('SEQUENCES'),
-              keyword('FUNCTIONS'),
-              keyword('ROUTINES'),
-              keyword('TYPES'),
-              keyword('SCHEMAS')
-            ),
+            $._default_priv_target,
             keyword('FROM'),
-            commaSep1($._role_spec),
+            commaSep1($._grantee),
             optional($._drop_behavior)
           )
         )
@@ -2886,7 +3013,7 @@ export default grammar({
         seq(choice(keyword('DOMAIN'), keyword('TYPE')), commaSep1($.qualified_name)),
         seq(
           choice(keyword('FUNCTION'), keyword('PROCEDURE'), keyword('ROUTINE')),
-          commaSep1(seq($.qualified_name, optional($._routine_arg_types)))
+          commaSep1(seq(alias($._func_qualified_name, $.qualified_name), optional($._routine_arg_types)))
         ),
         seq(keywords('LARGE OBJECT'), commaSep1($.numeric_literal)),
         seq(
@@ -2907,6 +3034,22 @@ export default grammar({
     // Session, Transactions, Maintenance & Utility Statements
     // =========================================================================
 
+    _var_value: ($) =>
+      choice(
+        $.boolean_literal,
+        keyword('ON'),
+        $.string_literal,
+        $.numeric_literal,
+        alias($._signed_numeric_literal, $.unary_expression),
+        $._non_reserved_word
+      ),
+
+    _generic_set: ($) =>
+      choice(
+        seq($.qualified_name, choice('=', keyword('TO')), choice(keyword('DEFAULT'), commaSep1($._var_value))),
+        seq($.qualified_name, keywords('FROM CURRENT'))
+      ),
+
     set_statement: ($) =>
       seq(
         keyword('SET'),
@@ -2916,7 +3059,7 @@ export default grammar({
           seq(keywords('TRANSACTION SNAPSHOT'), $.string_literal),
           seq(
             choice(keyword('TRANSACTION'), keywords('SESSION CHARACTERISTICS AS TRANSACTION')),
-            commaSep1($._transaction_mode)
+            $._transaction_mode_list
           ),
           seq(
             keywords('CONSTRAINTS'),
@@ -2924,13 +3067,11 @@ export default grammar({
             choice(keyword('DEFERRED'), keyword('IMMEDIATE'))
           ),
           seq(keywords('SESSION AUTHORIZATION'), choice($._role_spec, $.string_literal, keyword('DEFAULT'))),
-          seq(keyword('ROLE'), choice($._role_spec, $.string_literal)),
-          seq(
-            $.qualified_name,
-            choice('=', keyword('TO')),
-            choice(keyword('DEFAULT'), commaSep1(choice($._expression, keyword('ON'), keyword('OFF'))))
-          ),
-          seq($.qualified_name, keywords('FROM CURRENT'))
+          seq(keyword('ROLE'), choice($._role_spec, $.string_literal, keyword('NONE'))),
+          seq(keyword('NAMES'), optional(choice($.string_literal, keyword('DEFAULT')))),
+          seq(keyword('SCHEMA'), $.string_literal),
+          seq(keywords('XML OPTION'), choice(keyword('DOCUMENT'), keyword('CONTENT'))),
+          $._generic_set
         )
       ),
 
@@ -2959,13 +3100,15 @@ export default grammar({
         )
       ),
 
+    _transaction_mode_list: ($) => seq($._transaction_mode, repeat(seq(optional(','), $._transaction_mode))),
+
     begin_statement: ($) =>
       seq(
         choice(
           seq(keyword('BEGIN'), optional(choice(keyword('WORK'), keyword('TRANSACTION')))),
           keywords('START TRANSACTION')
         ),
-        commaSep($._transaction_mode)
+        optional($._transaction_mode_list)
       ),
 
     _transaction_mode: () =>
@@ -3072,8 +3215,21 @@ export default grammar({
     cluster_statement: ($) =>
       seq(
         keyword('CLUSTER'),
-        optional(choice(parens(commaSep1($._utility_option)), keyword('VERBOSE'))),
-        optional(seq($.qualified_name, optional(seq(keyword('USING'), $._identifier))))
+        choice(
+          seq(
+            parens(commaSep1($._utility_option)),
+            optional(seq($.qualified_name, optional(seq(keyword('USING'), $._identifier))))
+          ),
+          seq(
+            optional(keyword('VERBOSE')),
+            optional(
+              choice(
+                seq($.qualified_name, optional(seq(keyword('USING'), $._identifier))),
+                seq($._identifier, keyword('ON'), $.qualified_name)
+              )
+            )
+          )
+        )
       ),
 
     reindex_statement: ($) =>
@@ -3098,6 +3254,7 @@ export default grammar({
         ),
         choice(keyword('FROM'), keyword('TO')),
         choice(seq(optional(keyword('PROGRAM')), $.string_literal), keyword('STDIN'), keyword('STDOUT')),
+        optional(seq(optional(keyword('USING')), keyword('DELIMITERS'), $.string_literal)),
         optional(keyword('WITH')),
         optional(
           choice(
@@ -3215,6 +3372,15 @@ export default grammar({
     // Types (`type_name`)
     // =========================================================================
 
+    _func_type: ($) =>
+      choice(
+        seq(optional(keyword('SETOF')), $.type_name),
+        seq(optional(keyword('SETOF')), alias($._percent_type, $.type_name))
+      ),
+
+    _percent_type: ($) =>
+      seq(choice($._column_identifier, $._func_identifier), repeat1(seq('.', $._col_label)), '%', keyword('TYPE')),
+
     type_name: ($) =>
       prec.right(
         PREC.POSTFIX + 1,
@@ -3296,11 +3462,45 @@ export default grammar({
     // Expressions
     // =========================================================================
 
-    _expression: ($) =>
+    _expression: ($) => choice($._is_expr, $.unary_expression, $.binary_expression),
+
+    _is_expr: ($) => choice($._cmp_expr, $.is_expression),
+
+    _cmp_expr: ($) =>
+      choice($._pattern_expr, alias($._cmp_binary_expression, $.binary_expression), $.quantified_comparison_expression),
+
+    _pattern_expr: ($) =>
+      choice($._tight_expr, $.between_expression, $.in_expression, $.like_expression, $.overlaps_expression),
+
+    _tight_expr: ($) =>
+      choice(
+        $._primary_expr,
+        alias($._typecast_expression, $.cast_expression),
+        $.at_time_zone_expression,
+        $.collate_expression,
+        alias($._tight_unary_expression, $.unary_expression),
+        alias($._tight_binary_expression, $.binary_expression),
+        alias($._tight_quantified_expression, $.quantified_comparison_expression)
+      ),
+
+    _b_expr: ($) => choice($._b_cmp_expr, alias($._b_is_expression, $.is_expression)),
+
+    _b_cmp_expr: ($) => choice($._b_arith_expr, alias($._b_cmp_binary_expression, $.binary_expression)),
+
+    _b_arith_expr: ($) =>
+      choice(
+        $._primary_expr,
+        alias($._b_typecast_expression, $.cast_expression),
+        alias($._b_unary_expression, $.unary_expression),
+        alias($._b_arith_binary_expression, $.binary_expression)
+      ),
+
+    _primary_expr: ($) =>
       choice(
         $._term,
         $.typed_literal,
         $.column_reference,
+        prec(-1, $.table_columns),
         $.positional_parameter,
         $.parenthesized_expression,
         $.row_expression,
@@ -3316,20 +3516,27 @@ export default grammar({
         $.position_expression,
         $.overlay_expression,
         $.normalize_expression,
+        $.collation_for_expression,
         $.json_expression,
         $.xml_expression,
         $.field_selection,
-        $.subscript_expression,
-        $.at_time_zone_expression,
-        $.collate_expression,
-        $.unary_expression,
-        $.binary_expression,
-        $.quantified_comparison_expression,
-        $.between_expression,
-        $.in_expression,
-        $.like_expression,
-        $.overlaps_expression,
-        $.is_expression
+        $.subscript_expression
+      ),
+
+    _func_expr_windowless: ($) =>
+      choice(
+        alias($._windowless_function_call, $.function_call),
+        $.current_value,
+        $.cast_expression,
+        $.extract_expression,
+        $.substring_expression,
+        $.trim_expression,
+        $.position_expression,
+        $.overlay_expression,
+        $.normalize_expression,
+        $.collation_for_expression,
+        alias($._windowless_json_expression, $.json_expression),
+        $.xml_expression
       ),
 
     _term: ($) =>
@@ -3396,32 +3603,38 @@ export default grammar({
     _three_part_column_reference: ($) =>
       seq(field('schema', $._column_identifier), '.', field('table', $._col_label), '.', field('name', $._col_label)),
 
+    _selectable_atom: ($) =>
+      choice(
+        $.positional_parameter,
+        $.parenthesized_expression,
+        $.subscript_expression,
+        alias($._three_part_column_reference, $.column_reference),
+        alias($._attr_selection, $.field_selection)
+      ),
+
+    _indirection_atom: ($) =>
+      choice(
+        $.column_reference,
+        $.positional_parameter,
+        $.parenthesized_expression,
+        $.subscript_expression,
+        alias($._attr_selection, $.field_selection)
+      ),
+
+    _attr_selection: ($) =>
+      prec.left(PREC.POSTFIX, seq(field('value', $._selectable_atom), '.', field('field', $._col_label))),
+
     field_selection: ($) =>
-      prec.left(
-        PREC.POSTFIX,
-        seq(
-          field(
-            'value',
-            choice(
-              $.parenthesized_expression,
-              $.function_call,
-              $.subscript_expression,
-              $.cast_expression,
-              $.row_expression,
-              $.field_selection,
-              alias($._three_part_column_reference, $.column_reference)
-            )
-          ),
-          '.',
-          field('field', choice($._col_label, alias('*', $.all_columns)))
-        )
+      choice(
+        $._attr_selection,
+        prec.left(PREC.POSTFIX, seq(field('value', $._selectable_atom), '.', field('field', alias('*', $.all_columns))))
       ),
 
     subscript_expression: ($) =>
       prec.left(
         PREC.POSTFIX,
         seq(
-          field('value', $._expression),
+          field('value', $._indirection_atom),
           '[',
           choice(
             field('index', $._expression),
@@ -3450,26 +3663,38 @@ export default grammar({
 
     // Function calls & special SQL functions
 
-    function_call: ($) =>
-      choice(
-        seq(
-          field('name', choice($._func_name, alias($._col_name_function_keyword, $.identifier))),
-          parens(
-            optional(
-              choice(
-                alias('*', $.all_columns),
-                seq(
-                  optional(choice(keyword('DISTINCT'), keyword('ALL'))),
-                  commaSep1($.function_argument),
-                  optional($.order_by_clause)
-                )
+    _function_call_head: ($) =>
+      seq(
+        field('name', choice($._func_name, alias($._col_name_function_keyword, $.identifier))),
+        parens(
+          optional(
+            choice(
+              alias('*', $.all_columns),
+              seq(
+                optional(choice(keyword('DISTINCT'), keyword('ALL'))),
+                commaSep1($.function_argument),
+                optional($.order_by_clause)
               )
             )
-          ),
-          optional($.within_group_clause),
-          optional($.filter_clause),
-          optional($.over_clause)
+          )
         ),
+        optional($.within_group_clause),
+        optional($.filter_clause)
+      ),
+
+    _windowless_function_call: ($) =>
+      choice(
+        $._function_call_head,
+        seq(
+          field('name', alias(keyword('NULLIF'), $.identifier)),
+          parens(seq($.function_argument, ',', $.function_argument))
+        ),
+        seq(field('name', alias(keyword('MERGE_ACTION'), $.identifier)), seq('(', ')'))
+      ),
+
+    function_call: ($) =>
+      choice(
+        seq($._function_call_head, optional($.over_clause)),
         seq(
           field('name', alias(keyword('NULLIF'), $.identifier)),
           parens(seq($.function_argument, ',', $.function_argument))
@@ -3504,13 +3729,16 @@ export default grammar({
       seq(keyword('OVER'), choice(parens(optional($.window_definition)), field('window', $._identifier))),
 
     cast_expression: ($) =>
-      choice(
-        seq(
-          choice(keyword('CAST'), keyword('TREAT')),
-          parens(seq(field('value', $._expression), keyword('AS'), field('type', $.type_name)))
-        ),
-        prec.left(PREC.POSTFIX, seq(field('value', $._expression), '::', field('type', $.type_name)))
+      seq(
+        choice(keyword('CAST'), keyword('TREAT')),
+        parens(seq(field('value', $._expression), keyword('AS'), field('type', $.type_name)))
       ),
+
+    _typecast_expression: ($) =>
+      prec.left(PREC.POSTFIX, seq(field('value', $._tight_expr), '::', field('type', $.type_name))),
+
+    _b_typecast_expression: ($) =>
+      prec.left(PREC.POSTFIX, seq(field('value', $._b_arith_expr), '::', field('type', $.type_name))),
 
     case_expression: ($) =>
       seq(
@@ -3548,6 +3776,16 @@ export default grammar({
                 seq(keyword('FOR'), field('for', $._expression))
               )
             ),
+            prec(
+              PREC.PATTERN,
+              seq(
+                field('source', $._tight_expr),
+                keyword('SIMILAR'),
+                field('pattern', $._expression),
+                keyword('ESCAPE'),
+                field('escape', $._expression)
+              )
+            ),
             commaSep1($.function_argument)
           )
         )
@@ -3565,12 +3803,7 @@ export default grammar({
       ),
 
     position_expression: ($) =>
-      seq(
-        keyword('POSITION'),
-        parens(
-          seq(prec(PREC.ESCAPE, seq(field('substring', $._expression), keyword('IN'))), field('source', $._expression))
-        )
-      ),
+      seq(keyword('POSITION'), parens(seq(field('substring', $._b_expr), keyword('IN'), field('source', $._b_expr)))),
 
     overlay_expression: ($) =>
       seq(
@@ -3601,9 +3834,43 @@ export default grammar({
         )
       ),
 
+    collation_for_expression: ($) => seq(keywords('COLLATION FOR'), parens($._expression)),
+
     // SQL/JSON & XML
 
-    json_expression: ($) =>
+    _json_objectagg_head: ($) =>
+      seq(
+        keyword('JSON_OBJECTAGG'),
+        parens(
+          seq(
+            $._expression,
+            choice(':', keyword('VALUE')),
+            $._expression,
+            optional($._json_format),
+            optional($._json_null_clause),
+            optional($._json_unique_keys),
+            optional($._json_returning)
+          )
+        ),
+        optional($.filter_clause)
+      ),
+
+    _json_arrayagg_head: ($) =>
+      seq(
+        keyword('JSON_ARRAYAGG'),
+        parens(
+          seq(
+            $._expression,
+            optional($._json_format),
+            optional($.order_by_clause),
+            optional($._json_null_clause),
+            optional($._json_returning)
+          )
+        ),
+        optional($.filter_clause)
+      ),
+
+    _json_scalar_or_query_expression: ($) =>
       choice(
         seq(
           keyword('JSON_OBJECT'),
@@ -3642,36 +3909,6 @@ export default grammar({
           )
         ),
         seq(
-          keyword('JSON_OBJECTAGG'),
-          parens(
-            seq(
-              $._expression,
-              choice(':', keyword('VALUE')),
-              $._expression,
-              optional($._json_format),
-              optional($._json_null_clause),
-              optional($._json_unique_keys),
-              optional($._json_returning)
-            )
-          ),
-          optional($.filter_clause),
-          optional($.over_clause)
-        ),
-        seq(
-          keyword('JSON_ARRAYAGG'),
-          parens(
-            seq(
-              $._expression,
-              optional($._json_format),
-              optional($.order_by_clause),
-              optional($._json_null_clause),
-              optional($._json_returning)
-            )
-          ),
-          optional($.filter_clause),
-          optional($.over_clause)
-        ),
-        seq(
           choice(keyword('JSON'), keyword('JSON_SCALAR'), keyword('JSON_SERIALIZE')),
           parens(
             seq($._expression, optional($._json_format), optional($._json_unique_keys), optional($._json_returning))
@@ -3690,6 +3927,16 @@ export default grammar({
             )
           )
         )
+      ),
+
+    _windowless_json_expression: ($) =>
+      choice($._json_scalar_or_query_expression, $._json_objectagg_head, $._json_arrayagg_head),
+
+    json_expression: ($) =>
+      choice(
+        $._json_scalar_or_query_expression,
+        seq($._json_objectagg_head, optional($.over_clause)),
+        seq($._json_arrayagg_head, optional($.over_clause))
       ),
 
     _json_format: ($) => seq(keywords('FORMAT JSON'), optional(seq(keyword('ENCODING'), $._identifier))),
@@ -3820,8 +4067,10 @@ export default grammar({
     xml_attributes: ($) =>
       seq(keyword('XMLATTRIBUTES'), parens(commaSep1(seq($._expression, optional(seq(keyword('AS'), $._col_label)))))),
 
+    _xml_passing_mech: () => choice(keywords('BY REF'), keywords('BY VALUE')),
+
     _xml_passing: ($) =>
-      seq(keyword('PASSING'), optional(keywords('BY VALUE')), $._expression, optional(keywords('BY VALUE'))),
+      seq(keyword('PASSING'), optional($._xml_passing_mech), $._expression, optional($._xml_passing_mech)),
 
     xmltable_expression: ($) =>
       seq(
@@ -3857,8 +4106,8 @@ export default grammar({
           $.type_name,
           repeat(
             choice(
-              prec.left(PREC.ESCAPE, seq(keyword('PATH'), $._expression)),
-              prec.left(PREC.ESCAPE, seq(keyword('DEFAULT'), $._expression)),
+              seq(keyword('PATH'), $._b_expr),
+              seq(keyword('DEFAULT'), $._b_expr),
               keyword('NULL'),
               keywords('NOT NULL')
             )
@@ -3872,21 +4121,32 @@ export default grammar({
       prec.left(
         PREC.AT,
         seq(
-          field('value', $._expression),
-          choice(seq(keywords('AT TIME ZONE'), field('zone', $._expression)), keywords('AT LOCAL'))
+          field('value', $._tight_expr),
+          choice(seq(keywords('AT TIME ZONE'), field('zone', $._tight_expr)), keywords('AT LOCAL'))
         )
       ),
 
     collate_expression: ($) =>
-      prec.left(PREC.AT, seq(field('value', $._expression), keyword('COLLATE'), field('collation', $.qualified_name))),
+      prec.left(PREC.AT, seq(field('value', $._tight_expr), keyword('COLLATE'), field('collation', $.qualified_name))),
 
     unary_expression: ($) =>
+      prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', $._expression))),
+
+    _tight_unary_expression: ($) =>
       choice(
-        prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', $._expression))),
-        prec.right(PREC.UNARY, seq(field('operator', choice('+', '-')), field('operand', $._expression))),
+        prec.right(PREC.UNARY, seq(field('operator', choice('+', '-')), field('operand', $._tight_expr))),
         prec.right(
           PREC.OP,
-          seq(field('operator', choice($.custom_operator, $.operator_invocation)), field('operand', $._expression))
+          seq(field('operator', choice($.custom_operator, $.operator_invocation)), field('operand', $._tight_expr))
+        )
+      ),
+
+    _b_unary_expression: ($) =>
+      choice(
+        prec.right(PREC.UNARY, seq(field('operator', choice('+', '-')), field('operand', $._b_arith_expr))),
+        prec.right(
+          PREC.OP,
+          seq(field('operator', choice($.custom_operator, $.operator_invocation)), field('operand', $._b_arith_expr))
         )
       ),
 
@@ -3897,34 +4157,62 @@ export default grammar({
 
     _all_op: ($) => choice('+', '-', '*', '/', '%', '^', '<', '>', '=', '<=', '>=', '<>', '!=', $.custom_operator),
 
+    _cmp_operator: () => choice('=', '<>', '!=', '<', '<=', '>', '>='),
+
     binary_expression: ($) =>
-      choice(
-        binaryOp($, PREC.OR, keyword('OR')),
-        binaryOp($, PREC.AND, keyword('AND')),
-        binaryOp($, PREC.COMPARISON, choice('=', '<>', '!=', '<', '<=', '>', '>=')),
-        binaryOp($, PREC.OP, choice($.custom_operator, $.operator_invocation)),
-        binaryOp($, PREC.ADDITIVE, choice('+', '-')),
-        binaryOp($, PREC.MULTIPLICATIVE, choice('*', '/', '%')),
-        binaryOp($, PREC.EXPONENT, '^')
+      choice(leftBinary($._expression, PREC.OR, keyword('OR')), leftBinary($._expression, PREC.AND, keyword('AND'))),
+
+    _cmp_binary_expression: ($) =>
+      prec.left(
+        PREC.COMPARISON,
+        seq(field('left', $._pattern_expr), field('operator', $._cmp_operator), field('right', $._pattern_expr))
       ),
 
-    quantified_comparison_expression: ($) => {
+    _tight_binary_expression: ($) =>
+      choice(
+        leftBinary($._tight_expr, PREC.OP, choice($.custom_operator, $.operator_invocation)),
+        leftBinary($._tight_expr, PREC.ADDITIVE, choice('+', '-')),
+        leftBinary($._tight_expr, PREC.MULTIPLICATIVE, choice('*', '/', '%')),
+        leftBinary($._tight_expr, PREC.EXPONENT, '^')
+      ),
+
+    _b_arith_binary_expression: ($) =>
+      choice(
+        leftBinary($._b_arith_expr, PREC.OP, choice($.custom_operator, $.operator_invocation)),
+        leftBinary($._b_arith_expr, PREC.ADDITIVE, choice('+', '-')),
+        leftBinary($._b_arith_expr, PREC.MULTIPLICATIVE, choice('*', '/', '%')),
+        leftBinary($._b_arith_expr, PREC.EXPONENT, '^')
+      ),
+
+    _b_cmp_binary_expression: ($) =>
+      prec.left(
+        PREC.COMPARISON,
+        seq(field('left', $._b_arith_expr), field('operator', $._cmp_operator), field('right', $._b_arith_expr))
+      ),
+
+    _quantifier_tail: ($) =>
+      seq(
+        field('quantifier', choice(keyword('ANY'), keyword('SOME'), keyword('ALL'))),
+        parens(choice($.select_statement, $._expression))
+      ),
+
+    quantified_comparison_expression: ($) =>
+      prec.left(
+        PREC.COMPARISON,
+        seq(field('left', $._pattern_expr), field('operator', $._cmp_operator), $._quantifier_tail)
+      ),
+
+    _tight_quantified_expression: ($) => {
       /** @type {[number, RuleOrLiteral][]} */
       const operators = [
-        [PREC.COMPARISON, choice('=', '<>', '!=', '<', '<=', '>', '>=')],
         [PREC.OP, choice($.custom_operator, $.operator_invocation)],
+        [PREC.ADDITIVE, choice('+', '-')],
+        [PREC.MULTIPLICATIVE, choice('*', '/', '%')],
+        [PREC.EXPONENT, '^'],
       ];
       return choice(
         ...operators.map(([precedence, operator]) =>
-          prec.left(
-            precedence,
-            seq(
-              field('left', $._expression),
-              field('operator', operator),
-              field('quantifier', choice(keyword('ANY'), keyword('SOME'), keyword('ALL'))),
-              parens(choice($.select_statement, $._expression))
-            )
-          )
+          prec.left(precedence, seq(field('left', $._tight_expr), field('operator', operator), $._quantifier_tail))
         )
       );
     },
@@ -3933,13 +4221,13 @@ export default grammar({
       prec.left(
         PREC.PATTERN,
         seq(
-          field('value', $._expression),
+          field('value', $._tight_expr),
           optional(keyword('NOT')),
           keyword('BETWEEN'),
           optional(choice(keyword('SYMMETRIC'), keyword('ASYMMETRIC'))),
-          field('low', $._expression),
+          field('low', $._b_expr),
           keyword('AND'),
-          field('high', $._expression)
+          field('high', $._tight_expr)
         )
       ),
 
@@ -3947,7 +4235,7 @@ export default grammar({
       prec.left(
         PREC.PATTERN,
         seq(
-          field('value', $._expression),
+          field('value', $._tight_expr),
           optional(keyword('NOT')),
           keyword('IN'),
           parens(choice($.select_statement, commaSep1($._expression)))
@@ -3955,29 +4243,23 @@ export default grammar({
       ),
 
     like_expression: ($) =>
-      choice(
-        prec.left(PREC.PATTERN, seq($._like_head, field('right', $._like_rhs))),
-        seq(
-          $._like_head,
-          prec(PREC.ESCAPE, seq(field('right', $._like_rhs), keyword('ESCAPE'))),
-          prec.left(PREC.PATTERN, field('escape', $._expression))
-        )
-      ),
-
-    _like_head: ($) =>
       prec.left(
         PREC.PATTERN,
-        seq(
-          field('left', $._expression),
-          optional(keyword('NOT')),
-          field('operator', choice(keyword('LIKE'), keyword('ILIKE'), keywords('SIMILAR TO')))
+        choice(
+          seq(
+            field('left', $._tight_expr),
+            optional(keyword('NOT')),
+            field('operator', choice(keyword('LIKE'), keyword('ILIKE'), keywords('SIMILAR TO'))),
+            field('right', $._tight_expr),
+            optional(seq(keyword('ESCAPE'), field('escape', $._tight_expr)))
+          ),
+          seq(
+            field('left', $._tight_expr),
+            optional(keyword('NOT')),
+            field('operator', choice(keyword('LIKE'), keyword('ILIKE'))),
+            $._quantifier_tail
+          )
         )
-      ),
-
-    _like_rhs: ($) =>
-      choice(
-        $._expression,
-        seq(choice(keyword('ANY'), keyword('SOME'), keyword('ALL')), parens(choice($.select_statement, $._expression)))
       ),
 
     overlaps_expression: ($) =>
@@ -3990,16 +4272,16 @@ export default grammar({
       prec.left(
         PREC.IS,
         choice(
-          seq(field('value', $._expression), choice(keyword('ISNULL'), keyword('NOTNULL'))),
+          seq(field('value', $._cmp_expr), choice(keyword('ISNULL'), keyword('NOTNULL'))),
           seq(
-            field('value', $._expression),
+            field('value', $._cmp_expr),
             keyword('IS'),
             optional(keyword('NOT')),
             choice(
               $.null,
               $.boolean_literal,
               keyword('UNKNOWN'),
-              seq(keywords('DISTINCT FROM'), field('right', $._expression)),
+              seq(keywords('DISTINCT FROM'), field('right', $._cmp_expr)),
               keyword('DOCUMENT'),
               seq(
                 optional(choice(keyword('NFC'), keyword('NFD'), keyword('NFKC'), keyword('NFKD'))),
@@ -4015,9 +4297,43 @@ export default grammar({
         )
       ),
 
+    _b_is_expression: ($) =>
+      prec.left(
+        PREC.IS,
+        seq(
+          field('value', $._b_cmp_expr),
+          keyword('IS'),
+          optional(keyword('NOT')),
+          choice(seq(keywords('DISTINCT FROM'), field('right', $._b_cmp_expr)), keyword('DOCUMENT'))
+        )
+      ),
+
     // =========================================================================
     // Identifiers & Literals
     // =========================================================================
+
+    _func_qualified_name: ($) =>
+      choice(
+        field('name', choice($._func_identifier, $._illegal)),
+        seq(field('schema', $._column_identifier), '.', field('name', $._col_label)),
+        seq(
+          field('catalog', $._column_identifier),
+          '.',
+          field('schema', $._col_label),
+          '.',
+          field('name', $._col_label)
+        )
+      ),
+
+    _non_reserved_word: ($) =>
+      choice(
+        $.identifier,
+        $.quoted_identifier,
+        ...[...COL_NAME_KEYWORDS, ...TYPE_FUNC_NAME_KEYWORDS, ...UNRESERVED_STARTER_KEYWORDS].map((word) =>
+          prec(-1, alias(keyword(word), $.identifier))
+        ),
+        $._illegal
+      ),
 
     qualified_name: ($) =>
       choice(

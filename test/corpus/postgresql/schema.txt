@@ -438,13 +438,15 @@ CREATE SCHEMA, TYPE, DOMAIN, and EXTENSION
 :language(postgresql)
 ================================================================================
 
-CREATE SCHEMA IF NOT EXISTS app AUTHORIZATION CURRENT_USER CREATE TABLE items (id INT PRIMARY KEY); CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy'); CREATE TYPE pair AS (k TEXT, v INT); CREATE TYPE floatrange AS RANGE (subtype = float8); ALTER TYPE mood ADD VALUE IF NOT EXISTS 'ecstatic' AFTER 'happy'; CREATE DOMAIN posint AS INT DEFAULT 1 CONSTRAINT pos CHECK (VALUE > 0); ALTER DOMAIN posint VALIDATE CONSTRAINT pos; CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public VERSION '1.3' CASCADE;
+CREATE SCHEMA IF NOT EXISTS app_empty AUTHORIZATION CURRENT_USER; CREATE SCHEMA app AUTHORIZATION CURRENT_USER CREATE TABLE items (id INT PRIMARY KEY); CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy'); CREATE TYPE pair AS (k TEXT, v INT); CREATE TYPE floatrange AS RANGE (subtype = float8); ALTER TYPE mood ADD VALUE IF NOT EXISTS 'ecstatic' AFTER 'happy'; CREATE DOMAIN posint AS INT DEFAULT 1 CONSTRAINT pos CHECK (VALUE > 0); ALTER DOMAIN posint VALIDATE CONSTRAINT pos; CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public VERSION '1.3' CASCADE;
 
 --------------------------------------------------------------------------------
 
 (source_file
   (create_schema_statement
     (if_not_exists)
+    (identifier))
+  (create_schema_statement
     (identifier)
     (create_table_statement
       (qualified_name
@@ -529,10 +531,8 @@ CREATE OR REPLACE FUNCTION add_tax(amount NUMERIC, rate NUMERIC DEFAULT 0.1) RET
     (set_statement
       (qualified_name
         (identifier))
-      (column_reference
-        (identifier))
-      (column_reference
-        (identifier)))
+      (identifier)
+      (identifier))
     (string_literal))
   (create_function_statement
     (qualified_name
@@ -798,3 +798,233 @@ CREATE OR REPLACE AGGREGATE array_accum (anycompatible) (sfunc = array_append, s
       (type_name))
     (function_parameter
       (type_name))))
+
+================================================================================
+Routine parameter modes, %TYPE, func_name keywords, definitions, and languages
+:language(postgresql)
+================================================================================
+
+CREATE FUNCTION left(blkno OUT bigint, a IN t.c%TYPE, b INOUT int, c VARIADIC int[]) RETURNS SETOF s.t.c%TYPE LANGUAGE c AS 'a'; CREATE FUNCTION s.coalesce(int) RETURNS int LANGUAGE sql RETURN $1; CREATE OPERATOR <-> (LEFTARG = int2, RIGHTARG = int2, PROCEDURE = int2_dist, COMMUTATOR = '<->', HASHES, MERGES); ALTER OPERATOR = (ltree, ltree) SET (HASHES); CREATE AGGREGATE left(x IN int) (SFUNC = f, STYPE = int, FINALFUNC_EXTRA); CREATE OR REPLACE TRUSTED PROCEDURAL LANGUAGE plperl HANDLER h INLINE i VALIDATOR v; ALTER PROCEDURAL LANGUAGE plperl OWNER TO CURRENT_USER; ALTER LARGE OBJECT 42 OWNER TO CURRENT_USER;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (identifier)
+      (type_name))
+    (function_parameter
+      (identifier)
+      (type_name
+        (identifier)
+        (identifier)))
+    (function_parameter
+      (identifier)
+      (type_name))
+    (function_parameter
+      (identifier)
+      (type_name))
+    (type_name
+      (identifier)
+      (identifier)
+      (identifier))
+    (identifier)
+    (string_literal))
+  (create_function_statement
+    (qualified_name
+      (identifier)
+      (identifier))
+    (function_parameter
+      (type_name))
+    (type_name)
+    (identifier)
+    (sql_function_body
+      (positional_parameter)))
+  (create_operator_statement
+    (custom_operator)
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (string_literal)
+    (identifier)
+    (identifier))
+  (alter_operator_statement
+    (type_name
+      (identifier))
+    (type_name
+      (identifier))
+    (identifier))
+  (create_aggregate_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (type_name)
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name)
+    (identifier))
+  (create_language_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (alter_language_statement
+    (identifier))
+  (alter_large_object_statement
+    (numeric_literal)))
+
+================================================================================
+Views, materialized views, column storage, tablespaces, publications, event triggers, and statistics
+:language(postgresql)
+================================================================================
+
+CREATE OR REPLACE TEMP RECURSIVE VIEW v_rec (n) AS SELECT 1; CREATE UNLOGGED MATERIALIZED VIEW IF NOT EXISTS mv_u USING heap WITH (fillfactor = 80) TABLESPACE pg_default AS SELECT 1 WITH NO DATA; ALTER MATERIALIZED VIEW mv_u SET (fillfactor = 70), CLUSTER ON mv_idx; ALTER TABLE ALL IN TABLESPACE ts_a OWNED BY CURRENT_USER SET TABLESPACE ts_b NOWAIT; ALTER TABLE accounts ALTER COLUMN ratio SET STATISTICS DEFAULT; CREATE TABLE col_opts (c TEXT STORAGE MAIN COMPRESSION lz4 DEFAULT 'x' COLLATE "C" NOT NULL, r INT REFERENCES accounts MATCH SIMPLE ON UPDATE NO ACTION ON DELETE CASCADE); CREATE PUBLICATION pub2 FOR TABLE a (c1) WHERE (c1 > 0), b, TABLES IN SCHEMA s1, s2; ALTER PUBLICATION pub2 ADD TABLE a, b; CREATE EVENT TRIGGER evt2 ON ddl_command_end WHEN TAG IN ('CREATE TABLE') AND TAG IN ('DROP TABLE') EXECUTE FUNCTION left(); CREATE INDEX ON accounts (cast(id AS text), current_date, collation for (code)); CREATE STATISTICS st2 ON lower(code), coalesce(code, 'a'), id FROM accounts; ALTER SERVER srv_remote VERSION '2' OPTIONS (host 'db3', SET port '5433', DROP debug);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_view_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (create_view_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (storage_parameters
+      (identifier)
+      (numeric_literal))
+    (identifier)
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (alter_view_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (numeric_literal)
+    (identifier))
+  (alter_table_statement
+    (identifier)
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier))
+      (identifier)
+      (identifier)
+      (default_constraint
+        (string_literal))
+      (collate_clause
+        (qualified_name
+          (quoted_identifier)))
+      (not_null_constraint))
+    (column_definition
+      (identifier)
+      (type_name)
+      (foreign_key_clause
+        (qualified_name
+          (identifier))
+        (foreign_key_match)
+        (foreign_key_action)
+        (foreign_key_action))))
+  (create_publication_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier))
+    (binary_expression
+      (column_reference
+        (identifier))
+      (numeric_literal))
+    (qualified_name
+      (identifier))
+    (identifier)
+    (qualified_name
+      (identifier)))
+  (alter_publication_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (create_event_trigger_statement
+    (identifier)
+    (identifier)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (qualified_name
+      (identifier)))
+  (create_index_statement
+    (qualified_name
+      (identifier))
+    (index_element
+      (cast_expression
+        (column_reference
+          (identifier))
+        (type_name
+          (identifier))))
+    (index_element
+      (current_value))
+    (index_element
+      (collation_for_expression
+        (column_reference
+          (identifier)))))
+  (create_statistics_statement
+    (qualified_name
+      (identifier))
+    (function_call
+      (identifier)
+      (function_argument
+        (column_reference
+          (identifier))))
+    (function_call
+      (identifier)
+      (function_argument
+        (column_reference
+          (identifier)))
+      (function_argument
+        (string_literal)))
+    (identifier)
+    (qualified_name
+      (identifier)))
+  (alter_server_statement
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier)))

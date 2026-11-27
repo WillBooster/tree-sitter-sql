@@ -422,7 +422,7 @@ SELECT IF(a > 0, 'yes', 'no'),
        JSON_VALUE(doc, '$.id' RETURNING UNSIGNED DEFAULT 0 ON EMPTY ERROR ON ERROR),
        ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC),
        LEAD(salary, 1, 0) RESPECT NULLS OVER w,
-       NTH_VALUE(salary, 2 FROM FIRST IGNORE NULLS) OVER (w ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);
+       NTH_VALUE(salary, 2) FROM FIRST IGNORE NULLS OVER (w ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);
 
 --------------------------------------------------------------------------------
 
@@ -715,11 +715,11 @@ SELECT 8 / 4 * 2, 10 - 3 + 1, 16 >> 2 << 1, a AND b AND c, a OR b OR c, a XOR b 
             (identifier)))))))
 
 ================================================================================
-Escape binds to innermost LIKE
+BETWEEN bounds and sibling predicate precedence
 :language(mysql)
 ================================================================================
 
-SELECT a LIKE b LIKE c ESCAPE '\\';
+SELECT a BETWEEN 1 AND b LIKE c ESCAPE '\\', x BETWEEN 1 AND 2 = 0, a BETWEEN b AND c IS NOT NULL;
 
 --------------------------------------------------------------------------------
 
@@ -727,15 +727,80 @@ SELECT a LIKE b LIKE c ESCAPE '\\';
   (select_statement
     (select_core
       (result_column
-        (like_expression
+        (between_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
           (like_expression
             (column_reference
               (identifier))
             (column_reference
+              (identifier))
+            (string_literal))))
+      (result_column
+        (binary_expression
+          (between_expression
+            (column_reference
+              (identifier))
+            (numeric_literal)
+            (numeric_literal))
+          (numeric_literal)))
+      (result_column
+        (is_expression
+          (between_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier))
+            (column_reference
               (identifier)))
+          (null))))))
+
+================================================================================
+CAST with DOUBLE PRECISION, AT TIME ZONE, and CHAR BINARY attributes
+:language(mysql)
+================================================================================
+
+SELECT CAST(b AS DOUBLE PRECISION),
+       CAST(ts AT TIME ZONE '+00:00' AS DATETIME),
+       CAST(ts AT TIME ZONE INTERVAL '+00:00' AS DATETIME(6)),
+       CAST(a AS CHAR(10) BINARY),
+       CONVERT(a, CHAR BINARY);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (cast_expression
           (column_reference
             (identifier))
-          (string_literal))))))
+          (cast_type)))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (cast_type)))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (cast_type
+            (numeric_literal))))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (cast_type
+            (numeric_literal))))
+      (result_column
+        (convert_expression
+          (column_reference
+            (identifier))
+          (cast_type))))))
 
 ================================================================================
 Collate binds tighter than comparison and binary operators

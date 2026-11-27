@@ -16,9 +16,9 @@ const PREC = {
   XOR: 3,
   AND: 4,
   NOT: 5,
-  BETWEEN: 6,
+  IS_BOOL: 6,
   COMPARE: 7,
-  ESCAPE: 8,
+  PREDICATE: 8,
   BIT_OR: 9,
   BIT_AND: 10,
   BIT_SHIFT: 11,
@@ -28,8 +28,9 @@ const PREC = {
   UNARY: 15,
   BANG: 16,
   BINARY: 17,
-  JSON: 18,
-  INTERVAL: 19,
+  COLLATE: 18,
+  JSON: 19,
+  INTERVAL: 20,
 };
 
 // Reserved words in MySQL 8.4 (Section "Keywords and Reserved Words in MySQL 8.4").
@@ -175,8 +176,6 @@ const RESERVED = [
   'LONGTEXT',
   'LOOP',
   'LOW_PRIORITY',
-  'MASTER_BIND',
-  'MASTER_SSL_VERIFY_SERVER_CERT',
   'MATCH',
   'MAXVALUE',
   'MEDIUMBLOB',
@@ -360,8 +359,6 @@ const UNUSED_RESERVED_WORDS = [
   'INSENSITIVE',
   'IO_AFTER_GTIDS',
   'IO_BEFORE_GTIDS',
-  'MASTER_BIND',
-  'MASTER_SSL_VERIFY_SERVER_CERT',
   'QUALIFY',
   'READ_WRITE',
   'SENSITIVE',
@@ -378,12 +375,12 @@ const IDENTIFIER_CHAR = String.raw`0-9A-Za-z_$\u0080-\u{10FFFF}`;
 const optionalEq = (value) => seq(optional('='), value);
 
 /**
- * @param {GrammarSymbols<string>} $
  * @param {number} precedence
+ * @param {RuleOrLiteral} operand
  * @param {RuleOrLiteral} operator
  */
-const binaryOp = ($, precedence, operator) =>
-  prec.left(precedence, seq(field('left', $._expression), field('operator', operator), field('right', $._expression)));
+const leftBinaryOp = (precedence, operand, operator) =>
+  prec.left(precedence, seq(field('left', operand), field('operator', operator), field('right', operand)));
 
 export default grammar({
   name: 'mysql',
@@ -414,8 +411,6 @@ export default grammar({
 
   reserved: {
     global: () => RESERVED.map(keywordPattern),
-    // `FULL` is non-reserved in MySQL, except that `FROM a FULL [OUTER] JOIN b` is a syntax error rather than an alias.
-    table_alias: () => [...RESERVED, 'FULL'].map(keywordPattern),
     // After `.` in a qualified name (`tbl.select`), MySQL permits reserved words without backticks.
     none: () => [],
   },
@@ -431,6 +426,7 @@ export default grammar({
     [$.group_by_clause],
     [$.check_constraint_body],
     [$.function_call],
+    [$.select_statement, $.parenthesized_query],
   ],
 
   rules: {
@@ -454,6 +450,7 @@ export default grammar({
         $.update_statement,
         $.delete_statement,
         $.load_statement,
+        $.import_table_statement,
         $.create_database_statement,
         $.alter_database_statement,
         $.drop_database_statement,
@@ -477,6 +474,22 @@ export default grammar({
         $.create_event_statement,
         $.alter_event_statement,
         $.drop_event_statement,
+        $.create_tablespace_statement,
+        $.alter_tablespace_statement,
+        $.drop_tablespace_statement,
+        $.create_logfile_group_statement,
+        $.alter_logfile_group_statement,
+        $.drop_logfile_group_statement,
+        $.create_server_statement,
+        $.alter_server_statement,
+        $.drop_server_statement,
+        $.create_srs_statement,
+        $.drop_srs_statement,
+        $.create_resource_group_statement,
+        $.alter_resource_group_statement,
+        $.drop_resource_group_statement,
+        $.set_resource_group_statement,
+        $.alter_instance_statement,
         $.set_statement,
         $.start_transaction_statement,
         $.begin_statement,
@@ -484,8 +497,21 @@ export default grammar({
         $.rollback_statement,
         $.savepoint_statement,
         $.release_savepoint_statement,
+        $.xa_statement,
         $.lock_tables_statement,
         $.unlock_tables_statement,
+        $.lock_instance_statement,
+        $.unlock_instance_statement,
+        $.change_replication_source_statement,
+        $.change_replication_filter_statement,
+        $.start_replica_statement,
+        $.stop_replica_statement,
+        $.group_replication_statement,
+        $.install_statement,
+        $.uninstall_statement,
+        $.clone_statement,
+        $.cache_index_statement,
+        $.load_index_statement,
         $.show_statement,
         $.describe_statement,
         $.explain_statement,
@@ -507,12 +533,17 @@ export default grammar({
         $.kill_statement,
         $.shutdown_statement,
         $.restart_statement,
+        $.binlog_statement,
+        $.help_statement,
         $.prepare_statement,
         $.execute_statement,
         $.deallocate_statement,
         $.call_statement,
         $.do_statement,
-        $.handler_statement
+        $.handler_statement,
+        $.signal_statement,
+        $.resignal_statement,
+        $.get_diagnostics_statement
       ),
 
     // =========================================================================
@@ -525,8 +556,7 @@ export default grammar({
         $._query_expression_body,
         optional($.order_by_clause),
         optional($.limit_clause),
-        optional($.into_clause),
-        repeat($.locking_clause)
+        choice(seq(optional($.into_clause), repeat($.locking_clause)), seq(repeat1($.locking_clause), $.into_clause))
       ),
 
     with_clause: ($) => seq(keyword('WITH'), optional(keyword('RECURSIVE')), commaSep1($.common_table_expression)),
@@ -534,31 +564,49 @@ export default grammar({
     common_table_expression: ($) =>
       seq(field('name', $._identifier), optional($.column_list), keyword('AS'), '(', $.select_statement, ')'),
 
-    _query_expression_body: ($) => prec.left(seq($._query_primary, repeat(seq($.compound_operator, $._query_primary)))),
+    _query_expression_body: ($) => choice($._query_term, $.compound_query),
 
-    compound_operator: () =>
-      seq(
-        choice(keyword('UNION'), keyword('INTERSECT'), keyword('EXCEPT')),
-        optional(choice(keyword('ALL'), keyword('DISTINCT')))
+    compound_query: ($) =>
+      prec.left(
+        seq(
+          field('left', $._query_expression_body),
+          field('operator', alias($._union_or_except_operator, $.compound_operator)),
+          field('right', $._query_term)
+        )
       ),
+
+    _query_term: ($) => choice($._query_primary, alias($._intersect_query, $.compound_query)),
+
+    _intersect_query: ($) =>
+      prec.left(
+        seq(
+          field('left', $._query_term),
+          field('operator', alias($._intersect_operator, $.compound_operator)),
+          field('right', $._query_primary)
+        )
+      ),
+
+    _union_or_except_operator: () =>
+      seq(choice(keyword('UNION'), keyword('EXCEPT')), optional(choice(keyword('ALL'), keyword('DISTINCT')))),
+
+    _intersect_operator: () => seq(keyword('INTERSECT'), optional(choice(keyword('ALL'), keyword('DISTINCT')))),
 
     _query_primary: ($) => choice($.select_core, $.values_statement, $.table_value_statement, $.parenthesized_query),
 
     parenthesized_query: ($) =>
-      prec.right(
-        1,
-        seq(
-          '(',
-          optional($.with_clause),
-          $._query_expression_body,
-          optional($.order_by_clause),
-          optional($.limit_clause),
-          repeat($.locking_clause),
-          ')'
-        )
+      seq(
+        '(',
+        optional($.with_clause),
+        $._query_expression_body,
+        optional($.order_by_clause),
+        optional($.limit_clause),
+        repeat($.locking_clause),
+        ')'
       ),
 
-    values_statement: ($) => seq(keyword('VALUES'), commaSep1($.row_constructor)),
+    values_statement: ($) => seq(keyword('VALUES'), commaSep1(alias($._values_row_constructor, $.row_constructor))),
+
+    _values_row_constructor: ($) => seq(keyword('ROW'), '(', commaSep(choice($._expression, keyword('DEFAULT'))), ')'),
 
     row_constructor: ($) => seq(keyword('ROW'), '(', commaSep($._expression), ')'),
 
@@ -609,14 +657,7 @@ export default grammar({
 
     _alias_name: ($) => choice($._identifier, alias($._string_segment, $.string_literal)),
 
-    _table_alias: ($) =>
-      choice(
-        seq(keyword('AS'), field('alias', $._identifier)),
-        field(
-          'alias',
-          choice(reserved('table_alias', $.identifier), alias($._digit_identifier, $.identifier), $.quoted_identifier)
-        )
-      ),
+    _table_alias: ($) => seq(optional(keyword('AS')), field('alias', $._identifier)),
 
     into_clause: ($) =>
       seq(
@@ -637,7 +678,7 @@ export default grammar({
 
     _table_references: ($) => commaSep1($._table_reference),
 
-    _table_reference: ($) => prec.left(seq($._table_factor, repeat($._join_clause))),
+    _table_reference: ($) => choice($._table_factor, $._joined_table, seq('{', keyword('OJ'), $._table_reference, '}')),
 
     _table_factor: ($) => choice($.table, $.subquery_table, $.json_table, $.join_table),
 
@@ -657,19 +698,12 @@ export default grammar({
         choice(keyword('INDEX'), keyword('KEY')),
         optional(seq(keyword('FOR'), choice(keyword('JOIN'), keywords('ORDER BY'), keywords('GROUP BY')))),
         '(',
-        commaSep($._identifier),
+        commaSep(choice($._identifier, keyword('PRIMARY'))),
         ')'
       ),
 
     subquery_table: ($) =>
-      seq(
-        optional(keyword('LATERAL')),
-        '(',
-        $.select_statement,
-        ')',
-        optional($._table_alias),
-        optional($.column_list)
-      ),
+      seq(optional(keyword('LATERAL')), '(', $.select_statement, ')', $._table_alias, optional($.column_list)),
 
     join_table: ($) => seq('(', $._table_references, ')'),
 
@@ -685,7 +719,7 @@ export default grammar({
         commaSep1($.json_table_column),
         ')',
         ')',
-        optional($._table_alias)
+        $._table_alias
       ),
 
     json_table_column: ($) =>
@@ -718,28 +752,42 @@ export default grammar({
         choice(keyword('EMPTY'), keyword('ERROR'))
       ),
 
-    _join_clause: ($) =>
-      prec.right(
-        choice(
+    _joined_table: ($) =>
+      choice(
+        prec.right(
+          1,
           seq(
+            $._table_reference,
             optional(choice(keyword('INNER'), keyword('CROSS'))),
             keyword('JOIN'),
-            $._table_factor,
+            $._table_reference,
             optional($.join_constraint)
-          ),
+          )
+        ),
+        prec.right(
+          1,
           seq(
+            $._table_reference,
             keyword('STRAIGHT_JOIN'),
-            $._table_factor,
+            $._table_reference,
             optional(seq(keyword('ON'), field('condition', $._expression)))
-          ),
+          )
+        ),
+        prec.left(
+          2,
           seq(
+            $._table_reference,
             choice(keyword('LEFT'), keyword('RIGHT')),
             optional(keyword('OUTER')),
             keyword('JOIN'),
             $._table_reference,
             $.join_constraint
-          ),
+          )
+        ),
+        prec.left(
+          2,
           seq(
+            $._table_reference,
             keyword('NATURAL'),
             optional(
               choice(keyword('INNER'), seq(choice(keyword('LEFT'), keyword('RIGHT')), optional(keyword('OUTER'))))
@@ -800,8 +848,16 @@ export default grammar({
         )
       ),
 
+    _simple_limit_clause: ($) => seq(keyword('LIMIT'), field('limit', $._limit_value)),
+
     // Stored routines may also use local variables or parameters in LIMIT, while prepared statements use `?`.
-    _limit_value: ($) => choice($.numeric_literal, $.placeholder, $._identifier),
+    _limit_value: ($) =>
+      choice(
+        alias($._integer_literal, $.numeric_literal),
+        $.placeholder,
+        $._identifier,
+        seq($._float_literal, $._unreachable)
+      ),
 
     locking_clause: ($) =>
       choice(
@@ -831,8 +887,10 @@ export default grammar({
             optional($._insert_column_list),
             choice(
               seq(
-                choice(keyword('VALUES'), keyword('VALUE')),
-                commaSep1($.insert_values_row),
+                choice(
+                  seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
+                  seq(keyword('VALUES'), commaSep1(alias($._values_row_constructor, $.row_constructor)))
+                ),
                 optional($._insert_row_alias)
               ),
               alias($._insert_query, $.select_statement)
@@ -855,6 +913,7 @@ export default grammar({
             optional($._insert_column_list),
             choice(
               seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1($.insert_values_row)),
+              seq(keyword('VALUES'), commaSep1(alias($._values_row_constructor, $.row_constructor))),
               alias($._insert_query, $.select_statement)
             )
           ),
@@ -865,17 +924,39 @@ export default grammar({
     _insert_query: ($) =>
       seq(
         optional($.with_clause),
-        choice($.select_core, $.table_value_statement, $.parenthesized_query),
-        repeat(seq($.compound_operator, $._query_primary)),
+        $._insert_query_body,
         optional($.order_by_clause),
         optional($.limit_clause),
         repeat($.locking_clause)
       ),
 
+    _insert_query_body: ($) => choice($._insert_query_term, alias($._insert_compound_query, $.compound_query)),
+
+    _insert_compound_query: ($) =>
+      prec.left(
+        seq(
+          field('left', $._insert_query_body),
+          field('operator', alias($._union_or_except_operator, $.compound_operator)),
+          field('right', $._query_term)
+        )
+      ),
+
+    _insert_query_term: ($) => choice($._insert_query_primary, alias($._insert_intersect_query, $.compound_query)),
+
+    _insert_intersect_query: ($) =>
+      prec.left(
+        seq(
+          field('left', $._insert_query_term),
+          field('operator', alias($._intersect_operator, $.compound_operator)),
+          field('right', $._query_primary)
+        )
+      ),
+
+    _insert_query_primary: ($) => choice($.select_core, $.table_value_statement, $.parenthesized_query),
+
     _insert_column_list: ($) => seq('(', commaSep($.column_reference), ')'),
 
-    insert_values_row: ($) =>
-      seq(optional(keyword('ROW')), '(', commaSep(choice($._expression, keyword('DEFAULT'))), ')'),
+    insert_values_row: ($) => seq('(', commaSep(choice($._expression, keyword('DEFAULT'))), ')'),
 
     _insert_row_alias: ($) => seq(keyword('AS'), field('alias', $._identifier), optional($.column_list)),
 
@@ -891,7 +972,7 @@ export default grammar({
         $.set_clause,
         optional($.where_clause),
         optional($.order_by_clause),
-        optional($.limit_clause)
+        optional(alias($._simple_limit_clause, $.limit_clause))
       ),
 
     set_clause: ($) => seq(keyword('SET'), commaSep1($.assignment)),
@@ -911,11 +992,11 @@ export default grammar({
             choice(
               seq(
                 field('table', $.qualified_name),
-                optional($.partition_names_clause),
                 optional($._table_alias),
+                optional($.partition_names_clause),
                 optional($.where_clause),
                 optional($.order_by_clause),
-                optional($.limit_clause)
+                optional(alias($._simple_limit_clause, $.limit_clause))
               ),
               seq(commaSep1($.delete_target), keyword('USING'), $._table_references, optional($.where_clause))
             )
@@ -991,6 +1072,8 @@ export default grammar({
           choice(seq(keywords('STARTING BY'), $.string_literal), seq(keywords('TERMINATED BY'), $.string_literal))
         )
       ),
+
+    import_table_statement: ($) => seq(keywords('IMPORT TABLE FROM'), commaSep1($.string_literal)),
 
     // =========================================================================
     // DDL: Databases, Tables, Indexes, Views
@@ -1261,7 +1344,7 @@ export default grammar({
         seq(keyword('STATS_SAMPLE_PAGES'), optionalEq(choice(keyword('DEFAULT'), $.numeric_literal))),
         seq(
           keyword('TABLESPACE'),
-          $._identifier,
+          optionalEq($._identifier),
           optional(seq(keyword('STORAGE'), choice(keyword('DISK'), keyword('MEMORY'))))
         ),
         seq(keyword('UNION'), optionalEq(seq('(', commaSep1($.qualified_name), ')'))),
@@ -1396,27 +1479,42 @@ export default grammar({
           // String & binary types
           seq(
             choice(
-              seq(
-                optional(keyword('NATIONAL')),
-                choice(keyword('CHAR'), keyword('CHARACTER')),
-                optional(keyword('VARYING'))
-              ),
+              seq(optional(keyword('NATIONAL')), choice(keyword('CHAR'), keyword('CHARACTER')), keyword('VARYING')),
               seq(optional(keyword('NATIONAL')), choice(keyword('VARCHAR'), keyword('VARCHARACTER'))),
-              keyword('NCHAR'),
-              keyword('NVARCHAR'),
-              keyword('TINYTEXT'),
-              keyword('TEXT'),
-              keyword('MEDIUMTEXT'),
-              keyword('LONGTEXT'),
-              seq(keyword('LONG'), optional(choice(keyword('VARCHAR'), keywords('CHAR VARYING'))))
+              seq(keyword('NCHAR'), choice(keyword('VARYING'), keyword('VARCHAR'), keyword('VARCHARACTER'))),
+              keyword('NVARCHAR')
             ),
-            optional(seq('(', $.numeric_literal, ')')),
+            '(',
+            $.numeric_literal,
+            ')',
             repeat($._string_type_modifier)
           ),
           seq(
             choice(
+              seq(optional(keyword('NATIONAL')), choice(keyword('CHAR'), keyword('CHARACTER'))),
+              keyword('NCHAR'),
+              keyword('TINYTEXT'),
+              keyword('TEXT'),
+              keyword('MEDIUMTEXT'),
+              keyword('LONGTEXT'),
+              seq(
+                keyword('LONG'),
+                optional(
+                  choice(
+                    keyword('VARCHAR'),
+                    keyword('VARCHARACTER'),
+                    seq(choice(keyword('CHAR'), keyword('CHARACTER')), keyword('VARYING'))
+                  )
+                )
+              )
+            ),
+            optional(seq('(', $.numeric_literal, ')')),
+            repeat($._string_type_modifier)
+          ),
+          seq(keyword('VARBINARY'), '(', $.numeric_literal, ')'),
+          seq(
+            choice(
               keyword('BINARY'),
-              keyword('VARBINARY'),
               keyword('TINYBLOB'),
               keyword('BLOB'),
               keyword('MEDIUMBLOB'),
@@ -1451,6 +1549,7 @@ export default grammar({
         keyword('BINARY'),
         keyword('ascii'),
         keyword('UNICODE'),
+        keyword('BYTE'),
         $._charset_clause,
         seq(keyword('COLLATE'), $._identifier_or_string)
       ),
@@ -1463,16 +1562,13 @@ export default grammar({
       seq(
         keywords('ALTER TABLE'),
         field('table', $.qualified_name),
-        choice(
-          seq(commaSep1($.alter_table_action), optional($.partition_by_clause_ddl)),
-          $.partition_by_clause_ddl,
-          keywords('REMOVE PARTITIONING')
-        )
+        optional(commaSep1($.alter_table_action)),
+        optional(choice($.partition_by_clause_ddl, keywords('REMOVE PARTITIONING')))
       ),
 
     alter_table_action: ($) =>
       choice(
-        $.table_option,
+        repeat1($.table_option),
         seq(
           keyword('ADD'),
           choice(
@@ -1724,17 +1820,31 @@ export default grammar({
     create_function_statement: ($) =>
       seq(
         keyword('CREATE'),
-        optional($.definer_clause),
-        keyword('FUNCTION'),
-        optional($.if_not_exists),
-        field('name', $.qualified_name),
-        '(',
-        commaSep($.function_parameter),
-        ')',
-        keyword('RETURNS'),
-        $.data_type,
-        repeat($.routine_characteristic),
-        $._routine_statement
+        choice(
+          seq(
+            optional($.definer_clause),
+            keyword('FUNCTION'),
+            optional($.if_not_exists),
+            field('name', $.qualified_name),
+            '(',
+            commaSep($.function_parameter),
+            ')',
+            keyword('RETURNS'),
+            $.data_type,
+            repeat($.routine_characteristic),
+            $._routine_statement
+          ),
+          seq(
+            optional(keyword('AGGREGATE')),
+            keyword('FUNCTION'),
+            optional($.if_not_exists),
+            field('name', $._identifier),
+            keyword('RETURNS'),
+            choice(keyword('STRING'), keyword('INTEGER'), keyword('REAL'), keyword('DECIMAL')),
+            keyword('SONAME'),
+            field('soname', $.string_literal)
+          )
+        )
       ),
 
     function_parameter: ($) => seq(field('name', $._identifier), $.data_type),
@@ -1819,6 +1929,212 @@ export default grammar({
 
     drop_event_statement: ($) => seq(keywords('DROP EVENT'), optional($.if_exists), field('name', $.qualified_name)),
 
+    create_tablespace_statement: ($) =>
+      seq(
+        keyword('CREATE'),
+        optional(keyword('UNDO')),
+        keyword('TABLESPACE'),
+        field('name', $._identifier),
+        repeat($._tablespace_option)
+      ),
+
+    alter_tablespace_statement: ($) =>
+      seq(
+        keyword('ALTER'),
+        optional(keyword('UNDO')),
+        keyword('TABLESPACE'),
+        field('name', $._identifier),
+        repeat1($._tablespace_option)
+      ),
+
+    _tablespace_option: ($) =>
+      choice(
+        seq(choice(keyword('ADD'), keyword('DROP')), keyword('DATAFILE'), $.string_literal),
+        seq(keywords('USE LOGFILE GROUP'), $._identifier),
+        seq(
+          choice(
+            keyword('EXTENT_SIZE'),
+            keyword('INITIAL_SIZE'),
+            keyword('AUTOEXTEND_SIZE'),
+            keyword('MAX_SIZE'),
+            keyword('FILE_BLOCK_SIZE'),
+            keyword('NODEGROUP')
+          ),
+          optionalEq($._identifier_or_number)
+        ),
+        keyword('WAIT'),
+        seq(keyword('COMMENT'), optionalEq($.string_literal)),
+        seq(keyword('ENCRYPTION'), optionalEq($.string_literal)),
+        seq(keyword('ENGINE'), optionalEq($._identifier_or_string)),
+        seq(keyword('ENGINE_ATTRIBUTE'), optionalEq($.string_literal)),
+        seq(keywords('RENAME TO'), $._identifier),
+        seq(keyword('SET'), choice(keyword('ACTIVE'), keyword('INACTIVE')))
+      ),
+
+    drop_tablespace_statement: ($) =>
+      seq(
+        keyword('DROP'),
+        optional(keyword('UNDO')),
+        keyword('TABLESPACE'),
+        field('name', $._identifier),
+        optional(seq(keyword('ENGINE'), optionalEq($._identifier_or_string)))
+      ),
+
+    create_logfile_group_statement: ($) =>
+      seq(
+        keywords('CREATE LOGFILE GROUP'),
+        field('name', $._identifier),
+        keywords('ADD UNDOFILE'),
+        $.string_literal,
+        repeat($._logfile_group_option)
+      ),
+
+    alter_logfile_group_statement: ($) =>
+      seq(
+        keywords('ALTER LOGFILE GROUP'),
+        field('name', $._identifier),
+        keywords('ADD UNDOFILE'),
+        $.string_literal,
+        repeat($._logfile_group_option)
+      ),
+
+    _logfile_group_option: ($) =>
+      choice(
+        seq(
+          choice(
+            keyword('INITIAL_SIZE'),
+            keyword('UNDO_BUFFER_SIZE'),
+            keyword('REDO_BUFFER_SIZE'),
+            keyword('NODEGROUP')
+          ),
+          optionalEq($._identifier_or_number)
+        ),
+        keyword('WAIT'),
+        seq(keyword('COMMENT'), optionalEq($.string_literal)),
+        seq(keyword('ENGINE'), optionalEq($._identifier_or_string))
+      ),
+
+    drop_logfile_group_statement: ($) =>
+      seq(
+        keywords('DROP LOGFILE GROUP'),
+        field('name', $._identifier),
+        optional(seq(keyword('ENGINE'), optionalEq($._identifier_or_string)))
+      ),
+
+    create_server_statement: ($) =>
+      seq(
+        keywords('CREATE SERVER'),
+        field('name', $._identifier_or_string),
+        keywords('FOREIGN DATA WRAPPER'),
+        field('wrapper', $._identifier_or_string),
+        keyword('OPTIONS'),
+        '(',
+        commaSep1($._server_option),
+        ')'
+      ),
+
+    alter_server_statement: ($) =>
+      seq(
+        keywords('ALTER SERVER'),
+        field('name', $._identifier_or_string),
+        keyword('OPTIONS'),
+        '(',
+        commaSep1($._server_option),
+        ')'
+      ),
+
+    _server_option: ($) =>
+      choice(
+        seq(
+          choice(
+            keyword('HOST'),
+            keyword('DATABASE'),
+            keyword('USER'),
+            keyword('PASSWORD'),
+            keyword('SOCKET'),
+            keyword('OWNER')
+          ),
+          $.string_literal
+        ),
+        seq(keyword('PORT'), $.numeric_literal)
+      ),
+
+    drop_server_statement: ($) =>
+      seq(keywords('DROP SERVER'), optional($.if_exists), field('name', $._identifier_or_string)),
+
+    create_srs_statement: ($) =>
+      seq(
+        keyword('CREATE'),
+        choice(
+          seq(keywords('OR REPLACE'), keywords('SPATIAL REFERENCE SYSTEM')),
+          seq(keywords('SPATIAL REFERENCE SYSTEM'), optional($.if_not_exists))
+        ),
+        field('srid', $.numeric_literal),
+        repeat1($._srs_attribute)
+      ),
+
+    _srs_attribute: ($) =>
+      choice(
+        seq(keyword('NAME'), $.string_literal),
+        seq(keyword('DEFINITION'), $.string_literal),
+        seq(keyword('ORGANIZATION'), $.string_literal, keywords('IDENTIFIED BY'), $.numeric_literal),
+        seq(keyword('DESCRIPTION'), $.string_literal)
+      ),
+
+    drop_srs_statement: ($) =>
+      seq(keywords('DROP SPATIAL REFERENCE SYSTEM'), optional($.if_exists), field('srid', $.numeric_literal)),
+
+    create_resource_group_statement: ($) =>
+      seq(
+        keywords('CREATE RESOURCE GROUP'),
+        field('name', $._identifier),
+        keyword('TYPE'),
+        '=',
+        choice(keyword('SYSTEM'), keyword('USER')),
+        repeat($._resource_group_option)
+      ),
+
+    alter_resource_group_statement: ($) =>
+      seq(
+        keywords('ALTER RESOURCE GROUP'),
+        field('name', $._identifier),
+        repeat($._resource_group_option),
+        optional(keyword('FORCE'))
+      ),
+
+    _resource_group_option: ($) =>
+      choice(
+        seq(keyword('VCPU'), optionalEq(commaSep1(seq($.numeric_literal, optional(seq('-', $.numeric_literal)))))),
+        seq(keyword('THREAD_PRIORITY'), optionalEq(seq(optional(choice('+', '-')), $.numeric_literal))),
+        keyword('ENABLE'),
+        keyword('DISABLE')
+      ),
+
+    drop_resource_group_statement: ($) =>
+      seq(keywords('DROP RESOURCE GROUP'), field('name', $._identifier), optional(keyword('FORCE'))),
+
+    set_resource_group_statement: ($) =>
+      seq(
+        keywords('SET RESOURCE GROUP'),
+        field('name', $._identifier),
+        optional(seq(keyword('FOR'), commaSep1($.numeric_literal)))
+      ),
+
+    alter_instance_statement: ($) =>
+      seq(
+        keywords('ALTER INSTANCE'),
+        choice(
+          seq(choice(keyword('ENABLE'), keyword('DISABLE')), keywords('INNODB REDO_LOG')),
+          seq(keyword('ROTATE'), choice(keyword('INNODB'), keyword('BINLOG')), keywords('MASTER KEY')),
+          seq(
+            keywords('RELOAD TLS'),
+            optional(seq(keywords('FOR CHANNEL'), $._identifier)),
+            optional(keywords('NO ROLLBACK ON ERROR'))
+          ),
+          keywords('RELOAD KEYRING')
+        )
+      ),
+
     _routine_statement: ($) =>
       choice(
         $.compound_statement,
@@ -1833,9 +2149,6 @@ export default grammar({
         $.open_statement,
         $.fetch_statement,
         $.close_statement,
-        $.signal_statement,
-        $.resignal_statement,
-        $.get_diagnostics_statement,
         $._statement
       ),
 
@@ -1866,7 +2179,7 @@ export default grammar({
             commaSep1($._handler_condition_value),
             $._routine_statement
           ),
-          seq(commaSep1($._identifier), $.data_type, optional($.default_clause))
+          seq(commaSep1($._identifier), $.data_type, optional(seq(keyword('DEFAULT'), field('value', $._expression))))
         )
       ),
 
@@ -1990,24 +2303,29 @@ export default grammar({
       seq(
         keyword('SET'),
         choice(
-          $._charset_clause,
-          seq(
-            keyword('NAMES'),
-            choice(
-              keyword('DEFAULT'),
-              seq(
-                $._identifier_or_string,
-                optional(seq(keyword('COLLATE'), choice($._identifier_or_string, keyword('DEFAULT'))))
-              )
-            )
-          ),
           seq(
             optional(choice(keyword('GLOBAL'), keyword('SESSION'))),
             keyword('TRANSACTION'),
             commaSep1($._transaction_characteristic)
           ),
-          commaSep1($.variable_assignment)
+          commaSep1($._set_item)
         )
+      ),
+
+    _set_item: ($) =>
+      choice(
+        $._charset_clause,
+        seq(
+          keyword('NAMES'),
+          choice(
+            keyword('DEFAULT'),
+            seq(
+              $._identifier_or_string,
+              optional(seq(keyword('COLLATE'), choice($._identifier_or_string, keyword('DEFAULT'))))
+            )
+          )
+        ),
+        $.variable_assignment
       ),
 
     variable_assignment: ($) =>
@@ -2018,9 +2336,20 @@ export default grammar({
             choice(keyword('GLOBAL'), keyword('SESSION'), keyword('LOCAL'), keyword('PERSIST'), keyword('PERSIST_ONLY'))
           ),
           field('variable', choice($.system_variable, $.column_reference)),
-          '=',
-          field('value', choice($._expression, keyword('DEFAULT')))
+          choice('=', ':='),
+          field('value', $._set_value)
         )
+      ),
+
+    _set_value: ($) =>
+      choice(
+        $._expression,
+        keyword('DEFAULT'),
+        keyword('ON'),
+        keyword('ALL'),
+        keyword('BINARY'),
+        keyword('ROW'),
+        keyword('SYSTEM')
       ),
 
     _transaction_characteristic: () =>
@@ -2084,6 +2413,199 @@ export default grammar({
       ),
 
     unlock_tables_statement: () => seq(keyword('UNLOCK'), choice(keyword('TABLES'), keyword('TABLE'))),
+
+    lock_instance_statement: () => keywords('LOCK INSTANCE FOR BACKUP'),
+
+    unlock_instance_statement: () => keywords('UNLOCK INSTANCE'),
+
+    xa_statement: ($) =>
+      seq(
+        keyword('XA'),
+        choice(
+          seq(choice(keyword('START'), keyword('BEGIN')), $._xid, optional(choice(keyword('JOIN'), keyword('RESUME')))),
+          seq(keyword('END'), $._xid, optional(seq(keyword('SUSPEND'), optional(keywords('FOR MIGRATE'))))),
+          seq(keyword('PREPARE'), $._xid),
+          seq(keyword('COMMIT'), $._xid, optional(keywords('ONE PHASE'))),
+          seq(keyword('ROLLBACK'), $._xid),
+          seq(keyword('RECOVER'), optional(keywords('CONVERT XID')))
+        )
+      ),
+
+    _xid: ($) => seq($._xid_string, optional(seq(',', $._xid_string, optional(seq(',', $.numeric_literal))))),
+
+    _xid_string: ($) => choice($.string_literal, $.hex_literal, $.bit_literal),
+
+    change_replication_source_statement: ($) =>
+      seq(
+        keywords('CHANGE REPLICATION SOURCE TO'),
+        commaSep1($._replication_source_option),
+        optional(seq(keywords('FOR CHANNEL'), $.string_literal))
+      ),
+
+    _replication_source_option: ($) =>
+      choice(
+        seq(keyword('PRIVILEGE_CHECKS_USER'), '=', choice($.null, $.account_name)),
+        seq(keyword('IGNORE_SERVER_IDS'), '=', '(', commaSep($.numeric_literal), ')'),
+        seq($._identifier, '=', choice($.string_literal, $.numeric_literal, $.null, keyword('ON'), $._identifier))
+      ),
+
+    change_replication_filter_statement: ($) =>
+      seq(
+        keywords('CHANGE REPLICATION FILTER'),
+        commaSep1($._replication_filter),
+        optional(seq(keywords('FOR CHANNEL'), $.string_literal))
+      ),
+
+    _replication_filter: ($) =>
+      choice(
+        seq(choice(keyword('REPLICATE_DO_DB'), keyword('REPLICATE_IGNORE_DB')), '=', '(', commaSep($._identifier), ')'),
+        seq(
+          choice(keyword('REPLICATE_DO_TABLE'), keyword('REPLICATE_IGNORE_TABLE')),
+          '=',
+          '(',
+          commaSep($.qualified_name),
+          ')'
+        ),
+        seq(
+          choice(keyword('REPLICATE_WILD_DO_TABLE'), keyword('REPLICATE_WILD_IGNORE_TABLE')),
+          '=',
+          '(',
+          commaSep($.string_literal),
+          ')'
+        ),
+        seq(keyword('REPLICATE_REWRITE_DB'), '=', '(', commaSep(seq('(', $._identifier, ',', $._identifier, ')')), ')')
+      ),
+
+    start_replica_statement: ($) =>
+      seq(
+        keywords('START REPLICA'),
+        optional(commaSep1(choice(keyword('IO_THREAD'), keyword('SQL_THREAD')))),
+        optional($._replica_until_clause),
+        repeat($._replica_connection_option),
+        optional(seq(keywords('FOR CHANNEL'), $.string_literal))
+      ),
+
+    _replica_until_clause: ($) =>
+      seq(
+        keyword('UNTIL'),
+        choice(
+          seq(choice(keyword('SQL_BEFORE_GTIDS'), keyword('SQL_AFTER_GTIDS')), '=', $.string_literal),
+          seq(
+            keyword('SOURCE_LOG_FILE'),
+            '=',
+            $.string_literal,
+            ',',
+            keyword('SOURCE_LOG_POS'),
+            '=',
+            $.numeric_literal
+          ),
+          seq(keyword('RELAY_LOG_FILE'), '=', $.string_literal, ',', keyword('RELAY_LOG_POS'), '=', $.numeric_literal),
+          keyword('SQL_AFTER_MTS_GAPS')
+        )
+      ),
+
+    _replica_connection_option: ($) =>
+      seq(
+        choice(keyword('USER'), keyword('PASSWORD'), keyword('DEFAULT_AUTH'), keyword('PLUGIN_DIR')),
+        '=',
+        $.string_literal
+      ),
+
+    stop_replica_statement: ($) =>
+      seq(
+        keywords('STOP REPLICA'),
+        optional(commaSep1(choice(keyword('IO_THREAD'), keyword('SQL_THREAD')))),
+        optional(seq(keywords('FOR CHANNEL'), $.string_literal))
+      ),
+
+    group_replication_statement: ($) =>
+      choice(
+        seq(keywords('START GROUP_REPLICATION'), optional(commaSep1($._replica_connection_option))),
+        keywords('STOP GROUP_REPLICATION')
+      ),
+
+    install_statement: ($) =>
+      seq(
+        keyword('INSTALL'),
+        choice(
+          seq(keyword('PLUGIN'), field('name', $._identifier), keyword('SONAME'), field('soname', $.string_literal)),
+          seq(
+            keyword('COMPONENT'),
+            commaSep1($.string_literal),
+            optional(seq(keyword('SET'), commaSep1($.variable_assignment)))
+          )
+        )
+      ),
+
+    uninstall_statement: ($) =>
+      seq(
+        keyword('UNINSTALL'),
+        choice(
+          seq(keyword('PLUGIN'), field('name', $._identifier)),
+          seq(keyword('COMPONENT'), commaSep1($.string_literal))
+        )
+      ),
+
+    clone_statement: ($) =>
+      seq(
+        keyword('CLONE'),
+        choice(
+          seq(keywords('LOCAL DATA DIRECTORY'), optionalEq($.string_literal)),
+          seq(
+            keywords('INSTANCE FROM'),
+            $.account_name,
+            ':',
+            $.numeric_literal,
+            keywords('IDENTIFIED BY'),
+            $.string_literal,
+            optional(seq(keywords('DATA DIRECTORY'), optionalEq($.string_literal))),
+            optional(seq(keyword('REQUIRE'), optional(keyword('NO')), keyword('SSL')))
+          )
+        )
+      ),
+
+    cache_index_statement: ($) =>
+      seq(
+        keywords('CACHE INDEX'),
+        choice(
+          commaSep1(
+            seq(
+              $.qualified_name,
+              optional(
+                seq(
+                  optional(choice(keyword('INDEX'), keyword('KEY'))),
+                  '(',
+                  commaSep1(choice($._identifier, keyword('PRIMARY'))),
+                  ')'
+                )
+              )
+            )
+          ),
+          seq($.qualified_name, keyword('PARTITION'), '(', choice(keyword('ALL'), commaSep1($._identifier)), ')')
+        ),
+        keyword('IN'),
+        choice($._identifier, keyword('DEFAULT'))
+      ),
+
+    load_index_statement: ($) =>
+      seq(
+        keywords('LOAD INDEX INTO CACHE'),
+        commaSep1(
+          seq(
+            $.qualified_name,
+            optional(seq(keyword('PARTITION'), '(', choice(keyword('ALL'), commaSep1($._identifier)), ')')),
+            optional(
+              seq(
+                choice(keyword('INDEX'), keyword('KEY')),
+                '(',
+                commaSep1(choice($._identifier, keyword('PRIMARY'))),
+                ')'
+              )
+            ),
+            optional(keywords('IGNORE LEAVES'))
+          )
+        )
+      ),
 
     show_statement: ($) =>
       seq(
@@ -2160,22 +2682,50 @@ export default grammar({
           ),
           seq(choice(keywords('CHARACTER SET'), keyword('CHARSET'), keyword('COLLATION')), optional($._like_or_where)),
           seq(optional(keyword('STORAGE')), keyword('ENGINES')),
-          seq(keyword('ENGINE'), $._identifier, choice(keyword('STATUS'), keyword('MUTEX'), keyword('LOGS'))),
+          seq(
+            keyword('ENGINE'),
+            choice($._identifier, keyword('ALL')),
+            choice(keyword('STATUS'), keyword('MUTEX'), keyword('LOGS'))
+          ),
           keyword('PRIVILEGES'),
           keyword('PLUGINS'),
+          keyword('PROFILES'),
+          seq(
+            keyword('PROFILE'),
+            optional(
+              commaSep1(
+                choice(
+                  keyword('ALL'),
+                  keywords('BLOCK IO'),
+                  keywords('CONTEXT SWITCHES'),
+                  keyword('CPU'),
+                  keyword('IPC'),
+                  keyword('MEMORY'),
+                  keywords('PAGE FAULTS'),
+                  keyword('SOURCE'),
+                  keyword('SWAPS')
+                )
+              )
+            ),
+            optional(seq(keywords('FOR QUERY'), $.numeric_literal)),
+            optional($.limit_clause)
+          ),
           seq(
             keywords('OPEN TABLES'),
             optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
             optional($._like_or_where)
           ),
-          seq(choice(keyword('BINARY'), keyword('MASTER')), keyword('LOGS')),
-          keywords('MASTER STATUS'),
+          keywords('BINARY LOGS'),
           keywords('BINARY LOG STATUS'),
           seq(
-            choice(keyword('REPLICA'), keyword('SLAVE')),
-            keyword('STATUS'),
+            choice(keyword('BINLOG'), keyword('RELAYLOG')),
+            keyword('EVENTS'),
+            optional(seq(keyword('IN'), $.string_literal)),
+            optional(seq(keyword('FROM'), $.numeric_literal)),
+            optional($.limit_clause),
             optional(seq(keywords('FOR CHANNEL'), $.string_literal))
           ),
+          seq(keyword('REPLICA'), keyword('STATUS'), optional(seq(keywords('FOR CHANNEL'), $.string_literal))),
           keyword('REPLICAS')
         )
       ),
@@ -2241,7 +2791,7 @@ export default grammar({
         keywords('ALTER USER'),
         optional($.if_exists),
         choice(
-          seq(keyword('USER'), '(', ')', $.user_auth_option),
+          seq(keyword('USER'), '(', ')', $._alter_user_self_action),
           seq(
             commaSep1($.user_specification),
             optional(seq(keywords('DEFAULT ROLE'), choice(keyword('NONE'), keyword('ALL'), commaSep1($.account_name)))),
@@ -2252,17 +2802,65 @@ export default grammar({
         )
       ),
 
-    user_specification: ($) => seq($.account_name, optional($.user_auth_option)),
+    _alter_user_self_action: ($) =>
+      choice(
+        $.user_auth_option,
+        keywords('DISCARD OLD PASSWORD'),
+        repeat1(
+          choice(
+            seq(choice(keyword('ADD'), keyword('MODIFY')), $.numeric_literal, keyword('FACTOR'), $.user_auth_option),
+            seq(keyword('DROP'), $.numeric_literal, keyword('FACTOR'))
+          )
+        )
+      ),
+
+    user_specification: ($) =>
+      seq(
+        $.account_name,
+        optional(
+          choice(
+            seq(
+              optional(keywords('INITIAL AUTHENTICATION')),
+              $.user_auth_option,
+              repeat(seq(keyword('AND'), $.user_auth_option))
+            ),
+            keywords('DISCARD OLD PASSWORD'),
+            repeat1(
+              choice(
+                seq(
+                  choice(keyword('ADD'), keyword('MODIFY')),
+                  $.numeric_literal,
+                  keyword('FACTOR'),
+                  $.user_auth_option
+                ),
+                seq(keyword('DROP'), $.numeric_literal, keyword('FACTOR'))
+              )
+            )
+          )
+        )
+      ),
 
     user_auth_option: ($) =>
       seq(
         keyword('IDENTIFIED'),
         choice(
-          seq(keyword('BY'), optional(keywords('RANDOM PASSWORD')), optional($.string_literal)),
+          seq(
+            keyword('BY'),
+            choice(keywords('RANDOM PASSWORD'), $.string_literal),
+            optional(seq(keyword('REPLACE'), $.string_literal)),
+            optional(keywords('RETAIN CURRENT PASSWORD'))
+          ),
           seq(
             keyword('WITH'),
             $._identifier_or_string,
-            optional(choice(seq(keyword('BY'), $.string_literal), seq(keyword('AS'), $.string_literal)))
+            optional(
+              choice(
+                seq(keyword('BY'), choice(keywords('RANDOM PASSWORD'), $.string_literal)),
+                seq(keyword('AS'), $.string_literal)
+              )
+            ),
+            optional(seq(keyword('REPLACE'), $.string_literal)),
+            optional(keywords('RETAIN CURRENT PASSWORD'))
           )
         )
       ),
@@ -2309,7 +2907,12 @@ export default grammar({
         ),
         seq(keywords('PASSWORD HISTORY'), choice(keyword('DEFAULT'), $.numeric_literal)),
         seq(keywords('PASSWORD REUSE INTERVAL'), choice(keyword('DEFAULT'), seq($.numeric_literal, keyword('DAY')))),
-        seq(keywords('ACCOUNT'), choice(keyword('LOCK'), keyword('UNLOCK')))
+        seq(keywords('PASSWORD REQUIRE CURRENT'), optional(choice(keyword('DEFAULT'), keyword('OPTIONAL')))),
+        seq(keyword('FAILED_LOGIN_ATTEMPTS'), $.numeric_literal),
+        seq(keyword('PASSWORD_LOCK_TIME'), choice($.numeric_literal, keyword('UNBOUNDED'))),
+        seq(keyword('ACCOUNT'), choice(keyword('LOCK'), keyword('UNLOCK'))),
+        seq(keyword('COMMENT'), $.string_literal),
+        seq(keyword('ATTRIBUTE'), $.string_literal)
       ),
 
     drop_user_statement: ($) => seq(keywords('DROP USER'), optional($.if_exists), commaSep1($.account_name)),
@@ -2354,6 +2957,14 @@ export default grammar({
         keyword('GRANT'),
         choice(
           seq(
+            keyword('PROXY'),
+            keyword('ON'),
+            $.account_name,
+            keyword('TO'),
+            commaSep1($.account_name),
+            optional(keywords('WITH GRANT OPTION'))
+          ),
+          seq(
             commaSep1($.privilege_item),
             keyword('ON'),
             optional(choice(keyword('TABLE'), keyword('FUNCTION'), keyword('PROCEDURE'))),
@@ -2393,6 +3004,7 @@ export default grammar({
         keyword('REVOKE'),
         optional($.if_exists),
         choice(
+          seq(keyword('PROXY'), keyword('ON'), $.account_name, keyword('FROM'), commaSep1($.account_name)),
           seq(
             commaSep1($.privilege_item),
             optional(
@@ -2403,16 +3015,20 @@ export default grammar({
               )
             ),
             keyword('FROM'),
-            commaSep1($.account_name)
+            commaSep1($.account_name),
+            optional($._revoke_tail)
           ),
           seq(
             optional(keywords('ADMIN OPTION FOR')),
             commaSep1($.account_name),
             keyword('FROM'),
-            commaSep1($.account_name)
+            commaSep1($.account_name),
+            optional($._revoke_tail)
           )
         )
       ),
+
+    _revoke_tail: () => repeat1(choice(keywords('IGNORE UNKNOWN USER'), keywords('IGNORE UNKNOWN PRIVILEGE_LEVEL'))),
 
     privilege_item: ($) =>
       seq(
@@ -2555,18 +3171,15 @@ export default grammar({
       seq(
         keyword('RESET'),
         choice(
-          seq(keyword('MASTER'), optional(seq(keyword('TO'), $.numeric_literal))),
-          keywords('BINARY LOGS AND GTIDS'),
-          seq(choice(keyword('REPLICA'), keyword('SLAVE')), optional(keyword('ALL'))),
+          seq(keywords('BINARY LOGS AND GTIDS'), optional(seq(keyword('TO'), $.numeric_literal))),
+          seq(keyword('REPLICA'), optional(keyword('ALL')), optional(seq(keywords('FOR CHANNEL'), $.string_literal))),
           seq(keyword('PERSIST'), optional(seq(optional($.if_exists), $._identifier)))
         )
       ),
 
     purge_statement: ($) =>
       seq(
-        keyword('PURGE'),
-        choice(keyword('BINARY'), keyword('MASTER')),
-        keyword('LOGS'),
+        keywords('PURGE BINARY LOGS'),
         choice(seq(keyword('TO'), $.string_literal), seq(keyword('BEFORE'), $._expression))
       ),
 
@@ -2576,6 +3189,10 @@ export default grammar({
     shutdown_statement: () => keyword('SHUTDOWN'),
 
     restart_statement: () => keyword('RESTART'),
+
+    binlog_statement: ($) => seq(keyword('BINLOG'), $.string_literal),
+
+    help_statement: ($) => seq(keyword('HELP'), $.string_literal),
 
     prepare_statement: ($) =>
       seq(keyword('PREPARE'), field('name', $._identifier), keyword('FROM'), choice($.string_literal, $.user_variable)),
@@ -2629,6 +3246,146 @@ export default grammar({
     // =========================================================================
 
     _expression: ($) =>
+      choice($._bool_pri, $.is_expression, alias($._not_expression, $.unary_expression), $.binary_expression),
+
+    _not_expression: ($) =>
+      prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', $._expression))),
+
+    binary_expression: ($) =>
+      choice(
+        leftBinaryOp(PREC.OR, $._expression, choice(keyword('OR'), '||')),
+        leftBinaryOp(PREC.XOR, $._expression, keyword('XOR')),
+        leftBinaryOp(PREC.AND, $._expression, choice(keyword('AND'), '&&'))
+      ),
+
+    is_expression: ($) =>
+      prec.left(
+        PREC.IS_BOOL,
+        seq(
+          field('left', $._bool_pri),
+          keyword('IS'),
+          optional(keyword('NOT')),
+          field('right', choice($.boolean_literal, keyword('UNKNOWN')))
+        )
+      ),
+
+    _bool_pri: ($) =>
+      choice(
+        $._predicate,
+        alias($._is_null_expression, $.is_expression),
+        alias($._compare_binary_expression, $.binary_expression),
+        $.quantified_comparison_expression
+      ),
+
+    _is_null_expression: ($) =>
+      prec.left(
+        PREC.COMPARE,
+        seq(field('left', $._bool_pri), keyword('IS'), optional(keyword('NOT')), field('right', $.null))
+      ),
+
+    _compare_binary_expression: ($) =>
+      prec.left(
+        PREC.COMPARE,
+        seq(
+          field('left', $._bool_pri),
+          field('operator', choice('=', '<=>', '>=', '>', '<=', '<', '<>', '!=')),
+          field('right', $._predicate)
+        )
+      ),
+
+    quantified_comparison_expression: ($) =>
+      prec.left(
+        PREC.COMPARE,
+        seq(
+          field('left', $._bool_pri),
+          field('operator', choice('=', '>=', '>', '<=', '<', '<>', '!=')),
+          field('quantifier', choice(keyword('ANY'), keyword('SOME'), keyword('ALL'))),
+          '(',
+          $.select_statement,
+          ')'
+        )
+      ),
+
+    _predicate: ($) =>
+      choice(
+        $._bit_expr,
+        $.in_expression,
+        $.member_of_expression,
+        $.between_expression,
+        $.like_expression,
+        alias($._predicate_binary_expression, $.binary_expression)
+      ),
+
+    _predicate_binary_expression: ($) =>
+      prec.left(
+        PREC.PREDICATE,
+        choice(
+          seq(
+            field('left', $._bit_expr),
+            field('operator', seq(optional(keyword('NOT')), choice(keyword('REGEXP'), keyword('RLIKE')))),
+            field('right', $._bit_expr)
+          ),
+          seq(field('left', $._bit_expr), field('operator', keywords('SOUNDS LIKE')), field('right', $._bit_expr))
+        )
+      ),
+
+    like_expression: ($) =>
+      prec.right(
+        PREC.PREDICATE,
+        seq(
+          field('left', $._bit_expr),
+          optional(keyword('NOT')),
+          keyword('LIKE'),
+          field('right', $._simple_expr),
+          optional(seq(keyword('ESCAPE'), field('escape', $._simple_expr)))
+        )
+      ),
+
+    between_expression: ($) =>
+      prec.right(
+        PREC.PREDICATE,
+        seq(
+          field('value', $._bit_expr),
+          optional(keyword('NOT')),
+          keyword('BETWEEN'),
+          field('low', $._bit_expr),
+          keyword('AND'),
+          field('high', $._predicate)
+        )
+      ),
+
+    in_expression: ($) =>
+      prec.left(
+        PREC.PREDICATE,
+        seq(
+          field('value', $._bit_expr),
+          optional(keyword('NOT')),
+          keyword('IN'),
+          '(',
+          choice($.select_statement, commaSep1($._expression)),
+          ')'
+        )
+      ),
+
+    member_of_expression: ($) =>
+      prec.left(
+        PREC.PREDICATE,
+        seq(field('value', $._bit_expr), keywords('MEMBER OF'), '(', field('array', $._simple_expr), ')')
+      ),
+
+    _bit_expr: ($) => choice($._simple_expr, alias($._bit_binary_expression, $.binary_expression)),
+
+    _bit_binary_expression: ($) =>
+      choice(
+        leftBinaryOp(PREC.BIT_OR, $._bit_expr, '|'),
+        leftBinaryOp(PREC.BIT_AND, $._bit_expr, '&'),
+        leftBinaryOp(PREC.BIT_SHIFT, $._bit_expr, choice('<<', '>>')),
+        leftBinaryOp(PREC.ADD, $._bit_expr, choice('+', '-')),
+        leftBinaryOp(PREC.MUL, $._bit_expr, choice('*', '/', keyword('DIV'), '%', keyword('MOD'))),
+        leftBinaryOp(PREC.BIT_XOR, $._bit_expr, '^')
+      ),
+
+    _simple_expr: ($) =>
       choice(
         $._literal,
         $.column_reference,
@@ -2649,14 +3406,8 @@ export default grammar({
         $.case_expression,
         $.assignment_expression,
         $.unary_expression,
-        $.binary_expression,
         $.collate_expression,
-        $.is_expression,
-        $.like_expression,
-        $.between_expression,
-        $.in_expression,
-        $.member_of_expression,
-        $.quantified_comparison_expression
+        alias($._json_binary_expression, $.binary_expression)
       ),
 
     assignment_expression: ($) =>
@@ -2664,115 +3415,21 @@ export default grammar({
 
     unary_expression: ($) =>
       choice(
-        prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', $._expression))),
-        prec.right(PREC.UNARY, seq(field('operator', choice('-', '+', '~')), field('operand', $._expression))),
-        prec.right(PREC.BANG, seq(field('operator', '!'), field('operand', $._expression))),
-        prec.right(PREC.BINARY, seq(field('operator', keyword('BINARY')), field('operand', $._expression)))
+        prec.right(PREC.UNARY, seq(field('operator', choice('-', '+', '~')), field('operand', $._simple_expr))),
+        prec.right(PREC.BANG, seq(field('operator', '!'), field('operand', $._simple_expr))),
+        prec.right(PREC.BINARY, seq(field('operator', keyword('BINARY')), field('operand', $._simple_expr)))
       ),
 
     collate_expression: ($) =>
       prec.left(
-        PREC.BINARY,
-        seq(field('value', $._expression), keyword('COLLATE'), field('collation', $._identifier_or_string))
+        PREC.COLLATE,
+        seq(field('value', $._simple_expr), keyword('COLLATE'), field('collation', $._identifier_or_string))
       ),
 
-    binary_expression: ($) =>
-      choice(
-        binaryOp($, PREC.OR, choice(keyword('OR'), '||')),
-        binaryOp($, PREC.XOR, keyword('XOR')),
-        binaryOp($, PREC.AND, choice(keyword('AND'), '&&')),
-        binaryOp(
-          $,
-          PREC.COMPARE,
-          choice(
-            '=',
-            '<=>',
-            '>=',
-            '>',
-            '<=',
-            '<',
-            '<>',
-            '!=',
-            seq(optional(keyword('NOT')), choice(keyword('REGEXP'), keyword('RLIKE'))),
-            keywords('SOUNDS LIKE')
-          )
-        ),
-        binaryOp($, PREC.BIT_OR, '|'),
-        binaryOp($, PREC.BIT_AND, '&'),
-        binaryOp($, PREC.BIT_SHIFT, choice('<<', '>>')),
-        binaryOp($, PREC.ADD, choice('+', '-')),
-        binaryOp($, PREC.MUL, choice('*', '/', keyword('DIV'), '%', keyword('MOD'))),
-        binaryOp($, PREC.BIT_XOR, '^'),
-        binaryOp($, PREC.JSON, choice('->', '->>'))
-      ),
-
-    is_expression: ($) =>
+    _json_binary_expression: ($) =>
       prec.left(
-        PREC.COMPARE,
-        seq(
-          field('left', $._expression),
-          keyword('IS'),
-          optional(keyword('NOT')),
-          field('right', choice($.null, $.boolean_literal, keyword('UNKNOWN')))
-        )
-      ),
-
-    like_expression: ($) =>
-      choice(
-        prec.left(PREC.COMPARE, seq($._like_head, field('right', $._expression))),
-        seq(
-          $._like_head,
-          prec(PREC.ESCAPE, seq(field('right', $._expression), keyword('ESCAPE'))),
-          prec.left(PREC.COMPARE, field('escape', $._expression))
-        )
-      ),
-
-    _like_head: ($) =>
-      prec.left(PREC.COMPARE, seq(field('left', $._expression), optional(keyword('NOT')), keyword('LIKE'))),
-
-    between_expression: ($) =>
-      prec.left(
-        PREC.BETWEEN,
-        seq(
-          field('value', $._expression),
-          optional(keyword('NOT')),
-          keyword('BETWEEN'),
-          field('low', $._expression),
-          keyword('AND'),
-          field('high', $._expression)
-        )
-      ),
-
-    in_expression: ($) =>
-      prec.left(
-        PREC.COMPARE,
-        seq(
-          field('value', $._expression),
-          optional(keyword('NOT')),
-          keyword('IN'),
-          '(',
-          choice($.select_statement, commaSep1($._expression)),
-          ')'
-        )
-      ),
-
-    member_of_expression: ($) =>
-      prec.left(
-        PREC.COMPARE,
-        seq(field('value', $._expression), keywords('MEMBER OF'), '(', field('array', $._expression), ')')
-      ),
-
-    quantified_comparison_expression: ($) =>
-      prec.left(
-        PREC.COMPARE,
-        seq(
-          field('left', $._expression),
-          field('operator', choice('=', '>=', '>', '<=', '<', '<>', '!=')),
-          field('quantifier', choice(keyword('ANY'), keyword('SOME'), keyword('ALL'))),
-          '(',
-          $.select_statement,
-          ')'
-        )
+        PREC.JSON,
+        seq(field('left', $.column_reference), field('operator', choice('->', '->>')), field('right', $.string_literal))
       ),
 
     interval_expression: ($) =>
@@ -2819,7 +3476,13 @@ export default grammar({
             ')'
           )
         ),
-        optional(seq(optional($._null_treatment), $.over_clause))
+        optional(
+          seq(
+            optional(seq(keyword('FROM'), choice(keyword('FIRST'), keyword('LAST')))),
+            optional($._null_treatment),
+            $.over_clause
+          )
+        )
       ),
 
     _null_treatment: () => seq(choice(keyword('RESPECT'), keyword('IGNORE')), keyword('NULLS')),
@@ -2839,15 +3502,13 @@ export default grammar({
           $._expression,
           optional(seq(keyword('FOR'), $._expression))
         ),
-        prec(-1, seq($._expression, keyword('IN'), $._expression)),
+        prec(-1, seq($._bit_expr, keyword('IN'), $._expression)),
         seq(
           optional(choice(keyword('DISTINCT'), keyword('ALL'))),
           commaSep1($._expression),
           optional($.order_by_clause),
           optional(seq(keyword('SEPARATOR'), $.string_literal)),
           optional(seq(keyword('USING'), $._identifier)),
-          optional(seq(keyword('FROM'), choice(keyword('FIRST'), keyword('LAST')))),
-          optional($._null_treatment),
           optional(seq(keyword('RETURNING'), $.cast_type)),
           optional($._json_on_empty_or_error),
           optional($._json_on_empty_or_error)
@@ -2869,11 +3530,20 @@ export default grammar({
         keyword('CAST'),
         '(',
         field('value', $._expression),
-        keyword('AS'),
-        field('type', $.cast_type),
-        optional(keyword('ARRAY')),
+        choice(
+          seq(keyword('AS'), field('type', $.cast_type), optional(keyword('ARRAY'))),
+          seq(
+            keywords('AT TIME ZONE'),
+            optional(keyword('INTERVAL')),
+            field('timezone', $.string_literal),
+            keyword('AS'),
+            field('type', alias($._datetime_cast_type, $.cast_type))
+          )
+        ),
         ')'
       ),
+
+    _datetime_cast_type: ($) => seq(keyword('DATETIME'), optional(seq('(', $.numeric_literal, ')'))),
 
     convert_expression: ($) =>
       seq(
@@ -2888,20 +3558,19 @@ export default grammar({
       choice(
         seq(keyword('BINARY'), optional(seq('(', $.numeric_literal, ')'))),
         seq(
-          keyword('CHAR'),
+          choice(keyword('CHAR'), keywords('NATIONAL CHAR')),
           optional(seq('(', $.numeric_literal, ')')),
-          optional($._charset_clause),
-          optional(seq(keyword('COLLATE'), $._identifier))
+          repeat($._string_type_modifier)
         ),
-        keyword('NCHAR'),
-        seq(keyword('NCHAR'), '(', $.numeric_literal, ')'),
+        seq(keyword('NCHAR'), optional(seq('(', $.numeric_literal, ')'))),
         keyword('DATE'),
-        seq(choice(keyword('DATETIME'), keyword('TIME')), optional(seq('(', $.numeric_literal, ')'))),
+        $._datetime_cast_type,
+        seq(keyword('TIME'), optional(seq('(', $.numeric_literal, ')'))),
         seq(
           choice(keyword('DECIMAL'), keyword('DEC')),
           optional(seq('(', $.numeric_literal, optional(seq(',', $.numeric_literal)), ')'))
         ),
-        keyword('DOUBLE'),
+        seq(keyword('DOUBLE'), optional(keyword('PRECISION'))),
         seq(keyword('FLOAT'), optional(seq('(', $.numeric_literal, ')'))),
         keyword('JSON'),
         keyword('REAL'),
@@ -2913,7 +3582,8 @@ export default grammar({
         keyword('MULTIPOINT'),
         keyword('MULTILINESTRING'),
         keyword('MULTIPOLYGON'),
-        keyword('GEOMETRYCOLLECTION')
+        keyword('GEOMETRYCOLLECTION'),
+        keyword('GEOMCOLLECTION')
       ),
 
     match_expression: ($) =>
@@ -2924,7 +3594,7 @@ export default grammar({
         ')',
         keyword('AGAINST'),
         '(',
-        field('pattern', $._expression),
+        field('pattern', $._bit_expr),
         optional(
           choice(
             seq(keywords('IN NATURAL LANGUAGE MODE'), optional(keywords('WITH QUERY EXPANSION'))),
@@ -2979,7 +3649,11 @@ export default grammar({
 
     boolean_literal: () => choice(keyword('TRUE'), keyword('FALSE')),
 
-    numeric_literal: () => token(prec(1, /([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?/)),
+    numeric_literal: ($) => choice($._integer_literal, $._float_literal),
+
+    _integer_literal: () => token(prec(1, /[0-9]+/)),
+
+    _float_literal: () => token(prec(1, /([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+/)),
 
     string_literal: ($) =>
       prec.right(

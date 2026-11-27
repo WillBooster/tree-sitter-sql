@@ -4,8 +4,9 @@ INSERT VALUES with row alias and ON DUPLICATE KEY UPDATE
 ================================================================================
 
 INSERT HIGH_PRIORITY IGNORE INTO users PARTITION (p0) (id, name, visits)
-VALUES (1, 'Alice', DEFAULT), ROW(2, 'Bob', 1) AS incoming (id, name, visits)
+VALUES (1, 'Alice', DEFAULT), (2, 'Bob', 1) AS incoming (id, name, visits)
 ON DUPLICATE KEY UPDATE name = incoming.name, visits = visits + VALUES(visits);
+INSERT INTO users VALUES ROW(1, 'Alice', DEFAULT), ROW(2, 'Bob', 1) AS incoming (id, name, visits);
 
 --------------------------------------------------------------------------------
 
@@ -49,7 +50,22 @@ ON DUPLICATE KEY UPDATE name = incoming.name, visits = visits + VALUES(visits);
           (function_call
             (identifier)
             (column_reference
-              (identifier))))))))
+              (identifier)))))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (row_constructor
+      (numeric_literal)
+      (string_literal))
+    (row_constructor
+      (numeric_literal)
+      (string_literal)
+      (numeric_literal))
+    (identifier)
+    (column_list
+      (identifier)
+      (identifier)
+      (identifier))))
 
 ================================================================================
 INSERT SET, INSERT SELECT, INSERT TABLE, and empty VALUES
@@ -256,7 +272,7 @@ Single-table and multi-table DELETE
 :language(mysql)
 ================================================================================
 
-DELETE LOW_PRIORITY QUICK IGNORE FROM sessions PARTITION (p_old) AS s WHERE s.expires_at < NOW() ORDER BY s.id LIMIT 500;
+DELETE LOW_PRIORITY QUICK IGNORE FROM sessions AS s PARTITION (p_old) WHERE s.expires_at < NOW() ORDER BY s.id LIMIT 500;
 DELETE t1, t2.* FROM t1 INNER JOIN t2 ON t1.id = t2.t1_id WHERE t1.archived = 1;
 DELETE FROM t1, db.t2.* USING t1 JOIN db.t2 ON t1.id = db.t2.id WHERE t1.deleted = 1;
 
@@ -266,9 +282,9 @@ DELETE FROM t1, db.t2.* USING t1 JOIN db.t2 ON t1.id = db.t2.id WHERE t1.deleted
   (delete_statement
     (qualified_name
       (identifier))
+    (identifier)
     (partition_names_clause
       (identifier))
-    (identifier)
     (where_clause
       (binary_expression
         (column_reference

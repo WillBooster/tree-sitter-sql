@@ -70,10 +70,8 @@ SET LOCAL search_path TO app, public; SET TIME ZONE 'Asia/Tokyo'; SET SESSION CH
   (set_statement
     (qualified_name
       (identifier))
-    (column_reference
-      (identifier))
-    (column_reference
-      (identifier)))
+    (identifier)
+    (identifier))
   (set_statement
     (string_literal))
   (set_statement)
@@ -331,4 +329,61 @@ LISTEN chan_events; NOTIFY chan_events, 'payload'; UNLISTEN *; DECLARE cur1 BINA
   (discard_statement)
   (checkpoint_statement)
   (load_statement
+    (string_literal)))
+
+================================================================================
+SET special forms, var_list values, space-separated transaction modes, grantee GROUP, CLUSTER ON, and COPY DELIMITERS
+:language(postgresql)
+================================================================================
+
+SET NAMES 'UTF8'; SET SCHEMA 'public'; SET XML OPTION DOCUMENT; SET log_error_verbosity = verbose; SET search_path = left, "$user", public; SET extra_float_digits = -2; ALTER SYSTEM SET log_error_verbosity = verbose; BEGIN ISOLATION LEVEL SERIALIZABLE READ ONLY NOT DEFERRABLE; SET TRANSACTION READ ONLY DEFERRABLE; GRANT SELECT ON accounts TO GROUP g_readers; REVOKE SELECT ON accounts FROM GROUP g_readers; ALTER DEFAULT PRIVILEGES GRANT SELECT ON LARGE OBJECTS TO GROUP g_readers; CLUSTER VERBOSE accounts_pkey ON accounts; COPY accounts FROM '/tmp/in' USING DELIMITERS ',';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (set_statement
+    (string_literal))
+  (set_statement
+    (string_literal))
+  (set_statement)
+  (set_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (set_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (quoted_identifier)
+    (identifier))
+  (set_statement
+    (qualified_name
+      (identifier))
+    (unary_expression
+      (numeric_literal)))
+  (alter_system_statement
+    (set_statement
+      (qualified_name
+        (identifier))
+      (identifier)))
+  (begin_statement)
+  (set_statement)
+  (grant_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (revoke_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (alter_default_privileges_statement
+    (identifier))
+  (cluster_statement
+    (identifier)
+    (qualified_name
+      (identifier)))
+  (copy_statement
+    (qualified_name
+      (identifier))
+    (string_literal)
     (string_literal)))

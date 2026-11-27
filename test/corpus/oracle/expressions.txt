@@ -768,11 +768,18 @@ SELECT 1 - 2 + 3 || 4 - 5 FROM dual;
             (identifier)))))))
 
 ================================================================================
-Left associativity of multiplicative operators and right associativity of exponent
+Left associativity of multiplicative operators and PL/SQL exponent precedence
 :language(oracle)
 ================================================================================
 
-SELECT 24 / 4 * 2 / 3, 2 ** 3 ** 2 FROM dual;
+SELECT 24 / 4 * 2 / 3 FROM dual;
+
+BEGIN
+  x := 2 ** 3 ** 2;
+  y := -2 ** 2;
+  z := -a ** b * c;
+END;
+/
 
 --------------------------------------------------------------------------------
 
@@ -787,17 +794,33 @@ SELECT 24 / 4 * 2 / 3, 2 ** 3 ** 2 FROM dual;
                 (numeric_literal)
                 (numeric_literal))
               (numeric_literal))
-            (numeric_literal)))
-        (select_item
-          (binary_expression
-            (numeric_literal)
-            (binary_expression
-              (numeric_literal)
-              (numeric_literal)))))
+            (numeric_literal))))
       (from_clause
         (table_reference
           (object_name
-            (identifier)))))))
+            (identifier))))))
+  (anonymous_block
+    (assignment_statement
+      (identifier)
+      (binary_expression
+        (numeric_literal)
+        (binary_expression
+          (numeric_literal)
+          (numeric_literal))))
+    (assignment_statement
+      (identifier)
+      (unary_expression
+        (binary_expression
+          (numeric_literal)
+          (numeric_literal))))
+    (assignment_statement
+      (identifier)
+      (binary_expression
+        (unary_expression
+          (binary_expression
+            (identifier)
+            (identifier)))
+        (identifier)))))
 
 ================================================================================
 MULTISET set operators
@@ -880,4 +903,104 @@ FROM customers c;
         (table_reference
           (object_name
             (identifier))
+          (identifier))))))
+
+================================================================================
+Timestamp precision, ON CONVERSION ERROR, VALIDATE_CONVERSION, postfix intervals, and XML functions
+:language(oracle)
+================================================================================
+
+SELECT
+  SYSTIMESTAMP(6),
+  CURRENT_TIMESTAMP(3),
+  LOCALTIMESTAMP(6),
+  TO_NUMBER(a DEFAULT 0 ON CONVERSION ERROR, '999'),
+  VALIDATE_CONVERSION(a AS NUMBER),
+  CHR(65 USING NCHAR_CS),
+  TRANSLATE(s USING NCHAR_CS),
+  (d1 - d2) DAY(3) TO SECOND(6),
+  (d1 - d2) YEAR(2) TO MONTH,
+  XMLSERIALIZE(CONTENT x AS CLOB INDENT SIZE = 2),
+  XMLQUERY('/a' PASSING x RETURNING CONTENT NULL ON EMPTY),
+  XMLPARSE(DOCUMENT x WELLFORMED),
+  XMLCAST(x AS VARCHAR2(50)),
+  XMLROOT(x, VERSION '1.0', STANDALONE YES)
+FROM t WHERE XMLEXISTS('/a' PASSING x);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (pseudocolumn
+            (numeric_literal)))
+        (select_item
+          (pseudocolumn
+            (numeric_literal)))
+        (select_item
+          (pseudocolumn
+            (numeric_literal)))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier)
+              (numeric_literal))
+            (function_argument
+              (string_literal))))
+        (select_item
+          (validate_conversion_expression
+            (identifier)
+            (type_name)))
+        (select_item
+          (chr_expression
+            (numeric_literal)))
+        (select_item
+          (translate_expression
+            (identifier)))
+        (select_item
+          (interval_expression
+            (parenthesized_expression
+              (binary_expression
+                (identifier)
+                (identifier)))
+            (numeric_literal)
+            (numeric_literal)))
+        (select_item
+          (interval_expression
+            (parenthesized_expression
+              (binary_expression
+                (identifier)
+                (identifier)))
+            (numeric_literal)))
+        (select_item
+          (xml_function_expression
+            (identifier)
+            (type_name)
+            (numeric_literal)))
+        (select_item
+          (xml_function_expression
+            (string_literal)
+            (identifier)))
+        (select_item
+          (xml_function_expression
+            (identifier)))
+        (select_item
+          (xml_function_expression
+            (identifier)
+            (type_name
+              (numeric_literal))))
+        (select_item
+          (xml_function_expression
+            (identifier)
+            (string_literal))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))))
+      (where_clause
+        (xml_function_expression
+          (string_literal)
           (identifier))))))

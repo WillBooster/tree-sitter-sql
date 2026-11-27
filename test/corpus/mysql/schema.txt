@@ -417,8 +417,8 @@ DROP TRIGGER IF EXISTS trg_orders_bi;
 CREATE PROCEDURE proc_sync(IN p_limit INT, OUT p_done INT, INOUT p_tag VARCHAR(20))
 LANGUAGE SQL NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER COMMENT 'sync'
 proc_lbl: BEGIN
-  DECLARE v_id INT DEFAULT 0;
-  DECLARE v_finished INT DEFAULT 0;
+  DECLARE v_id INT DEFAULT p_limit + 1;
+  DECLARE v_finished INT DEFAULT @init_done;
   DECLARE dup_key CONDITION FOR SQLSTATE '23000';
   DECLARE cur CURSOR FOR SELECT id FROM orders LIMIT p_limit;
   DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_finished = 1;
@@ -568,13 +568,14 @@ DROP EVENT IF EXISTS ev_cleanup;
       (declare_statement
         (identifier)
         (data_type)
-        (default_clause
+        (binary_expression
+          (column_reference
+            (identifier))
           (numeric_literal)))
       (declare_statement
         (identifier)
         (data_type)
-        (default_clause
-          (numeric_literal)))
+        (user_variable))
       (declare_statement
         (identifier)
         (string_literal))
@@ -894,3 +895,86 @@ CREATE TABLE t_ver (
       (identifier))
     (table_option
       (identifier))))
+
+================================================================================
+ALTER TABLE space-separated options, loadable functions, tablespaces, servers, SRS, resource groups, and ALTER INSTANCE
+:language(mysql)
+================================================================================
+
+ALTER TABLE orders ENGINE = InnoDB ROW_FORMAT = DYNAMIC;
+ALTER TABLE orders;
+CREATE AGGREGATE FUNCTION IF NOT EXISTS udf_sum RETURNS REAL SONAME 'udf_sum.so';
+CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd' ENGINE = InnoDB;
+ALTER UNDO TABLESPACE uts1 SET INACTIVE;
+DROP TABLESPACE ts1 ENGINE = InnoDB;
+CREATE LOGFILE GROUP lg1 ADD UNDOFILE 'undo_1.dat' INITIAL_SIZE = 16M ENGINE = NDB;
+DROP LOGFILE GROUP lg1 ENGINE = NDB;
+CREATE SERVER srv1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST '127.0.0.1', PORT 3306);
+DROP SERVER IF EXISTS srv1;
+CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 41001 NAME 'WGS 84' DEFINITION 'GEOGCS[]';
+DROP SPATIAL REFERENCE SYSTEM IF EXISTS 41001;
+CREATE RESOURCE GROUP rg_app TYPE = USER VCPU = 0-1 THREAD_PRIORITY = -5 ENABLE;
+ALTER RESOURCE GROUP rg_app DISABLE FORCE;
+DROP RESOURCE GROUP rg_app FORCE;
+ALTER INSTANCE ROTATE INNODB MASTER KEY;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action
+      (table_option
+        (identifier))
+      (table_option)))
+  (alter_table_statement
+    (qualified_name
+      (identifier)))
+  (create_function_statement
+    (if_not_exists)
+    (identifier)
+    (string_literal))
+  (create_tablespace_statement
+    (identifier)
+    (string_literal)
+    (identifier))
+  (alter_tablespace_statement
+    (identifier))
+  (drop_tablespace_statement
+    (identifier)
+    (identifier))
+  (create_logfile_group_statement
+    (identifier)
+    (string_literal)
+    (identifier)
+    (identifier))
+  (drop_logfile_group_statement
+    (identifier)
+    (identifier))
+  (create_server_statement
+    (identifier)
+    (identifier)
+    (string_literal)
+    (numeric_literal))
+  (drop_server_statement
+    (if_exists)
+    (identifier))
+  (create_srs_statement
+    (if_not_exists)
+    (numeric_literal)
+    (string_literal)
+    (string_literal))
+  (drop_srs_statement
+    (if_exists)
+    (numeric_literal))
+  (create_resource_group_statement
+    (identifier)
+    (numeric_literal)
+    (numeric_literal)
+    (numeric_literal))
+  (alter_resource_group_statement
+    (identifier))
+  (drop_resource_group_statement
+    (identifier))
+  (alter_instance_statement))

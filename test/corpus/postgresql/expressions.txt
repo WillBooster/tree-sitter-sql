@@ -988,3 +988,198 @@ SELECT JSON_OBJECT('a': 1, 'b' VALUE 2 NULL ON NULL WITH UNIQUE KEYS RETURNING j
         (table
           (qualified_name
             (identifier)))))))
+
+================================================================================
+Whole-row references in expressions and positional parameter indirection
+:language(postgresql)
+================================================================================
+
+SELECT row_to_json(t.*), count(s.t.*), c.s.t.*, ROW(t.*, 1), t.*::text, t.* IS NULL, $1.x, $1.*, $1[1].x, $1[1].* FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (table_columns
+              (identifier)))))
+      (result_column
+        (function_call
+          (identifier)
+          (function_argument
+            (table_columns
+              (identifier)
+              (identifier)))))
+      (result_column
+        (field_selection
+          (column_reference
+            (identifier)
+            (identifier)
+            (identifier))
+          (all_columns)))
+      (result_column
+        (row_expression
+          (table_columns
+            (identifier))
+          (numeric_literal)))
+      (result_column
+        (cast_expression
+          (table_columns
+            (identifier))
+          (type_name
+            (identifier))))
+      (result_column
+        (is_expression
+          (table_columns
+            (identifier))
+          (null)))
+      (result_column
+        (field_selection
+          (positional_parameter)
+          (identifier)))
+      (result_column
+        (field_selection
+          (positional_parameter)
+          (all_columns)))
+      (result_column
+        (field_selection
+          (subscript_expression
+            (positional_parameter)
+            (numeric_literal))
+          (identifier)))
+      (result_column
+        (field_selection
+          (subscript_expression
+            (positional_parameter)
+            (numeric_literal))
+          (all_columns)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Pattern matching precedence with logical, comparison, and IS operators
+:language(postgresql)
+================================================================================
+
+SELECT a LIKE 'x%' AND b = 1, a LIKE b = c, a ILIKE 'x%' OR b IS NULL, 'a' LIKE 'b' || 'c' ESCAPE 'x' AND d, 'x' LIKE 'x' = true, 'x' LIKE 'x' IS NULL FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (like_expression
+            (column_reference
+              (identifier))
+            (string_literal))
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))))
+      (result_column
+        (binary_expression
+          (like_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (like_expression
+            (column_reference
+              (identifier))
+            (string_literal))
+          (is_expression
+            (column_reference
+              (identifier))
+            (null))))
+      (result_column
+        (binary_expression
+          (like_expression
+            (string_literal)
+            (binary_expression
+              (string_literal)
+              (custom_operator)
+              (string_literal))
+            (string_literal))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (like_expression
+            (string_literal)
+            (string_literal))
+          (boolean_literal)))
+      (result_column
+        (is_expression
+          (like_expression
+            (string_literal)
+            (string_literal))
+          (null)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Quantified arithmetic operators, SUBSTRING SIMILAR, COLLATION FOR, and XML PASSING BY REF
+:language(postgresql)
+================================================================================
+
+SELECT a + ANY (b), a - ANY (b), a * ALL (SELECT 1), SUBSTRING(s SIMILAR p ESCAPE '#'), COLLATION FOR (s), XMLEXISTS('//a' PASSING BY REF doc BY REF) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal))))))
+      (result_column
+        (substring_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (collation_for_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (xml_expression
+          (string_literal)
+          (column_reference
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))

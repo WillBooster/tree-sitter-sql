@@ -334,51 +334,54 @@ LOCK IN SHARE MODE;
         (column_list
           (identifier))
         (select_statement
-          (select_core
-            (result_column
-              (numeric_literal)))
-          (compound_operator)
-          (select_core
-            (result_column
-              (binary_expression
-                (column_reference
-                  (identifier))
+          (compound_query
+            (select_core
+              (result_column
                 (numeric_literal)))
+            (compound_operator)
+            (select_core
+              (result_column
+                (binary_expression
+                  (column_reference
+                    (identifier))
+                  (numeric_literal)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))
+              (where_clause
+                (binary_expression
+                  (column_reference
+                    (identifier))
+                  (numeric_literal))))))))
+    (compound_query
+      (compound_query
+        (parenthesized_query
+          (select_core
+            (result_column
+              (column_reference
+                (identifier)))
             (from_clause
               (table
                 (qualified_name
-                  (identifier))))
-            (where_clause
-              (binary_expression
-                (column_reference
-                  (identifier))
-                (numeric_literal)))))))
-    (parenthesized_query
-      (select_core
-        (result_column
-          (column_reference
-            (identifier)))
-        (from_clause
-          (table
-            (qualified_name
-              (identifier)))))
-      (order_by_clause
-        (ordering_term
-          (column_reference
+                  (identifier)))))
+          (order_by_clause
+            (ordering_term
+              (column_reference
+                (identifier))))
+          (limit_clause
+            (numeric_literal)
+            (numeric_literal)))
+        (compound_operator)
+        (table_value_statement
+          (qualified_name
             (identifier))))
-      (limit_clause
-        (numeric_literal)
-        (numeric_literal)))
-    (compound_operator)
-    (table_value_statement
-      (qualified_name
-        (identifier)))
-    (compound_operator)
-    (values_statement
-      (row_constructor
-        (numeric_literal))
-      (row_constructor
-        (numeric_literal)))
+      (compound_operator)
+      (values_statement
+        (row_constructor
+          (numeric_literal))
+        (row_constructor
+          (numeric_literal))))
     (order_by_clause
       (ordering_term
         (numeric_literal)))
@@ -568,3 +571,127 @@ SELECT * FROM a JOIN b CROSS JOIN c INNER JOIN d;
         (table
           (qualified_name
             (identifier)))))))
+
+================================================================================
+INTERSECT precedence over UNION and EXCEPT, FOR UPDATE INTO, PRIMARY index hint, ODBC escape, nested joins, and FULL alias
+:language(mysql)
+================================================================================
+
+SELECT 1 UNION SELECT 2 INTERSECT SELECT 3;
+SELECT * FROM t FORCE INDEX (PRIMARY) FOR UPDATE INTO @out_var;
+SELECT * FROM a JOIN b JOIN c ON b.x = c.x ON a.x = b.x;
+SELECT * FROM ((SELECT 1) AS a JOIN b);
+SELECT * FROM { OJ a LEFT OUTER JOIN b ON a.x = b.x };
+SELECT full.id FROM t full JOIN u ON full.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (compound_query
+      (select_core
+        (result_column
+          (numeric_literal)))
+      (compound_operator)
+      (compound_query
+        (select_core
+          (result_column
+            (numeric_literal)))
+        (compound_operator)
+        (select_core
+          (result_column
+            (numeric_literal))))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (index_hint))))
+    (locking_clause)
+    (into_clause
+      (user_variable)))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier)))))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (join_table
+          (subquery_table
+            (select_statement
+              (select_core
+                (result_column
+                  (numeric_literal))))
+            (identifier))
+          (table
+            (qualified_name
+              (identifier)))))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier)))))))
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))))))

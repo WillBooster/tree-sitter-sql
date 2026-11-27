@@ -370,47 +370,50 @@ Compound queries with UNION, INTERSECT, and EXCEPT
 
 (source_file
   (select_statement
-    (select_core
-      (result_column
-        (column_reference
-          (identifier)))
-      (from_clause
-        (table
-          (qualified_name
-            (identifier)))))
-    (order_by_clause
-      (ordering_term
-        (column_reference
-          (identifier))))
-    (limit_clause
-      (numeric_literal))
-    (compound_operator)
-    (select_core
-      (result_column
-        (column_reference
-          (identifier)))
-      (from_clause
-        (table
-          (qualified_name
-            (identifier)))))
-    (compound_operator)
-    (select_core
-      (result_column
-        (column_reference
-          (identifier)))
-      (from_clause
-        (table
-          (qualified_name
-            (identifier)))))
-    (compound_operator)
-    (select_core
-      (result_column
-        (column_reference
-          (identifier)))
-      (from_clause
-        (table
-          (qualified_name
-            (identifier)))))
+    (compound_query
+      (compound_query
+        (select_core
+          (result_column
+            (column_reference
+              (identifier)))
+          (from_clause
+            (table
+              (qualified_name
+                (identifier)))))
+        (order_by_clause
+          (ordering_term
+            (column_reference
+              (identifier))))
+        (limit_clause
+          (numeric_literal))
+        (compound_operator)
+        (compound_query
+          (select_core
+            (result_column
+              (column_reference
+                (identifier)))
+            (from_clause
+              (table
+                (qualified_name
+                  (identifier)))))
+          (compound_operator)
+          (select_core
+            (result_column
+              (column_reference
+                (identifier)))
+            (from_clause
+              (table
+                (qualified_name
+                  (identifier)))))))
+      (compound_operator)
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))))
     (order_by_clause
       (ordering_term
         (numeric_literal)))))
@@ -542,52 +545,53 @@ WITH RECURSIVE graph(id, link, data) AS MATERIALIZED (SELECT id, link, data FROM
           (identifier)
           (identifier))
         (select_statement
-          (select_core
-            (result_column
-              (column_reference
-                (identifier)))
-            (result_column
-              (column_reference
-                (identifier)))
-            (result_column
-              (column_reference
-                (identifier)))
-            (from_clause
-              (table
-                (qualified_name
-                  (identifier)))))
-          (compound_operator)
-          (select_core
-            (result_column
-              (column_reference
-                (identifier)
-                (identifier)))
-            (result_column
-              (column_reference
-                (identifier)
-                (identifier)))
-            (result_column
-              (column_reference
-                (identifier)
-                (identifier)))
-            (from_clause
-              (table
-                (qualified_name
-                  (identifier))
-                (identifier))
-              (join_operator)
-              (table
-                (qualified_name
-                  (identifier))
-                (identifier))
-              (join_constraint
-                (binary_expression
-                  (column_reference
-                    (identifier)
+          (compound_query
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (result_column
+                (column_reference
+                  (identifier)))
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier)))))
+            (compound_operator)
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)
+                  (identifier)))
+              (result_column
+                (column_reference
+                  (identifier)
+                  (identifier)))
+              (result_column
+                (column_reference
+                  (identifier)
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
                     (identifier))
-                  (column_reference
-                    (identifier)
-                    (identifier)))))))
+                  (identifier))
+                (join_operator)
+                (table
+                  (qualified_name
+                    (identifier))
+                  (identifier))
+                (join_constraint
+                  (binary_expression
+                    (column_reference
+                      (identifier)
+                      (identifier))
+                    (column_reference
+                      (identifier)
+                      (identifier))))))))
         (cte_search_clause
           (identifier)
           (identifier))
@@ -678,3 +682,88 @@ SELECT FROM items WHERE active;
       (where_clause
         (column_reference
           (identifier))))))
+
+================================================================================
+Right-nested joins, parenthesized joins, and windowless table functions
+:language(postgresql)
+================================================================================
+
+SELECT * FROM a LEFT JOIN b JOIN c ON b.x = c.x ON a.x = b.x, ((t JOIN u ON true)) x, current_date, cast(1 AS int), extract(epoch FROM now()), json_object('{}'::text), ROWS FROM (user, coalesce(1, 2)) FOR UPDATE FOR SHARE LIMIT 1 OFFSET 2;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_operator)
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (join_table
+          (table
+            (qualified_name
+              (identifier)))
+          (join_operator)
+          (table
+            (qualified_name
+              (identifier)))
+          (join_constraint
+            (boolean_literal))
+          (identifier))
+        (table_function
+          (current_value))
+        (table_function
+          (cast_expression
+            (numeric_literal)
+            (type_name)))
+        (table_function
+          (extract_expression
+            (identifier)
+            (function_call
+              (identifier))))
+        (table_function
+          (json_expression
+            (function_argument
+              (cast_expression
+                (string_literal)
+                (type_name
+                  (identifier))))))
+        (rows_from_table
+          (current_value)
+          (function_call
+            (identifier)
+            (function_argument
+              (numeric_literal))
+            (function_argument
+              (numeric_literal))))))
+    (locking_clause)
+    (locking_clause)
+    (limit_clause
+      (numeric_literal))
+    (offset_clause
+      (numeric_literal))))

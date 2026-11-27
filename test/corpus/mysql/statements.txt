@@ -463,3 +463,125 @@ KILL CONNECTION 99;
         (string_literal))))
   (kill_statement
     (numeric_literal)))
+
+================================================================================
+MySQL 8.4 SET values, XA, replication, plugins, components, CLONE, index cache, GRANT PROXY, and standalone diagnostics
+:language(mysql)
+================================================================================
+
+SET autocommit = ON, binlog_format = ROW, time_zone = SYSTEM, sql_mode := DEFAULT;
+SET NAMES utf8mb4, @a = 1;
+XA START 'xid1';
+XA END 'xid1';
+XA PREPARE 'xid1';
+XA COMMIT 'xid1';
+CHANGE REPLICATION SOURCE TO SOURCE_HOST = 'replica-src', SOURCE_PORT = 3306;
+CHANGE REPLICATION FILTER REPLICATE_DO_DB = (app_db);
+START REPLICA;
+STOP REPLICA;
+INSTALL PLUGIN validate_password SONAME 'validate_password.so';
+UNINSTALL PLUGIN validate_password;
+INSTALL COMPONENT 'file://component_validate_password';
+UNINSTALL COMPONENT 'file://component_validate_password';
+CLONE LOCAL DATA DIRECTORY = '/var/lib/mysql-clone';
+CACHE INDEX orders INDEX (PRIMARY) IN hot_cache;
+LOAD INDEX INTO CACHE orders INDEX (PRIMARY) IGNORE LEAVES;
+IMPORT TABLE FROM 'orders.sdi';
+BINLOG 'base64payload';
+HELP 'SELECT';
+SHOW BINLOG EVENTS IN 'bin.000001' FROM 4 LIMIT 10;
+GRANT PROXY ON ''@'' TO 'root'@'localhost' WITH GRANT OPTION;
+CREATE USER u_sec IDENTIFIED BY 'secret' FAILED_LOGIN_ATTEMPTS 3 PASSWORD_LOCK_TIME UNBOUNDED COMMENT 'service user' ATTRIBUTE '{"team":"core"}';
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Standalone error';
+GET DIAGNOSTICS @err_count = NUMBER;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (set_statement
+    (variable_assignment
+      (column_reference
+        (identifier)))
+    (variable_assignment
+      (column_reference
+        (identifier)))
+    (variable_assignment
+      (column_reference
+        (identifier)))
+    (variable_assignment
+      (column_reference
+        (identifier))))
+  (set_statement
+    (identifier)
+    (variable_assignment
+      (user_variable)
+      (numeric_literal)))
+  (xa_statement
+    (string_literal))
+  (xa_statement
+    (string_literal))
+  (xa_statement
+    (string_literal))
+  (xa_statement
+    (string_literal))
+  (change_replication_source_statement
+    (identifier)
+    (string_literal)
+    (identifier)
+    (numeric_literal))
+  (change_replication_filter_statement
+    (identifier))
+  (start_replica_statement)
+  (stop_replica_statement)
+  (install_statement
+    (identifier)
+    (string_literal))
+  (uninstall_statement
+    (identifier))
+  (install_statement
+    (string_literal))
+  (uninstall_statement
+    (string_literal))
+  (clone_statement
+    (string_literal))
+  (cache_index_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (load_index_statement
+    (qualified_name
+      (identifier)))
+  (import_table_statement
+    (string_literal))
+  (binlog_statement
+    (string_literal))
+  (help_statement
+    (string_literal))
+  (show_statement
+    (string_literal)
+    (numeric_literal)
+    (limit_clause
+      (numeric_literal)))
+  (grant_statement
+    (account_name
+      (string_literal)
+      (string_literal))
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (create_user_statement
+    (user_specification
+      (account_name
+        (identifier))
+      (user_auth_option
+        (string_literal)))
+    (numeric_literal)
+    (string_literal)
+    (string_literal))
+  (signal_statement
+    (string_literal)
+    (signal_information_item
+      (identifier)
+      (string_literal)))
+  (get_diagnostics_statement
+    (user_variable)))

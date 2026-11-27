@@ -100,7 +100,7 @@ SELECT
   cascade,
   purge,
   if
-FROM data AS result;
+FROM data result;
 
 --------------------------------------------------------------------------------
 

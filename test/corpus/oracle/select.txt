@@ -740,26 +740,24 @@ SELECT * FROM jobs WHERE status = 'NEW' FOR UPDATE OF status SKIP LOCKED;
       (identifier))))
 
 ================================================================================
-Oracle 23ai VALUES query and aliased VALUES subquery
+Oracle 23ai VALUES table value constructors in FROM and WITH
 :language(oracle)
 ================================================================================
-
-VALUES (1, 'one'), (2, 'two');
 
 SELECT t.id, t.label
 FROM (VALUES (1, 'one'), (2, 'two')) AS t (id, label);
 
+SELECT t.id, t.label
+FROM VALUES (1, 'one'), (2, 'two') t (id, label);
+
+WITH items (id, label) AS (
+  VALUES (1, 'one'), (2, 'two')
+)
+SELECT id, label FROM items;
+
 --------------------------------------------------------------------------------
 
 (source_file
-  (select_statement
-    (values_clause
-      (values_row
-        (numeric_literal)
-        (string_literal))
-      (values_row
-        (numeric_literal)
-        (string_literal))))
   (select_statement
     (select_core
       (select_list
@@ -772,19 +770,66 @@ FROM (VALUES (1, 'one'), (2, 'two')) AS t (id, label);
             (identifier)
             (identifier))))
       (from_clause
-        (subquery_table
-          (select_statement
-            (values_clause
-              (values_row
-                (numeric_literal)
-                (string_literal))
-              (values_row
-                (numeric_literal)
-                (string_literal)))))
+        (values_table_clause
+          (values_clause
+            (values_row
+              (numeric_literal)
+              (string_literal))
+            (values_row
+              (numeric_literal)
+              (string_literal)))
+          (identifier)
+          (column_list
+            (identifier)
+            (identifier))))))
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (member_expression
+            (identifier)
+            (identifier)))
+        (select_item
+          (member_expression
+            (identifier)
+            (identifier))))
+      (from_clause
+        (values_table_clause
+          (values_clause
+            (values_row
+              (numeric_literal)
+              (string_literal))
+            (values_row
+              (numeric_literal)
+              (string_literal)))
+          (identifier)
+          (column_list
+            (identifier)
+            (identifier))))))
+  (select_statement
+    (with_clause
+      (common_table_expression
         (identifier)
         (column_list
           (identifier)
-          (identifier))))))
+          (identifier))
+        (values_clause
+          (values_row
+            (numeric_literal)
+            (string_literal))
+          (values_row
+            (numeric_literal)
+            (string_literal)))))
+    (select_core
+      (select_list
+        (select_item
+          (identifier))
+        (select_item
+          (identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))))))
 
 ================================================================================
 Oracle 23ai GROUP BY ALL
@@ -846,3 +891,96 @@ SELECT 2 FROM dual
         (table_reference
           (object_name
             (identifier)))))))
+
+================================================================================
+CONNECT BY before START WITH, HAVING before GROUP BY, and unaliased partitioned outer joins
+:language(oracle)
+================================================================================
+
+SELECT id FROM emp CONNECT BY PRIOR id = mgr START WITH mgr IS NULL;
+SELECT dept_id FROM emp HAVING COUNT(*) > 1 GROUP BY dept_id;
+SELECT * FROM a PARTITION BY (a.x) RIGHT JOIN b ON a.y = b.y;
+SELECT * FROM a LEFT JOIN b PARTITION BY (x) ON a.y = b.y;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))))
+      (hierarchical_query_clause
+        (binary_expression
+          (unary_expression
+            (identifier))
+          (identifier))
+        (is_expression
+          (identifier)))))
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))))
+      (having_clause
+        (binary_expression
+          (function_call
+            (identifier)
+            (all_columns))
+          (numeric_literal)))
+      (group_by_clause
+        (identifier))))
+  (select_statement
+    (select_core
+      (select_list
+        (all_columns))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))
+        (join_clause
+          (partition_by_clause
+            (parenthesized_expression
+              (member_expression
+                (identifier)
+                (identifier))))
+          (table_reference
+            (object_name
+              (identifier)))
+          (binary_expression
+            (member_expression
+              (identifier)
+              (identifier))
+            (member_expression
+              (identifier)
+              (identifier)))))))
+  (select_statement
+    (select_core
+      (select_list
+        (all_columns))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))
+        (join_clause
+          (table_reference
+            (object_name
+              (identifier)))
+          (partition_by_clause
+            (parenthesized_expression
+              (identifier)))
+          (binary_expression
+            (member_expression
+              (identifier)
+              (identifier))
+            (member_expression
+              (identifier)
+              (identifier))))))))
