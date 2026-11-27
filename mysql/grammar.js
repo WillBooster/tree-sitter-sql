@@ -300,30 +300,21 @@ const RESERVED = [
 ];
 
 const RESERVED_FUNCTION_NAMES = [
-  'CUME_DIST',
   'DATABASE',
   'DEFAULT',
-  'DENSE_RANK',
-  'FIRST_VALUE',
   'GROUPING',
   'IF',
   'INSERT',
-  'LAG',
-  'LAST_VALUE',
-  'LEAD',
   'LEFT',
   'MOD',
-  'NTH_VALUE',
-  'NTILE',
-  'PERCENT_RANK',
-  'RANK',
   'REPEAT',
   'REPLACE',
   'RIGHT',
-  'ROW_NUMBER',
   'SCHEMA',
   'VALUES',
 ];
+
+const ZERO_ARG_WINDOW_NAMES = ['CUME_DIST', 'DENSE_RANK', 'PERCENT_RANK', 'RANK', 'ROW_NUMBER'];
 
 const DISTINCT_AGGREGATE_NAMES = ['AVG', 'MAX', 'MIN', 'ST_COLLECT', 'SUM'];
 
@@ -3810,146 +3801,201 @@ export default grammar({
       ),
 
     function_call: ($) =>
-      seq(
-        choice(
-          seq(field('name', $._function_name), '(', commaSep($._expression), ')'),
-          seq(
-            field('name', alias(keyword('INTERVAL'), $.identifier)),
-            '(',
-            $._expression,
-            ',',
-            commaSep1($._expression),
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('CHAR'), $.identifier)),
-            '(',
-            commaSep1($._expression),
-            optional(seq(keyword('USING'), choice($._identifier_or_string, keyword('BINARY')))),
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('COUNT'), $.identifier)),
-            '(',
-            choice(
-              seq(optional(keyword('ALL')), alias('*', $.all_columns)),
-              seq(optional(keyword('ALL')), $._expression),
-              seq(keyword('DISTINCT'), commaSep1($._expression))
-            ),
-            ')'
-          ),
-          seq(
-            field('name', choice(...DISTINCT_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))),
-            '(',
-            optional(choice(keyword('DISTINCT'), keyword('ALL'))),
-            $._expression,
-            ')'
-          ),
-          seq(
-            field('name', choice(...ALL_ONLY_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))),
-            '(',
-            optional(keyword('ALL')),
-            $._expression,
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('JSON_OBJECTAGG'), $.identifier)),
-            '(',
-            optional(keyword('ALL')),
-            $._expression,
-            ',',
-            optional(keyword('ALL')),
-            $._expression,
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('GROUP_CONCAT'), $.identifier)),
-            '(',
-            optional(keyword('DISTINCT')),
-            commaSep1($._expression),
-            optional($.order_by_clause),
-            optional(seq(keyword('SEPARATOR'), $.string_literal)),
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('JSON_VALUE'), $.identifier)),
-            '(',
-            $._expression,
-            ',',
-            $.string_literal,
-            optional(seq(keyword('RETURNING'), $.cast_type)),
-            optional($._json_on_empty),
-            optional($._json_on_error),
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('TRIM'), $.identifier)),
-            '(',
-            choice(
-              seq(
-                choice(keyword('BOTH'), keyword('LEADING'), keyword('TRAILING')),
-                optional($._expression),
-                keyword('FROM'),
-                $._expression
-              ),
-              seq($._expression, optional(seq(keyword('FROM'), $._expression)))
-            ),
-            ')'
-          ),
-          seq(
-            field(
-              'name',
-              choice(
-                alias(keyword('SUBSTRING'), $.identifier),
-                alias(keyword('SUBSTR'), $.identifier),
-                alias(keyword('MID'), $.identifier)
-              )
-            ),
-            '(',
-            $._expression,
-            choice(
-              seq(',', $._expression, optional(seq(',', $._expression))),
-              seq(keyword('FROM'), $._expression, optional(seq(keyword('FOR'), $._expression)))
-            ),
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('EXTRACT'), $.identifier)),
-            '(',
-            $.interval_unit,
-            keyword('FROM'),
-            $._expression,
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('POSITION'), $.identifier)),
-            '(',
-            $._bit_expr,
-            keyword('IN'),
-            $._expression,
-            ')'
-          ),
-          seq(
-            field('name', alias(keyword('WEIGHT_STRING'), $.identifier)),
-            '(',
-            $._expression,
-            optional(
-              choice(
-                seq(keyword('AS'), choice(keyword('CHAR'), keyword('BINARY')), '(', $._uint_length_literal, ')'),
-                seq(',', $.numeric_literal, ',', $.numeric_literal, ',', $.numeric_literal)
-              )
-            ),
-            ')'
-          )
+      choice(
+        $._scalar_function_call,
+        seq($._aggregate_function_call, optional($.over_clause)),
+        $._window_function_call
+      ),
+
+    _scalar_function_call: ($) =>
+      choice(
+        seq(field('name', $._function_name), '(', commaSep($._expression), ')'),
+        seq(
+          field('name', alias(keyword('INTERVAL'), $.identifier)),
+          '(',
+          $._expression,
+          ',',
+          commaSep1($._expression),
+          ')'
         ),
-        optional(
-          seq(
-            optional(seq(keyword('FROM'), choice(keyword('FIRST'), keyword('LAST')))),
-            optional($._null_treatment),
-            $.over_clause
-          )
+        seq(
+          field('name', alias(keyword('CHAR'), $.identifier)),
+          '(',
+          commaSep1($._expression),
+          optional(seq(keyword('USING'), choice($._identifier_or_string, keyword('BINARY')))),
+          ')'
+        ),
+        seq(
+          field('name', alias(keyword('JSON_VALUE'), $.identifier)),
+          '(',
+          $._expression,
+          ',',
+          $.string_literal,
+          optional(seq(keyword('RETURNING'), $.cast_type)),
+          optional($._json_on_empty),
+          optional($._json_on_error),
+          ')'
+        ),
+        seq(
+          field('name', alias(keyword('TRIM'), $.identifier)),
+          '(',
+          choice(
+            seq(
+              choice(keyword('BOTH'), keyword('LEADING'), keyword('TRAILING')),
+              optional($._expression),
+              keyword('FROM'),
+              $._expression
+            ),
+            seq($._expression, optional(seq(keyword('FROM'), $._expression)))
+          ),
+          ')'
+        ),
+        seq(
+          field(
+            'name',
+            choice(
+              alias(keyword('SUBSTRING'), $.identifier),
+              alias(keyword('SUBSTR'), $.identifier),
+              alias(keyword('MID'), $.identifier)
+            )
+          ),
+          '(',
+          $._expression,
+          choice(
+            seq(',', $._expression, optional(seq(',', $._expression))),
+            seq(keyword('FROM'), $._expression, optional(seq(keyword('FOR'), $._expression)))
+          ),
+          ')'
+        ),
+        seq(
+          field('name', alias(keyword('EXTRACT'), $.identifier)),
+          '(',
+          $.interval_unit,
+          keyword('FROM'),
+          $._expression,
+          ')'
+        ),
+        seq(
+          field('name', alias(keyword('POSITION'), $.identifier)),
+          '(',
+          $._bit_expr,
+          keyword('IN'),
+          $._expression,
+          ')'
+        ),
+        seq(
+          field('name', alias(keyword('WEIGHT_STRING'), $.identifier)),
+          '(',
+          $._expression,
+          optional(
+            choice(
+              seq(keyword('AS'), choice(keyword('CHAR'), keyword('BINARY')), '(', $._uint_length_literal, ')'),
+              seq(',', $.numeric_literal, ',', $.numeric_literal, ',', $.numeric_literal)
+            )
+          ),
+          ')'
         )
       ),
+
+    _aggregate_function_call: ($) =>
+      choice(
+        seq(
+          field('name', alias(keyword('COUNT'), $.identifier)),
+          '(',
+          choice(
+            seq(optional(keyword('ALL')), alias('*', $.all_columns)),
+            seq(optional(keyword('ALL')), $._expression),
+            seq(keyword('DISTINCT'), commaSep1($._expression))
+          ),
+          ')'
+        ),
+        seq(
+          field('name', choice(...DISTINCT_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))),
+          '(',
+          optional(choice(keyword('DISTINCT'), keyword('ALL'))),
+          $._expression,
+          ')'
+        ),
+        seq(
+          field('name', choice(...ALL_ONLY_AGGREGATE_NAMES.map((word) => alias(keyword(word), $.identifier)))),
+          '(',
+          optional(keyword('ALL')),
+          $._expression,
+          ')'
+        ),
+        seq(
+          field('name', alias(keyword('JSON_OBJECTAGG'), $.identifier)),
+          '(',
+          optional(keyword('ALL')),
+          $._expression,
+          ',',
+          optional(keyword('ALL')),
+          $._expression,
+          ')'
+        ),
+        seq(
+          field('name', alias(keyword('GROUP_CONCAT'), $.identifier)),
+          '(',
+          optional(keyword('DISTINCT')),
+          commaSep1($._expression),
+          optional($.order_by_clause),
+          optional(seq(keyword('SEPARATOR'), $.string_literal)),
+          ')'
+        )
+      ),
+
+    _window_function_call: ($) =>
+      choice(
+        seq(
+          field('name', choice(...ZERO_ARG_WINDOW_NAMES.map((word) => alias(keyword(word), $.identifier)))),
+          '(',
+          ')',
+          $.over_clause
+        ),
+        seq(field('name', alias(keyword('NTILE'), $.identifier)), '(', $._stable_integer, ')', $.over_clause),
+        seq(
+          field('name', choice(alias(keyword('LEAD'), $.identifier), alias(keyword('LAG'), $.identifier))),
+          '(',
+          $._expression,
+          optional(seq(',', $._stable_integer, optional(seq(',', $._expression)))),
+          ')',
+          optional($._null_treatment),
+          $.over_clause
+        ),
+        seq(
+          field(
+            'name',
+            choice(alias(keyword('FIRST_VALUE'), $.identifier), alias(keyword('LAST_VALUE'), $.identifier))
+          ),
+          '(',
+          $._expression,
+          ')',
+          optional($._null_treatment),
+          $.over_clause
+        ),
+        seq(
+          field('name', alias(keyword('NTH_VALUE'), $.identifier)),
+          '(',
+          $._expression,
+          ',',
+          $._simple_expr,
+          ')',
+          optional(seq(keyword('FROM'), choice(keyword('FIRST'), keyword('LAST')))),
+          optional($._null_treatment),
+          $.over_clause
+        )
+      ),
+
+    _stable_integer: ($) =>
+      choice(
+        alias($._uint64_literal, $.numeric_literal),
+        $.placeholder,
+        alias($._stable_ident_ref, $.column_reference),
+        $.user_variable,
+        seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
+      ),
+
+    _stable_ident_ref: ($) => field('name', $._identifier),
 
     _null_treatment: () => seq(choice(keyword('RESPECT'), keyword('IGNORE')), keyword('NULLS')),
 

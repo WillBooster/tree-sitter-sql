@@ -880,3 +880,13 @@ IF NOT EXISTS on SHOW CREATE TABLE or SHOW CREATE USER is invalid
 SHOW CREATE TABLE IF NOT EXISTS t;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+OVER clause on scalar function or omitted OVER on ROW_NUMBER is invalid
+:error
+:language(mysql)
+================================================================================
+
+SELECT ABS(1) OVER ();
+
+--------------------------------------------------------------------------------
