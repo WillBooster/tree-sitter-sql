@@ -870,3 +870,13 @@ Session user variable in cursor FETCH INTO is invalid
 CREATE PROCEDURE p() BEGIN FETCH c INTO @x; END;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+IF NOT EXISTS on SHOW CREATE TABLE or SHOW CREATE USER is invalid
+:error
+:language(mysql)
+================================================================================
+
+SHOW CREATE TABLE IF NOT EXISTS t;
+
+--------------------------------------------------------------------------------

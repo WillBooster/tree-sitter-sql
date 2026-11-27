@@ -27775,18 +27775,6 @@
                           "value": "USER"
                         },
                         {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "if_not_exists"
-                            },
-                            {
-                              "type": "BLANK"
-                            }
-                          ]
-                        },
-                        {
                           "type": "SYMBOL",
                           "name": "account_name"
                         }
@@ -27815,7 +27803,33 @@
                               },
                               "named": false,
                               "value": "SCHEMA"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "SYMBOL",
+                              "name": "if_not_exists"
                             },
+                            {
+                              "type": "BLANK"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "qualified_name"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "CHOICE",
+                          "members": [
                             {
                               "type": "ALIAS",
                               "content": {
@@ -27869,18 +27883,6 @@
                               },
                               "named": false,
                               "value": "EVENT"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "if_not_exists"
-                            },
-                            {
-                              "type": "BLANK"
                             }
                           ]
                         },

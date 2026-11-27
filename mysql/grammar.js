@@ -2964,11 +2964,10 @@ export default grammar({
           seq(
             keyword('CREATE'),
             choice(
-              seq(keyword('USER'), optional($.if_not_exists), $.account_name),
+              seq(keyword('USER'), $.account_name),
+              seq(choice(keyword('DATABASE'), keyword('SCHEMA')), optional($.if_not_exists), $.qualified_name),
               seq(
                 choice(
-                  keyword('DATABASE'),
-                  keyword('SCHEMA'),
                   keyword('TABLE'),
                   keyword('VIEW'),
                   keyword('PROCEDURE'),
@@ -2976,7 +2975,6 @@ export default grammar({
                   keyword('TRIGGER'),
                   keyword('EVENT')
                 ),
-                optional($.if_not_exists),
                 $.qualified_name
               )
             )
