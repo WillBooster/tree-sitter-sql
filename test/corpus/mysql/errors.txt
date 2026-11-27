@@ -931,5 +931,16 @@ CREATE PROCEDURE p() BEGIN DECLARE UNDO HANDLER FOR SQLEXCEPTION SET @a = 1; END
 
 --------------------------------------------------------------------------------
 
+================================================================================
+Error number zero in DECLARE CONDITION or HANDLER is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() BEGIN DECLARE c CONDITION FOR 0; END;
+
+--------------------------------------------------------------------------------
+
+
 
 

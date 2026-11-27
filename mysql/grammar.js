@@ -2455,7 +2455,7 @@ export default grammar({
           seq(
             field('condition', $._identifier),
             keywords('CONDITION FOR'),
-            choice($._sqlstate_clause, $.numeric_literal)
+            choice($._sqlstate_clause, $._sp_condition_number)
           ),
           seq(field('cursor', $._identifier), keywords('CURSOR FOR'), alias($._subquery_select, $.select_statement)),
           seq(
@@ -2474,8 +2474,14 @@ export default grammar({
         keyword('SQLEXCEPTION'),
         keyword('SQLWARNING'),
         keywords('NOT FOUND'),
-        $.numeric_literal,
+        $._sp_condition_number,
         $._identifier
+      ),
+
+    _sp_condition_number: ($) =>
+      choice(
+        alias($._nonzero_uint64_literal, $.numeric_literal),
+        seq(choice($._zero_int_literal, $._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
       ),
 
     _routine_statement_list: ($) => repeat1(seq($._routine_statement, ';')),
@@ -4207,11 +4213,15 @@ export default grammar({
 
     numeric_literal: ($) => choice($._uint64_literal, $._overflow_int_literal, $._decimal_literal, $._float_literal),
 
-    _uint64_literal: () =>
+    _uint64_literal: ($) => choice($._zero_int_literal, $._nonzero_uint64_literal),
+
+    _zero_int_literal: () => token(prec(1, /0+/)),
+
+    _nonzero_uint64_literal: () =>
       token(
         prec(
           1,
-          /0*(?:[0-9]{1,19}|1(?:[0-7][0-9]{18}|8(?:[0-3][0-9]{17}|4(?:[0-3][0-9]{16}|4(?:[0-5][0-9]{15}|6(?:[0-6][0-9]{14}|7(?:[0-3][0-9]{13}|4(?:[0-3][0-9]{12}|40(?:[0-6][0-9]{10}|7(?:[0-2][0-9]{9}|3(?:[0-6][0-9]{8}|70(?:[0-8][0-9]{6}|9(?:[0-4][0-9]{5}|5(?:[0-4][0-9]{4}|5(?:0[0-9]{3}|1(?:[0-5][0-9]{2}|6(?:0[0-9]|1[0-5])))))))))))))))))/
+          /0*(?:[1-9][0-9]{0,18}|1(?:[0-7][0-9]{18}|8(?:[0-3][0-9]{17}|4(?:[0-3][0-9]{16}|4(?:[0-5][0-9]{15}|6(?:[0-6][0-9]{14}|7(?:[0-3][0-9]{13}|4(?:[0-3][0-9]{12}|40(?:[0-6][0-9]{10}|7(?:[0-2][0-9]{9}|3(?:[0-6][0-9]{8}|70(?:[0-8][0-9]{6}|9(?:[0-4][0-9]{5}|5(?:[0-4][0-9]{4}|5(?:0[0-9]{3}|1(?:[0-5][0-9]{2}|6(?:0[0-9]|1[0-5])))))))))))))))))/
         )
       ),
 
