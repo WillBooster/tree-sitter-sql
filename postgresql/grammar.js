@@ -908,10 +908,12 @@ export default grammar({
       seq(
         keyword('FETCH'),
         choice(keyword('FIRST'), keyword('NEXT')),
-        optional(field('count', $._expression)),
+        optional(field('count', $._fetch_first_value)),
         choice(keyword('ROW'), keyword('ROWS')),
         choice(keyword('ONLY'), keywords('WITH TIES'))
       ),
+
+    _fetch_first_value: ($) => choice($._c_expr, alias($._signed_numeric_literal, $.unary_expression)),
 
     locking_clause: ($) =>
       seq(
@@ -3708,12 +3710,13 @@ export default grammar({
 
     _b_closed_expr: ($) => alias($._b_postfix_is_expression, $.is_expression),
 
-    _primary_expr: ($) =>
+    _primary_expr: ($) => choice($._c_expr, prec(-1, $.table_columns)),
+
+    _c_expr: ($) =>
       choice(
         $._term,
         $.typed_literal,
         $.column_reference,
-        prec(-1, $.table_columns),
         $.positional_parameter,
         $.parenthesized_expression,
         $.row_expression,

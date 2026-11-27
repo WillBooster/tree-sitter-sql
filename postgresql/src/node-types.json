@@ -10756,18 +10756,6 @@
             "named": true
           },
           {
-            "type": "at_time_zone_expression",
-            "named": true
-          },
-          {
-            "type": "between_expression",
-            "named": true
-          },
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
             "type": "bit_string_literal",
             "named": true
           },
@@ -10781,10 +10769,6 @@
           },
           {
             "type": "cast_expression",
-            "named": true
-          },
-          {
-            "type": "collate_expression",
             "named": true
           },
           {
@@ -10816,19 +10800,7 @@
             "named": true
           },
           {
-            "type": "in_expression",
-            "named": true
-          },
-          {
-            "type": "is_expression",
-            "named": true
-          },
-          {
             "type": "json_expression",
-            "named": true
-          },
-          {
-            "type": "like_expression",
             "named": true
           },
           {
@@ -10841,10 +10813,6 @@
           },
           {
             "type": "numeric_literal",
-            "named": true
-          },
-          {
-            "type": "overlaps_expression",
             "named": true
           },
           {
@@ -10861,10 +10829,6 @@
           },
           {
             "type": "positional_parameter",
-            "named": true
-          },
-          {
-            "type": "quantified_comparison_expression",
             "named": true
           },
           {
@@ -10885,10 +10849,6 @@
           },
           {
             "type": "substring_expression",
-            "named": true
-          },
-          {
-            "type": "table_columns",
             "named": true
           },
           {
