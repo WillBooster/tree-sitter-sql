@@ -668,6 +668,29 @@ static bool scan_operator_or_comment(
   return any_op_valid && scan_custom_operator_tail(scanner, lexer, valid_symbols, first);
 }
 
+static bool scan_bit_segment(TSLexer *lexer, bool is_hex, bool *valid_digits) {
+  advance(lexer);
+  while (!at_eof(lexer)) {
+    int32_t c = lexer->lookahead;
+    advance(lexer);
+    if (c == '\'') return true;
+    if (c == 0 || !(is_hex ? is_hex_digit(c) : is_bin_digit(c))) *valid_digits = false;
+  }
+  return false;
+}
+
+static bool scan_bit_string(TSLexer *lexer, bool is_hex) {
+  bool valid_digits = true;
+  for (;;) {
+    if (!scan_bit_segment(lexer, is_hex, &valid_digits)) {
+      lexer->mark_end(lexer);
+      return false;
+    }
+    lexer->mark_end(lexer);
+    if (!scan_quote_continuation(lexer)) return valid_digits;
+  }
+}
+
 static bool scan_prefixed_literal(TSLexer *lexer, const bool *valid_symbols, int32_t prefix) {
   advance(lexer);
   if (prefix == 'u' || prefix == 'U') {
@@ -677,8 +700,10 @@ static bool scan_prefixed_literal(TSLexer *lexer, const bool *valid_symbols, int
            scan_unicode_literal(lexer, valid_symbols, lexer->lookahead == '"');
   }
   if (lexer->lookahead != '\'') return false;
-  bool is_bit = prefix == 'b' || prefix == 'B' || prefix == 'x' || prefix == 'X';
-  return emit_result(lexer, valid_symbols, is_bit ? BIT_STRING_LITERAL : STRING_LITERAL,
+  if (prefix == 'b' || prefix == 'B' || prefix == 'x' || prefix == 'X') {
+    return emit_result(lexer, valid_symbols, BIT_STRING_LITERAL, scan_bit_string(lexer, prefix == 'x' || prefix == 'X'));
+  }
+  return emit_result(lexer, valid_symbols, STRING_LITERAL,
                      scan_string_segments(lexer, prefix == 'e' || prefix == 'E', NULL, 0));
 }
 
