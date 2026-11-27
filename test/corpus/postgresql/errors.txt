@@ -1149,3 +1149,13 @@ Repeated HANDLER option in CREATE FOREIGN DATA WRAPPER
 CREATE FOREIGN DATA WRAPPER repeated NO HANDLER NO HANDLER;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Aggregate or window modifier on COALESCE or GREATEST
+:error
+:language(postgresql)
+================================================================================
+
+SELECT COALESCE(1, 2) OVER ();
+
+--------------------------------------------------------------------------------

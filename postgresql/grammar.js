@@ -3988,7 +3988,7 @@ export default grammar({
 
     _function_call_head: ($) =>
       seq(
-        field('name', choice($._func_name, alias($._col_name_function_keyword, $.identifier))),
+        field('name', $._func_name),
         parens(
           optional(
             choice(
@@ -4005,25 +4005,22 @@ export default grammar({
         optional($.filter_clause)
       ),
 
-    _windowless_function_call: ($) =>
+    _special_function_call: ($) =>
       choice(
-        $._function_call_head,
+        seq(
+          field('name', alias($._col_name_function_keyword, $.identifier)),
+          parens(commaSep1(alias($._expression, $.function_argument)))
+        ),
         seq(
           field('name', alias(keyword('NULLIF'), $.identifier)),
-          parens(seq($.function_argument, ',', $.function_argument))
+          parens(seq(alias($._expression, $.function_argument), ',', alias($._expression, $.function_argument)))
         ),
         seq(field('name', alias(keyword('MERGE_ACTION'), $.identifier)), seq('(', ')'))
       ),
 
-    function_call: ($) =>
-      choice(
-        seq($._function_call_head, optional($.over_clause)),
-        seq(
-          field('name', alias(keyword('NULLIF'), $.identifier)),
-          parens(seq($.function_argument, ',', $.function_argument))
-        ),
-        seq(field('name', alias(keyword('MERGE_ACTION'), $.identifier)), seq('(', ')'))
-      ),
+    _windowless_function_call: ($) => choice($._function_call_head, $._special_function_call),
+
+    function_call: ($) => choice(seq($._function_call_head, optional($.over_clause)), $._special_function_call),
 
     _func_name: ($) =>
       prec.right(
