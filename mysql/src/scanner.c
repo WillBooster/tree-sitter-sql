@@ -422,24 +422,8 @@ static bool scan_prefixed_literal(TSLexer *lexer, int32_t c, const bool *valid_s
   return scan_quoted_hex_or_bit(lexer, is_hex, valid_symbols[is_hex ? QUOTED_HEX_LITERAL : QUOTED_BIT_LITERAL]);
 }
 
-static bool scan_host_charset_introducer(TSLexer *lexer) {
-  advance(lexer);
-  char charset[32];
-  unsigned length = read_charset_word(lexer, charset, sizeof charset);
-  return length > 0 && length < sizeof charset && is_mysql_charset(charset) &&
-         (lexer->lookahead == '\'' || lexer->lookahead == '"') && emit(lexer, CHARSET_INTRODUCER);
-}
-
-static bool scan_host_name(TSLexer *lexer, const bool *valid_symbols) {
-  int32_t c = lexer->lookahead;
-  if (!is_user_var_char(c)) return false;
-  if (c == '_' && valid_symbols[CHARSET_INTRODUCER]) {
-    if (scan_host_charset_introducer(lexer)) return true;
-  } else if (c == 'n' || c == 'N' || c == 'x' || c == 'X' || c == 'b' || c == 'B') {
-    if (scan_prefixed_literal(lexer, c, valid_symbols)) return true;
-  } else {
-    advance(lexer);
-  }
+static bool scan_host_name(TSLexer *lexer) {
+  if (!is_user_var_char(lexer->lookahead)) return false;
   while (is_user_var_char(lexer->lookahead)) advance(lexer);
   return emit(lexer, HOST_NAME);
 }
@@ -638,7 +622,7 @@ bool tree_sitter_mysql_external_scanner_scan(void *payload, TSLexer *lexer, cons
   if (lexer->lookahead == ';' && valid_symbols[STATEMENT_TERMINATOR] && !valid_symbols[UNREACHABLE]) {
     return scan_top_level_semicolon(scanner, lexer);
   }
-  if (valid_symbols[HOST_NAME] && !valid_symbols[UNREACHABLE] && scan_host_name(lexer, valid_symbols)) {
+  if (valid_symbols[HOST_NAME] && !valid_symbols[UNREACHABLE] && scan_host_name(lexer)) {
     return true;
   }
 

@@ -29619,8 +29619,22 @@
               "type": "FIELD",
               "name": "user",
               "content": {
-                "type": "SYMBOL",
-                "name": "_identifier_or_string"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_identifier"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_string_segment"
+                    },
+                    "named": true,
+                    "value": "string_literal"
+                  }
+                ]
               }
             },
             {
@@ -29653,8 +29667,13 @@
                 "name": "_role_identifier"
               },
               {
-                "type": "SYMBOL",
-                "name": "string_literal"
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_string_segment"
+                },
+                "named": true,
+                "value": "string_literal"
               }
             ]
           }
@@ -29687,8 +29706,13 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "string_literal"
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_string_segment"
+                },
+                "named": true,
+                "value": "string_literal"
               },
               {
                 "type": "SYMBOL",

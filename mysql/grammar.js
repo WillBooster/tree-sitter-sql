@@ -3085,13 +3085,23 @@ export default grammar({
     account_name: ($) =>
       choice(
         seq(keyword('CURRENT_USER'), optional(seq('(', ')'))),
-        seq(field('user', $._identifier_or_string), optional($._account_host))
+        seq(field('user', choice($._identifier, alias($._string_segment, $.string_literal))), optional($._account_host))
       ),
 
-    _role_name: ($) => seq(field('user', choice($._role_identifier, $.string_literal)), optional($._account_host)),
+    _role_name: ($) =>
+      seq(
+        field('user', choice($._role_identifier, alias($._string_segment, $.string_literal))),
+        optional($._account_host)
+      ),
 
     _account_host: ($) =>
-      seq('@', field('host', choice($.string_literal, $.quoted_identifier, alias($._host_name, $.identifier)))),
+      seq(
+        '@',
+        field(
+          'host',
+          choice(alias($._string_segment, $.string_literal), $.quoted_identifier, alias($._host_name, $.identifier))
+        )
+      ),
 
     create_user_statement: ($) =>
       seq(

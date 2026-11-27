@@ -900,3 +900,14 @@ Non-literal expression in JSON_VALUE DEFAULT is invalid
 SELECT JSON_VALUE('{}', '$.b' DEFAULT 1 + 2 ON ERROR);
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Charset introducer or concatenated string in account name is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE USER 'u'@_utf8mb4'localhost';
+
+--------------------------------------------------------------------------------
+
