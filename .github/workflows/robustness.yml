@@ -52,10 +52,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
+          fetch-depth: 2
           persist-credentials: false
       - id: filter
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           EVENT_NAME: ${{ github.event_name }}
           GRAMMAR: ${{ matrix.grammar }}
         run: |
@@ -63,13 +63,16 @@ jobs:
             echo "should_fuzz=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git fetch --no-tags --depth=1 origin "$BASE_SHA"
-          if ! git diff --quiet "$BASE_SHA"...HEAD -- \
-            common/ script/ Cargo.lock .github/workflows/robustness.yml "$GRAMMAR/" "test/corpus/$GRAMMAR/"; then
-            echo "should_fuzz=true" >> "$GITHUB_OUTPUT"
-          else
+          status=0
+          git diff --quiet HEAD^1 HEAD -- \
+            common/ script/ Cargo.lock .github/workflows/robustness.yml "$GRAMMAR/" "test/corpus/$GRAMMAR/" || status=$?
+          if [[ $status -eq 0 ]]; then
             echo "No inputs affecting $GRAMMAR changed; skipping fuzz run."
             echo "should_fuzz=false" >> "$GITHUB_OUTPUT"
+          elif [[ $status -eq 1 ]]; then
+            echo "should_fuzz=true" >> "$GITHUB_OUTPUT"
+          else
+            exit "$status"
           fi
       - id: runtime
         if: steps.filter.outputs.should_fuzz == 'true'
