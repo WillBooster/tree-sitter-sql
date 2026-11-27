@@ -417,3 +417,50 @@ END;
           (identifier))
         (function_argument
           (numeric_literal))))))
+
+================================================================================
+Edition and multi-word system privileges, and PL/SQL special-keyword variable assignments and calls
+:language(oracle)
+================================================================================
+
+GRANT CREATE ANY EDITION, MANAGE TABLESPACE, ADMINISTER SQL MANAGEMENT OBJECT TO app_user;
+REVOKE DROP ANY EDITION FROM app_user;
+DECLARE
+  json NUMBER;
+  timestamp DATE;
+BEGIN
+  json := 1;
+  timestamp := SYSDATE;
+  translate;
+  json(1) := 2;
+END;
+/
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (grant_statement
+    (identifier))
+  (revoke_statement
+    (identifier))
+  (anonymous_block
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (assignment_statement
+      (identifier)
+      (numeric_literal))
+    (assignment_statement
+      (identifier)
+      (pseudocolumn))
+    (procedure_call_statement
+      (identifier))
+    (assignment_statement
+      (function_call
+        (identifier)
+        (function_argument
+          (numeric_literal)))
+      (numeric_literal))))

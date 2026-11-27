@@ -282,6 +282,7 @@ const SPECIAL_EXPR_KEYWORDS = [
   'JSON_ARRAYAGG',
   'JSON_OBJECT',
   'JSON_OBJECTAGG',
+  'JSON_SERIALIZE',
   'LISTAGG',
   'MULTISET',
   'TIMESTAMP',
@@ -496,7 +497,9 @@ const buildExpressionFamily = (prefix) => {
           baseIdentifier($),
           alias($._conversion_function_name, $.identifier),
           alias($._json_path_function_name, $.identifier),
-          ...SPECIAL_EXPR_KEYWORDS.map((word) => alias(keyword(word), $.identifier))
+          ...SPECIAL_EXPR_KEYWORDS.filter((word) => !(isPlsql && word === 'CURSOR')).map((word) =>
+            alias(keyword(word), $.identifier)
+          )
         ),
     ],
     def('parenthesized_expression', ($) => seq('(', ref($, '_expression'), ')')),
@@ -513,17 +516,6 @@ const buildExpressionFamily = (prefix) => {
         seq(field('cursor', ref($, '_primary_expression')), '%', field('attribute', $._member_name))
       )
     ),
-    [
-      k('_conversion_first_argument'),
-      /** @param {GrammarSymbols<string>} $ */ ($) =>
-        seq(
-          choice(
-            seq(field('parameter', $._plsql_name), '=>', field('value', ref($, '_expression'))),
-            ref($, '_expression')
-          ),
-          optional(seq(keyword('DEFAULT'), field('default', ref($, '_expression')), keywords('ON CONVERSION ERROR')))
-        ),
-    ],
     def('function_argument', ($) =>
       choice(seq(field('parameter', $._plsql_name), '=>', field('value', ref($, '_expression'))), ref($, '_expression'))
     ),
@@ -601,19 +593,16 @@ const buildExpressionFamily = (prefix) => {
       )
     ),
     def('interval_expression', ($) =>
-      prec.left(
-        PREC.POSTFIX,
-        seq(
-          field('value', pub($, 'parenthesized_expression')),
-          choice(
-            seq(
-              keyword('DAY'),
-              optional(seq('(', $.numeric_literal, ')')),
-              keywords('TO SECOND'),
-              optional(seq('(', $.numeric_literal, ')'))
-            ),
-            seq(keyword('YEAR'), optional(seq('(', $.numeric_literal, ')')), keywords('TO MONTH'))
-          )
+      seq(
+        field('value', pub($, 'parenthesized_expression')),
+        choice(
+          seq(
+            keyword('DAY'),
+            optional(seq('(', $.numeric_literal, ')')),
+            keywords('TO SECOND'),
+            optional(seq('(', $.numeric_literal, ')'))
+          ),
+          seq(keyword('YEAR'), optional(seq('(', $.numeric_literal, ')')), keywords('TO MONTH'))
         )
       )
     ),
@@ -772,6 +761,11 @@ function plsqlOnlyExpressionRules() {
         optional(seq(',', commaSep1(alias($._plsql_function_argument, $.function_argument)))),
         ')'
       ),
+    _plsql_conversion_first_argument: ($) =>
+      seq(
+        choice(seq(field('parameter', $._plsql_name), '=>', field('value', $._plsql_expression)), $._plsql_expression),
+        optional(seq(keyword('DEFAULT'), field('default', $._plsql_expression), keywords('ON CONVERSION ERROR')))
+      ),
   };
 }
 
@@ -805,6 +799,11 @@ function sqlOnlyExpressionRules() {
         optional(seq(',', commaSep1($.function_argument))),
         ')',
         optional($._analytic_tail)
+      ),
+    _conversion_first_argument: ($) =>
+      seq(
+        choice(seq(field('parameter', $._plsql_name), '=>', field('value', $._expression)), $._expression),
+        optional(seq(keyword('DEFAULT'), field('default', $._expression), keywords('ON CONVERSION ERROR')))
       ),
     validate_conversion_expression: ($) =>
       seq(
@@ -859,7 +858,24 @@ function sqlOnlyExpressionRules() {
       ),
     json_function_expression: ($) =>
       choice(
-        seq($._json_path_function_name, '(', $._expression, optional($._json_path_args_tail), ')'),
+        seq(
+          $._json_path_function_name,
+          '(',
+          $._expression,
+          optional(keywords('FORMAT JSON')),
+          ',',
+          $._expression,
+          repeat($._json_path_option),
+          ')'
+        ),
+        seq(
+          keyword('JSON_SERIALIZE'),
+          '(',
+          $._expression,
+          optional(keywords('FORMAT JSON')),
+          repeat($._json_serialize_option),
+          ')'
+        ),
         seq(
           keyword('JSON_OBJECT'),
           '(',
@@ -870,7 +886,12 @@ function sqlOnlyExpressionRules() {
         seq(
           keyword('JSON_ARRAY'),
           '(',
-          optional(choice($.select_statement, commaSep1(seq($._expression, optional(keywords('FORMAT JSON')))))),
+          optional(
+            choice(
+              alias($._subquery_statement, $.select_statement),
+              commaSep1(seq($._expression, optional(keywords('FORMAT JSON'))))
+            )
+          ),
           repeat(choice($._json_null_clause, $._json_returning_clause, keyword('STRICT'))),
           ')'
         ),
@@ -1059,7 +1080,11 @@ export default grammar({
 
   conflicts: ($) => [
     [$.select_item],
+    [$._primary_expression, $.interval_expression],
     [$.select_statement, $._subquery_statement],
+    [$.table_reference],
+    [$._non_ref_column_constraint],
+    [$._inline_references_constraint],
     [$.function_call],
     [$._conversion_function_call],
     [$.listagg_expression],
@@ -1356,18 +1381,17 @@ export default grammar({
     _from_item: ($) =>
       prec.right(
         choice(
-          seq($.values_table_clause, repeat(choice($.pivot_clause, $.unpivot_clause, $.match_recognize_clause))),
-          seq(
-            $._table_primary,
-            repeat(choice($.pivot_clause, $.unpivot_clause, $.match_recognize_clause)),
-            optional($._dml_alias)
-          )
+          seq($.values_table_clause, optional($._table_operator_chain)),
+          seq($.table_reference, optional($._table_operator_chain)),
+          seq($._non_table_ref_primary, optional($._dml_alias), optional($._table_operator_chain))
         )
       ),
 
-    _table_primary: ($) =>
+    _table_operator_chain: ($) =>
+      repeat1(seq(choice($.pivot_clause, $.unpivot_clause, $.match_recognize_clause), optional($._dml_alias))),
+
+    _non_table_ref_primary: ($) =>
       choice(
-        $.table_reference,
         $.only_table_reference,
         $.subquery_table,
         $.table_collection_expression,
@@ -1378,15 +1402,26 @@ export default grammar({
       ),
 
     only_table_reference: ($) =>
-      seq(keyword('ONLY'), '(', choice($.table_reference, $.subquery_table, $.values_table_clause), ')'),
+      seq(
+        keyword('ONLY'),
+        '(',
+        choice(alias($._unaliased_table_reference, $.table_reference), $.subquery_table, $.values_table_clause),
+        ')'
+      ),
 
-    table_reference: ($) =>
+    _unaliased_table_reference: ($) =>
       prec.right(
         seq(
           field('name', alias($._table_object_name, $.object_name)),
-          repeat(choice($.partition_extension_clause, $.sample_clause, $.flashback_query_clause)),
-          optional($._dml_alias)
+          repeat(choice($.partition_extension_clause, $.sample_clause, $.flashback_query_clause))
         )
+      ),
+
+    table_reference: ($) =>
+      seq(
+        field('name', alias($._table_object_name, $.object_name)),
+        repeat(choice($.partition_extension_clause, prec(1, $.sample_clause), prec(1, $.flashback_query_clause))),
+        optional(prec(1, $._dml_alias))
       ),
 
     _table_object_name: ($) =>
@@ -1573,7 +1608,7 @@ export default grammar({
       choice(
         $.partition_by_clause,
         $.order_by_clause,
-        seq(keyword('MEASURES'), commaSep1(seq($._expression, keyword('AS'), $._name))),
+        seq(keyword('MEASURES'), commaSep1(seq($._expression, optional(keyword('AS')), $._name))),
         keywords('ONE ROW PER MATCH'),
         prec.right(
           seq(
@@ -1720,7 +1755,7 @@ export default grammar({
 
     model_column_clauses: ($) =>
       seq(
-        optional(seq($._partition_by_token, '(', commaSep1(seq($._expression, optional($._column_alias))), ')')),
+        optional(seq(keywords('PARTITION BY'), '(', commaSep1(seq($._expression, optional($._column_alias))), ')')),
         keywords('DIMENSION BY'),
         '(',
         commaSep1(seq($._expression, optional($._column_alias))),
@@ -1824,7 +1859,7 @@ export default grammar({
 
     _plsql_record_expression: ($) =>
       choice(
-        $._plsql_identifier,
+        $._plsql_expr_identifier,
         $.bind_variable,
         alias($._plsql_record_member, $.member_expression),
         alias($._plsql_record_call, $.function_call)
@@ -1847,7 +1882,7 @@ export default grammar({
     _multi_table_insert: ($) =>
       seq(
         choice(
-          seq(keyword('ALL'), repeat1($._multi_insert_branch), optional($._multi_insert_else)),
+          seq(keyword('ALL'), repeat1($._multi_insert_branch)),
           seq(
             optional(choice(keyword('ALL'), keyword('FIRST'))),
             repeat1($._conditional_insert_when),
@@ -1919,12 +1954,19 @@ export default grammar({
         field('target', $._dml_target),
         optional($._dml_alias),
         keyword('USING'),
-        choice(field('source', $.values_table_clause), seq(field('source', $._table_primary), optional($._dml_alias))),
+        choice(
+          field('source', $.values_table_clause),
+          field('source', $.table_reference),
+          seq(field('source', $._non_table_ref_primary), optional($._dml_alias))
+        ),
         keyword('ON'),
         '(',
         field('condition', $._expression),
         ')',
-        repeat1(choice($.merge_update_clause, $.merge_insert_clause)),
+        choice(
+          seq($.merge_update_clause, optional($.merge_insert_clause)),
+          seq($.merge_insert_clause, optional($.merge_update_clause))
+        ),
         optional($.error_logging_clause)
       ),
 
@@ -2002,20 +2044,18 @@ export default grammar({
         choice(
           seq(
             '(',
-            commaSep1($._table_element),
+            choice($._table_elements_no_fk, $._table_elements_has_fk),
             ')',
             repeat($._table_property),
-            optional(seq(keyword('AS'), $.select_statement))
+            optional(seq(keyword('AS'), alias($._subquery_statement, $.select_statement)))
           ),
           seq(
             '(',
-            optional(seq(commaSep1($._table_element), ',')),
-            alias($._ctas_only_column_definition, $.column_definition),
-            repeat(seq(',', choice($._table_element, alias($._ctas_only_column_definition, $.column_definition)))),
+            $._table_elements_needs_fk,
             ')',
             repeat($._table_property),
             keyword('AS'),
-            $.select_statement
+            alias($._subquery_statement, $.select_statement)
           ),
           seq(
             keyword('OF'),
@@ -2025,21 +2065,48 @@ export default grammar({
             ),
             optional(seq('(', commaSep1($._object_table_element), ')')),
             repeat($._table_property),
-            optional(seq(keyword('AS'), $.select_statement))
+            optional(seq(keyword('AS'), alias($._subquery_statement, $.select_statement)))
           ),
-          seq(repeat($._table_property), keyword('AS'), $.select_statement),
+          seq(repeat($._table_property), keyword('AS'), alias($._subquery_statement, $.select_statement)),
           repeat1($._table_property)
         )
       ),
 
-    _table_element: ($) =>
+    _table_elements_no_fk: ($) =>
+      choice($._plain_table_element, seq($._table_elements_no_fk, ',', $._plain_table_element)),
+
+    _table_elements_needs_fk: ($) =>
+      choice(
+        $._typeless_table_element,
+        seq($._table_elements_no_fk, ',', $._typeless_table_element),
+        seq($._table_elements_needs_fk, ',', choice($._plain_table_element, $._typeless_table_element))
+      ),
+
+    _table_elements_has_fk: ($) =>
+      choice(
+        $._fk_table_element,
+        seq(choice($._table_elements_no_fk, $._table_elements_needs_fk), ',', $._fk_table_element),
+        seq(
+          $._table_elements_has_fk,
+          ',',
+          choice($._plain_table_element, $._fk_table_element, $._typeless_table_element)
+        )
+      ),
+
+    _table_element: ($) => choice($._plain_table_element, $._fk_table_element),
+
+    _plain_table_element: ($) =>
       choice(
         $.column_definition,
         $.period_definition,
-        $.table_constraint,
+        alias($._non_fk_table_constraint, $.table_constraint),
         $.supplemental_log_clause,
         $.table_domain_clause
       ),
+
+    _fk_table_element: ($) => alias($._fk_table_constraint, $.table_constraint),
+
+    _typeless_table_element: ($) => alias($._typeless_column_definition, $.column_definition),
 
     table_domain_clause: ($) => seq(keyword('DOMAIN'), field('domain', $.object_name), $.column_list),
 
@@ -2080,8 +2147,8 @@ export default grammar({
         )
       ),
 
-    // In `CREATE TABLE (...)` without `AS subquery`, every column requires either an explicit `type_name`, a `DOMAIN`
-    // association, a virtual column expression (`[GENERATED ALWAYS] AS (...)`), or an inline `REFERENCES` constraint.
+    // In `CREATE TABLE (...)` without `AS subquery` or a table-level `FOREIGN KEY` constraint, every column requires an
+    // explicit `type_name`, a `DOMAIN` association, a virtual column expression, or an inline `REFERENCES` constraint.
     column_definition: ($) =>
       prec.right(
         seq(
@@ -2098,7 +2165,7 @@ export default grammar({
         )
       ),
 
-    _ctas_only_column_definition: ($) =>
+    _typeless_column_definition: ($) =>
       prec.right(seq(field('name', $._column_name), repeat($._non_ref_column_attribute))),
 
     _modify_column_definition: ($) =>
@@ -2228,16 +2295,14 @@ export default grammar({
     _column_constraint: ($) => choice($._non_ref_column_constraint, $._inline_references_constraint),
 
     _non_ref_column_constraint: ($) =>
-      prec.right(
-        seq(
-          optional($.constraint_name),
-          choice(keyword('NULL'), keywords('NOT NULL'), keywords('PRIMARY KEY'), keyword('UNIQUE'), $.check_constraint),
-          repeat($._constraint_state)
-        )
+      seq(
+        optional($.constraint_name),
+        choice(keyword('NULL'), keywords('NOT NULL'), keywords('PRIMARY KEY'), keyword('UNIQUE'), $.check_constraint),
+        repeat($._constraint_state)
       ),
 
     _inline_references_constraint: ($) =>
-      prec.right(seq(optional($.constraint_name), $.references_clause, repeat($._constraint_state))),
+      seq(optional($.constraint_name), $.references_clause, repeat($._constraint_state)),
 
     constraint_name: ($) => seq(keyword('CONSTRAINT'), field('name', $._name)),
 
@@ -2253,7 +2318,20 @@ export default grammar({
         )
       ),
 
-    table_constraint: ($) =>
+    table_constraint: ($) => choice($._non_fk_table_constraint, $._fk_table_constraint),
+
+    _fk_table_constraint: ($) =>
+      prec.right(
+        seq(
+          optional($.constraint_name),
+          keywords('FOREIGN KEY'),
+          $.column_list,
+          $.references_clause,
+          repeat($._constraint_state)
+        )
+      ),
+
+    _non_fk_table_constraint: ($) =>
       prec.right(
         seq(
           optional($.constraint_name),
@@ -2261,7 +2339,6 @@ export default grammar({
             seq(keywords('PRIMARY KEY'), $.column_list),
             seq(keyword('UNIQUE'), $.column_list),
             $.check_constraint,
-            seq(keywords('FOREIGN KEY'), $.column_list, $.references_clause),
             seq(keywords('SCOPE FOR'), '(', $._name, ')', keyword('IS'), $.object_name),
             seq(keyword('WITH'), keyword('ROWID')),
             seq(keywords('REF'), '(', $._name, ')', keywords('WITH ROWID'))
@@ -2270,9 +2347,10 @@ export default grammar({
         )
       ),
 
-    _constraint_state: ($) =>
+    _constraint_state: ($) => choice(keywords('NOT DEFERRABLE'), prec(1, $._det_constraint_state)),
+
+    _det_constraint_state: ($) =>
       choice(
-        alias(token(seq(keywordPattern('NOT'), /[\t\n\v\f\r ]+/, keywordPattern('DEFERRABLE'))), 'NOT DEFERRABLE'),
         keyword('DEFERRABLE'),
         seq(keyword('INITIALLY'), choice(keyword('IMMEDIATE'), keyword('DEFERRED'))),
         keyword('RELY'),
@@ -2297,6 +2375,7 @@ export default grammar({
       prec.right(
         choice(
           $._segment_or_storage_attr,
+          seq(keyword('CLUSTER'), field('cluster', $.object_name), '(', commaSep1($._name), ')'),
           seq(
             keywords('ON COMMIT'),
             choice(
@@ -2462,7 +2541,10 @@ export default grammar({
       choice(
         seq(
           keywords('ACCESS PARAMETERS'),
-          choice($._access_parameters_parens, seq(keyword('USING'), keyword('CLOB'), $.select_statement)),
+          choice(
+            $._access_parameters_parens,
+            seq(keyword('USING'), keyword('CLOB'), alias($._subquery_statement, $.select_statement))
+          ),
           optional($._external_table_location)
         ),
         $._external_table_location
@@ -2587,7 +2669,7 @@ export default grammar({
     table_partitioning_clause: ($) =>
       prec.right(
         seq(
-          $._partition_by_token,
+          keywords('PARTITION BY'),
           choice(
             seq(
               keyword('RANGE'),
@@ -2772,7 +2854,7 @@ export default grammar({
         $.identifier
       ),
 
-    _vector_storage: () => choice(keyword('DENSE'), keyword('SPARSE')),
+    _vector_storage: () => choice('*', keyword('DENSE'), keyword('SPARSE')),
 
     _signed_integer: ($) => seq(optional(choice('+', '-')), $.numeric_literal),
 
@@ -3027,7 +3109,7 @@ export default grammar({
           )
         ),
         keyword('AS'),
-        $.select_statement,
+        alias($._subquery_statement, $.select_statement),
         optional($.subquery_restriction_clause)
       ),
 
@@ -3065,7 +3147,7 @@ export default grammar({
         optional(seq('(', commaSep1($._name), ')')),
         repeat($._mview_property),
         keyword('AS'),
-        $.select_statement
+        alias($._subquery_statement, $.select_statement)
       ),
 
     _mview_property: ($) =>
@@ -3339,7 +3421,9 @@ export default grammar({
 
     create_context_statement: ($) =>
       seq(
-        createReplaceableHead($, [], keyword('CONTEXT')),
+        keyword('CREATE'),
+        optional($._or_replace),
+        keyword('CONTEXT'),
         field('name', $._name),
         keyword('USING'),
         field('package', $.object_name),
@@ -4182,37 +4266,53 @@ export default grammar({
       seq(
         createReplaceableHead($, [optional($._editionable)], keyword('TRIGGER')),
         field('name', $.object_name),
-        optional(choice(keyword('BEFORE'), keyword('AFTER'), keywords('INSTEAD OF'), keyword('FOR'))),
-        $._trigger_event_list,
-        keyword('ON'),
-        choice(
-          seq(keywords('NESTED TABLE'), $._name, keyword('OF'), $.object_name),
-          seq(optional(keyword('PLUGGABLE')), keyword('DATABASE')),
-          seq(optional(seq($._name, '.')), keyword('SCHEMA')),
-          $.object_name
-        ),
-        repeat($._trigger_option),
         choice(
           seq(
+            choice(keyword('BEFORE'), keyword('AFTER'), keywords('INSTEAD OF')),
+            $._trigger_event_list,
+            keyword('ON'),
+            $._trigger_target,
+            repeat($._trigger_option),
+            choice(seq(keyword('CALL'), $._plsql_primary_expression, ';'), $.anonymous_block)
+          ),
+          seq(
+            keyword('FOR'),
+            $._dml_trigger_event_list,
+            keyword('ON'),
+            choice(seq(keywords('NESTED TABLE'), $._name, keyword('OF'), $.object_name), $.object_name),
+            repeat($._trigger_option),
             keywords('COMPOUND TRIGGER'),
             repeat($._plsql_declaration),
             repeat1($.compound_trigger_timing_point),
             keyword('END'),
             optional($._plsql_name),
             ';'
-          ),
-          seq(keyword('CALL'), $._plsql_primary_expression, ';'),
-          $.anonymous_block
+          )
         )
+      ),
+
+    _trigger_target: ($) =>
+      choice(
+        seq(keywords('NESTED TABLE'), $._name, keyword('OF'), $.object_name),
+        seq(optional(keyword('PLUGGABLE')), keyword('DATABASE')),
+        seq(optional(seq($._name, '.')), keyword('SCHEMA')),
+        $.object_name
+      ),
+
+    _dml_trigger_event_list: ($) => seq($._dml_trigger_event, repeat(seq(keyword('OR'), $._dml_trigger_event))),
+
+    _dml_trigger_event: ($) =>
+      choice(
+        keyword('INSERT'),
+        keyword('DELETE'),
+        seq(keyword('UPDATE'), optional(seq(keyword('OF'), commaSep1($._name))))
       ),
 
     _trigger_event_list: ($) => seq($._trigger_event, repeat(seq(keyword('OR'), $._trigger_event))),
 
     _trigger_event: ($) =>
       choice(
-        keyword('INSERT'),
-        keyword('DELETE'),
-        seq(keyword('UPDATE'), optional(seq(keyword('OF'), commaSep1($._name)))),
+        $._dml_trigger_event,
         keyword('CREATE'),
         keyword('ALTER'),
         keyword('DROP'),
@@ -4412,13 +4512,41 @@ export default grammar({
 
     assignment_statement: ($) =>
       seq(
-        field('target', choice($._plsql_callable_expression, $.bind_variable)),
+        field('target', choice($._plsql_stmt_target, $.bind_variable)),
         ':=',
         field('value', $._plsql_expression),
         ';'
       ),
 
-    procedure_call_statement: ($) => seq(field('callee', $._plsql_callable_expression), ';'),
+    procedure_call_statement: ($) => seq(field('callee', $._plsql_stmt_target), ';'),
+
+    _plsql_stmt_target: ($) =>
+      choice(
+        $._plsql_expr_identifier,
+        alias($._plsql_target_member, $.member_expression),
+        alias($._plsql_target_call, $.function_call),
+        alias($._plsql_target_cursor_attribute, $.cursor_attribute)
+      ),
+
+    _plsql_target_member: ($) =>
+      prec.left(
+        PREC.POSTFIX,
+        seq(field('object', choice($._plsql_stmt_target, $.bind_variable)), '.', field('member', $._member_name))
+      ),
+
+    _plsql_target_call: ($) =>
+      seq(
+        field('name', $._plsql_stmt_target),
+        '(',
+        commaSep(alias($._plsql_function_argument, $.function_argument)),
+        ')'
+      ),
+
+    _plsql_target_cursor_attribute: ($) =>
+      prec.left(
+        PREC.POSTFIX,
+        seq(field('cursor', choice($._plsql_stmt_target, $.bind_variable)), '%', field('attribute', $._member_name))
+      ),
 
     if_statement: ($) =>
       seq(
@@ -4670,7 +4798,7 @@ export default grammar({
           seq(keyword('FLASHBACK'), choice(keyword('ON'), keyword('OFF'))),
           keywords('BEGIN BACKUP'),
           keywords('END BACKUP'),
-          seq(choice(keyword('ADD'), keyword('DROP')), $.supplemental_log_clause),
+          seq(choice(keyword('ADD'), keyword('DROP')), alias($._db_supplemental_log_clause, $.supplemental_log_clause)),
           seq(keywords('RENAME FILE'), commaSep1($.string_literal), keyword('TO'), commaSep1($.string_literal)),
           seq(keywords('RENAME GLOBAL_NAME TO'), $.dblink_name),
           seq(keywords('SET TIME_ZONE'), '=', $.string_literal),
@@ -4709,6 +4837,32 @@ export default grammar({
               seq(keyword('GROUP'), $.numeric_literal),
               $.string_literal,
               seq('(', commaSep1($.string_literal), ')')
+            )
+          )
+        )
+      ),
+
+    _db_supplemental_log_clause: () =>
+      prec.right(
+        seq(
+          keywords('SUPPLEMENTAL LOG DATA'),
+          optional(
+            choice(
+              seq(
+                '(',
+                commaSep1(
+                  choice(
+                    keyword('ALL'),
+                    keywords('PRIMARY KEY'),
+                    seq(keyword('UNIQUE'), optional(keyword('INDEX'))),
+                    keywords('FOREIGN KEY')
+                  )
+                ),
+                ')',
+                keyword('COLUMNS')
+              ),
+              keywords('FOR PROCEDURAL REPLICATION'),
+              keywords('SUBSET DATABASE REPLICATION')
             )
           )
         )
@@ -4924,6 +5078,7 @@ export default grammar({
         seq(keyword('FORCE'), optional(keyword('ANY')), keyword('TRANSACTION')),
         keywords('PURGE DBA_RECYCLEBIN'),
         keywords('INHERIT ANY PRIVILEGES'),
+        keywords('INHERIT ANY REMOTE PRIVILEGES'),
         keywords('TRANSLATE ANY SQL'),
         keywords('ANALYZE ANY'),
         keywords('ANALYZE ANY DICTIONARY'),
@@ -4938,6 +5093,15 @@ export default grammar({
         keywords('GRANT ANY SCHEMA PRIVILEGE'),
         keywords('KEEP DATE TIME'),
         keywords('KEEP SYSGUID'),
+        keywords('CHANGE NOTIFICATION'),
+        keywords('DEBUG CONNECT SESSION'),
+        keywords('EM EXPRESS CONNECT'),
+        keywords('ENABLE DIAGNOSTICS'),
+        prec(1, keywords('EXECUTE ASSEMBLY')),
+        keywords('EXECUTE DYNAMIC MLE'),
+        keywords('FLASHBACK ARCHIVE ADMINISTER'),
+        keywords('TEXT DATASTORE ACCESS'),
+        seq(choice(keyword('EXPORT'), keyword('IMPORT')), keywords('FULL DATABASE')),
         keyword('ADVISOR'),
         keyword('LOGMINING'),
         keyword('RESUMABLE'),
@@ -4950,8 +5114,29 @@ export default grammar({
         keyword('SYSRAC'),
         keyword('CONNECT'),
         keyword('RESOURCE'),
-        seq(keyword('ADMINISTER'), repeat1($._identifier)),
-        seq(keyword('MANAGE'), repeat1(choice($._identifier, keyword('TABLESPACE'), keyword('ANY')))),
+        seq(
+          keyword('ADMINISTER'),
+          choice(
+            seq(optional(keyword('ANY')), keywords('SQL TUNING SET')),
+            keywords('DATABASE TRIGGER'),
+            keywords('FINE GRAINED AUDIT POLICY'),
+            keywords('KEY MANAGEMENT'),
+            keywords('REDACTION POLICY'),
+            keywords('RESOURCE MANAGER'),
+            keywords('ROW LEVEL SECURITY POLICY'),
+            keywords('SQL FIREWALL'),
+            keywords('SQL MANAGEMENT OBJECT')
+          )
+        ),
+        seq(
+          keyword('MANAGE'),
+          choice(
+            keyword('TABLESPACE'),
+            keyword('SCHEDULER'),
+            seq(optional(keyword('ANY')), keywords('FILE GROUP')),
+            keywords('ANY QUEUE')
+          )
+        ),
         seq(keyword('BACKUP'), keywords('ANY TABLE')),
         seq(
           choice(keyword('CREATE'), keyword('ALTER'), keyword('DROP')),
@@ -4974,7 +5159,9 @@ export default grammar({
             keyword('MERGE'),
             keyword('REDEFINE'),
             keyword('DEBUG'),
-            keyword('USE')
+            keyword('USE'),
+            keyword('ENQUEUE'),
+            keyword('DEQUEUE')
           ),
           keyword('ANY'),
           $._system_privilege_object
@@ -5003,6 +5190,8 @@ export default grammar({
         keyword('LIBRARY'),
         keyword('DIRECTORY'),
         keyword('CONTEXT'),
+        keyword('EDITION'),
+        keyword('ASSEMBLY'),
         keyword('PROFILE'),
         keyword('ROLE'),
         keyword('USER'),
@@ -5020,10 +5209,16 @@ export default grammar({
         keyword('HIERARCHY'),
         keywords('AUDIT POLICY'),
         keywords('LOCKDOWN PROFILE'),
+        keywords('SQL PROFILE'),
         keywords('SQL TRANSLATION PROFILE'),
         keywords('PLUGGABLE DATABASE'),
+        keywords('TRUE CACHE'),
+        keywords('FILE GROUP'),
+        keyword('QUEUE'),
         keyword('JOB'),
         keywords('EXTERNAL JOB'),
+        keyword('CLASS'),
+        keyword('PROGRAM'),
         keyword('CREDENTIAL'),
         keyword('RULE'),
         keywords('RULE SET'),
@@ -5402,21 +5597,24 @@ export default grammar({
       choice(
         prec(1, $._object_privilege),
         $._system_privilege_or_role,
-        seq(
-          choice(
-            keyword('SELECT'),
-            keyword('INSERT'),
-            keyword('UPDATE'),
-            keyword('DELETE'),
-            keyword('AUDIT'),
-            keyword('COMMENT'),
-            keyword('GRANT'),
-            keyword('INDEX'),
-            keyword('LOCK'),
-            keyword('RENAME'),
-            keyword('EXECUTE')
-          ),
-          $._system_privilege_object
+        prec(
+          -1,
+          seq(
+            choice(
+              keyword('SELECT'),
+              keyword('INSERT'),
+              keyword('UPDATE'),
+              keyword('DELETE'),
+              keyword('AUDIT'),
+              keyword('COMMENT'),
+              keyword('GRANT'),
+              keyword('INDEX'),
+              keyword('LOCK'),
+              keyword('RENAME'),
+              keyword('EXECUTE')
+            ),
+            $._system_privilege_object
+          )
         )
       ),
 
@@ -5584,10 +5782,7 @@ export default grammar({
         $.windowing_clause
       ),
 
-    _partition_by_token: () =>
-      alias(token(seq(keywordPattern('PARTITION'), /[\t\n\v\f\r ]+/, keywordPattern('BY'))), 'PARTITION BY'),
-
-    partition_by_clause: ($) => seq($._partition_by_token, commaSep1($._expression)),
+    partition_by_clause: ($) => seq(keywords('PARTITION BY'), commaSep1($._expression)),
 
     _sql_function_in_parens_tail: ($) =>
       choice(
@@ -5596,12 +5791,6 @@ export default grammar({
       ),
 
     _json_path_function_name: () => JSON_PATH_FUNCTION_TOKEN(),
-
-    _json_path_args_tail: ($) =>
-      choice(seq(keywords('FORMAT JSON'), optional($._json_path_expr_and_opts)), $._json_path_expr_and_opts),
-
-    _json_path_expr_and_opts: ($) =>
-      choice(seq(',', $._expression, repeat($._json_path_option)), repeat1($._json_path_option)),
 
     _json_path_option: ($) =>
       choice(
@@ -5612,6 +5801,16 @@ export default grammar({
         keyword('ascii'),
         keyword('TRUNCATE'),
         seq(choice(keyword('KEEP'), keyword('OMIT')), keyword('QUOTES'))
+      ),
+
+    _json_serialize_option: ($) =>
+      choice(
+        $._json_returning_clause,
+        $._json_on_error_or_empty,
+        keyword('PRETTY'),
+        keyword('ascii'),
+        keyword('ORDERED'),
+        keyword('TRUNCATE')
       ),
 
     _json_arrayagg_tail: ($) =>
@@ -5642,7 +5841,7 @@ export default grammar({
         seq($._expression, choice(keyword('PRECEDING'), keyword('FOLLOWING')))
       ),
 
-    cursor_expression: ($) => seq(keyword('CURSOR'), '(', $.select_statement, ')'),
+    cursor_expression: ($) => seq(keyword('CURSOR'), '(', alias($._subquery_statement, $.select_statement), ')'),
 
     multiset_expression: ($) => seq(keyword('MULTISET'), '(', alias($._subquery_statement, $.select_statement), ')'),
 

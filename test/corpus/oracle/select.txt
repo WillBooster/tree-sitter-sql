@@ -984,3 +984,62 @@ SELECT * FROM a LEFT JOIN b PARTITION BY (x) ON a.y = b.y;
             (member_expression
               (identifier)
               (identifier))))))))
+
+================================================================================
+Parenthesized DAY/YEAR aliases, commented PARTITION BY, and MATCH_RECOGNIZE bare measure aliases
+:language(oracle)
+================================================================================
+
+SELECT (a) day, (b) year, SUM(x) OVER (PARTITION /* c */ BY a)
+FROM t
+MATCH_RECOGNIZE (
+  ORDER BY id
+  MEASURES COUNT(*) n, MATCH_NUMBER() m
+  PATTERN (A+)
+  DEFINE A AS id > 0
+);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (parenthesized_expression
+            (identifier))
+          (identifier))
+        (select_item
+          (parenthesized_expression
+            (identifier))
+          (identifier))
+        (select_item
+          (function_call
+            (identifier)
+            (function_argument
+              (identifier))
+            (over_clause
+              (window_specification
+                (partition_by_clause
+                  (comment)
+                  (identifier)))))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))
+        (match_recognize_clause
+          (order_by_clause
+            (ordering_term
+              (identifier)))
+          (function_call
+            (identifier)
+            (all_columns))
+          (identifier)
+          (function_call
+            (identifier))
+          (identifier)
+          (identifier)
+          (identifier)
+          (binary_expression
+            (identifier)
+            (numeric_literal)))))))

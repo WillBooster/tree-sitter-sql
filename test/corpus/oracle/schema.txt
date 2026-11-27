@@ -932,3 +932,73 @@ ALTER DATABASE OPEN READ WRITE;
       (identifier))
     (string_literal))
   (alter_database_statement))
+
+================================================================================
+Table-level FK type inference, VECTOR storage wildcard, commented NOT DEFERRABLE, CLUSTER tables, and DB supplemental log
+:language(oracle)
+================================================================================
+
+CREATE TABLE child_items (
+  parent_id,
+  note NOT NULL,
+  vec VECTOR(3, FLOAT32, *),
+  CONSTRAINT child_pk UNIQUE (parent_id) NOT /* comment */ DEFERRABLE,
+  CONSTRAINT child_fk FOREIGN KEY (parent_id) REFERENCES parent_items(id)
+) CLUSTER item_clu (parent_id);
+CREATE MATERIALIZED VIEW mv_clustered CLUSTER item_clu (parent_id) AS SELECT parent_id FROM child_items;
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+ALTER PLUGGABLE DATABASE DROP SUPPLEMENTAL LOG DATA;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (object_name
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)
+        (identifier)))
+    (table_constraint
+      (constraint_name
+        (identifier))
+      (column_list
+        (identifier))
+      (comment))
+    (table_constraint
+      (constraint_name
+        (identifier))
+      (column_list
+        (identifier))
+      (references_clause
+        (object_name
+          (identifier))
+        (column_list
+          (identifier))))
+    (object_name
+      (identifier))
+    (identifier))
+  (create_materialized_view_statement
+    (object_name
+      (identifier))
+    (object_name
+      (identifier))
+    (identifier)
+    (select_statement
+      (select_core
+        (select_list
+          (select_item
+            (identifier)))
+        (from_clause
+          (table_reference
+            (object_name
+              (identifier)))))))
+  (alter_database_statement
+    (supplemental_log_clause))
+  (alter_database_statement
+    (supplemental_log_clause)))

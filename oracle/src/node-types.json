@@ -1356,6 +1356,16 @@
     "type": "alter_materialized_view_log_statement",
     "named": true,
     "fields": {
+      "cluster": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "object_name",
+            "named": true
+          }
+        ]
+      },
       "table": {
         "multiple": false,
         "required": true,
@@ -1636,6 +1646,16 @@
     "type": "alter_materialized_view_statement",
     "named": true,
     "fields": {
+      "cluster": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "object_name",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -2220,6 +2240,16 @@
     "type": "alter_table_statement",
     "named": true,
     "fields": {
+      "cluster": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "object_name",
+            "named": true
+          }
+        ]
+      },
       "new_name": {
         "multiple": true,
         "required": false,
@@ -7427,16 +7457,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "if_not_exists",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -8225,6 +8245,16 @@
     "type": "create_materialized_view_log_statement",
     "named": true,
     "fields": {
+      "cluster": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "object_name",
+            "named": true
+          }
+        ]
+      },
       "table": {
         "multiple": false,
         "required": true,
@@ -8505,6 +8535,16 @@
     "type": "create_materialized_view_statement",
     "named": true,
     "fields": {
+      "cluster": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "object_name",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -9951,6 +9991,16 @@
     "type": "create_table_statement",
     "named": true,
     "fields": {
+      "cluster": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "object_name",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": true,
         "required": true,
@@ -25239,6 +25289,16 @@
     "type": "nested_table_storage_clause",
     "named": true,
     "fields": {
+      "cluster": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "object_name",
+            "named": true
+          }
+        ]
+      },
       "storage_table": {
         "multiple": false,
         "required": false,
@@ -39608,6 +39668,10 @@
     "named": false
   },
   {
+    "type": "ASSEMBLY",
+    "named": false
+  },
+  {
     "type": "ASSOCIATE",
     "named": false
   },
@@ -39817,6 +39881,10 @@
   },
   {
     "type": "CHAINED",
+    "named": false
+  },
+  {
+    "type": "CHANGE",
     "named": false
   },
   {
@@ -40080,6 +40148,10 @@
     "named": false
   },
   {
+    "type": "DATASTORE",
+    "named": false
+  },
+  {
     "type": "DATE",
     "named": false
   },
@@ -40204,6 +40276,10 @@
     "named": false
   },
   {
+    "type": "DIAGNOSTICS",
+    "named": false
+  },
+  {
     "type": "DICTIONARY",
     "named": false
   },
@@ -40280,6 +40356,10 @@
     "named": false
   },
   {
+    "type": "DYNAMIC",
+    "named": false
+  },
+  {
     "type": "E",
     "named": false
   },
@@ -40313,6 +40393,10 @@
   },
   {
     "type": "ELSIF",
+    "named": false
+  },
+  {
+    "type": "EM",
     "named": false
   },
   {
@@ -40428,6 +40512,14 @@
     "named": false
   },
   {
+    "type": "EXPORT",
+    "named": false
+  },
+  {
+    "type": "EXPRESS",
+    "named": false
+  },
+  {
     "type": "EXTEND",
     "named": false
   },
@@ -40477,6 +40569,14 @@
   },
   {
     "type": "FINAL",
+    "named": false
+  },
+  {
+    "type": "FINE",
+    "named": false
+  },
+  {
+    "type": "FIREWALL",
     "named": false
   },
   {
@@ -40588,6 +40688,10 @@
     "named": false
   },
   {
+    "type": "GRAINED",
+    "named": false
+  },
+  {
     "type": "GRANT",
     "named": false
   },
@@ -40669,6 +40773,10 @@
   },
   {
     "type": "IMMUTABLE",
+    "named": false
+  },
+  {
+    "type": "IMPORT",
     "named": false
   },
   {
@@ -40837,6 +40945,10 @@
   },
   {
     "type": "JSON_OBJECTAGG",
+    "named": false
+  },
+  {
+    "type": "JSON_SERIALIZE",
     "named": false
   },
   {
@@ -41021,6 +41133,10 @@
   },
   {
     "type": "MANAGEMENT",
+    "named": false
+  },
+  {
+    "type": "MANAGER",
     "named": false
   },
   {
@@ -41344,11 +41460,11 @@
     "named": false
   },
   {
-    "type": "NOT DEFERRABLE",
+    "type": "NOTHING",
     "named": false
   },
   {
-    "type": "NOTHING",
+    "type": "NOTIFICATION",
     "named": false
   },
   {
@@ -41476,6 +41592,10 @@
     "named": false
   },
   {
+    "type": "ORDERED",
+    "named": false
+  },
+  {
     "type": "ORDINALITY",
     "named": false
   },
@@ -41545,10 +41665,6 @@
   },
   {
     "type": "PARTITION",
-    "named": false
-  },
-  {
-    "type": "PARTITION BY",
     "named": false
   },
   {
@@ -41724,6 +41840,10 @@
     "named": false
   },
   {
+    "type": "PROGRAM",
+    "named": false
+  },
+  {
     "type": "PROPERTIES",
     "named": false
   },
@@ -41745,6 +41865,10 @@
   },
   {
     "type": "QUERY",
+    "named": false
+  },
+  {
+    "type": "QUEUE",
     "named": false
   },
   {
@@ -42020,6 +42144,10 @@
     "named": false
   },
   {
+    "type": "SCHEDULER",
+    "named": false
+  },
+  {
     "type": "SCHEMA",
     "named": false
   },
@@ -42045,6 +42173,10 @@
   },
   {
     "type": "SECUREFILE",
+    "named": false
+  },
+  {
+    "type": "SECURITY",
     "named": false
   },
   {
@@ -42380,6 +42512,10 @@
     "named": false
   },
   {
+    "type": "TEXT",
+    "named": false
+  },
+  {
     "type": "THAN",
     "named": false
   },
@@ -42469,6 +42605,10 @@
   },
   {
     "type": "TRUNCATE",
+    "named": false
+  },
+  {
+    "type": "TUNING",
     "named": false
   },
   {
