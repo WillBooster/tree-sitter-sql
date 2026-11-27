@@ -1027,3 +1027,23 @@ SELECT COUNT(DISTINCTROW x), SUM(DISTINCTROW x), GROUP_CONCAT(DISTINCTROW x) FRO
         (table
           (qualified_name
             (identifier)))))))
+
+================================================================================
+CONVERT USING with BINARY and quoted charset name
+:language(mysql)
+================================================================================
+
+SELECT CONVERT('a' USING binary), CONVERT('a' USING 'latin1');
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (convert_expression
+          (string_literal)))
+      (result_column
+        (convert_expression
+          (string_literal)
+          (string_literal))))))

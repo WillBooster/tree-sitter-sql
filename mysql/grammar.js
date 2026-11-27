@@ -1616,7 +1616,7 @@ export default grammar({
     _charset_clause: ($) =>
       seq(
         choice(keywords('CHARACTER SET'), keyword('CHARSET')),
-        optionalEq(choice($._identifier_or_string, keyword('BINARY'), keyword('DEFAULT')))
+        optionalEq(choice($._charset_name, keyword('DEFAULT')))
       ),
 
     _identifier_or_string: ($) => choice($._identifier, $.string_literal),
@@ -2633,10 +2633,7 @@ export default grammar({
           keyword('NAMES'),
           choice(
             keyword('DEFAULT'),
-            seq(
-              $._identifier_or_string,
-              optional(seq(keyword('COLLATE'), choice($._identifier_or_string, keyword('DEFAULT'))))
-            )
+            seq($._charset_name, optional(seq(keyword('COLLATE'), choice($._identifier_or_string, keyword('DEFAULT')))))
           )
         ),
         $.variable_assignment
@@ -3825,7 +3822,7 @@ export default grammar({
           field('name', alias(keyword('CHAR'), $.identifier)),
           '(',
           commaSep1($._expression),
-          optional(seq(keyword('USING'), choice($._identifier_or_string, keyword('BINARY')))),
+          optional(seq(keyword('USING'), $._charset_name)),
           ')'
         ),
         seq(
@@ -4041,9 +4038,11 @@ export default grammar({
         keyword('CONVERT'),
         '(',
         field('value', $._expression),
-        choice(seq(',', field('type', $.cast_type)), seq(keyword('USING'), field('charset', $._identifier))),
+        choice(seq(',', field('type', $.cast_type)), seq(keyword('USING'), field('charset', $._charset_name))),
         ')'
       ),
+
+    _charset_name: ($) => choice($._identifier, alias($._string_segment, $.string_literal), keyword('BINARY')),
 
     cast_type: ($) =>
       choice(

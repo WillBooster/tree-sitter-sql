@@ -5147,11 +5147,19 @@
         "required": false,
         "types": [
           {
+            "type": "BINARY",
+            "named": false
+          },
+          {
             "type": "identifier",
             "named": true
           },
           {
             "type": "quoted_identifier",
+            "named": true
+          },
+          {
+            "type": "string_literal",
             "named": true
           }
         ]

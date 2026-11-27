@@ -11184,16 +11184,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_identifier_or_string"
-                },
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[Bb][Ii][Nn][Aa][Rr][Yy]"
-                  },
-                  "named": false,
-                  "value": "BINARY"
+                  "name": "_charset_name"
                 },
                 {
                   "type": "ALIAS",
@@ -23057,7 +23048,7 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "_identifier_or_string"
+                      "name": "_charset_name"
                     },
                     {
                       "type": "CHOICE",
@@ -38874,22 +38865,8 @@
                       "value": "USING"
                     },
                     {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "_identifier_or_string"
-                        },
-                        {
-                          "type": "ALIAS",
-                          "content": {
-                            "type": "PATTERN",
-                            "value": "[Bb][Ii][Nn][Aa][Rr][Yy]"
-                          },
-                          "named": false,
-                          "value": "BINARY"
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "_charset_name"
                     }
                   ]
                 },
@@ -41261,7 +41238,7 @@
                   "name": "charset",
                   "content": {
                     "type": "SYMBOL",
-                    "name": "_identifier"
+                    "name": "_charset_name"
                   }
                 }
               ]
@@ -41271,6 +41248,33 @@
         {
           "type": "STRING",
           "value": ")"
+        }
+      ]
+    },
+    "_charset_name": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_string_segment"
+          },
+          "named": true,
+          "value": "string_literal"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Bb][Ii][Nn][Aa][Rr][Yy]"
+          },
+          "named": false,
+          "value": "BINARY"
         }
       ]
     },
