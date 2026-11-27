@@ -108,19 +108,39 @@ static bool scan_block_comment_tail(TSLexer *lexer) {
   return emit(lexer, ILLEGAL_TOKEN);
 }
 
-static bool scan_version_comment_open(Scanner *scanner, TSLexer *lexer) {
+static unsigned parse_version_guard(TSLexer *lexer, uint32_t *ver_out) {
   unsigned digits = 0;
+  uint32_t ver = 0;
   while (digits < 5 && is_digit(lexer->lookahead)) {
+    ver = ver * 10 + (uint32_t)(lexer->lookahead - '0');
     advance(lexer);
     digits++;
   }
-  if (digits > 0 && digits < 5) return scan_block_comment_tail(lexer);
-
-  lexer->mark_end(lexer);
-  if (digits == 5 && is_digit(lexer->lookahead)) {
-    advance(lexer);
-    if (is_space(lexer->lookahead) || lexer->lookahead == '*') lexer->mark_end(lexer);
+  if (digits == 5) {
+    lexer->mark_end(lexer);
+    if (is_digit(lexer->lookahead)) {
+      uint32_t d6 = (uint32_t)(lexer->lookahead - '0');
+      advance(lexer);
+      if (is_space(lexer->lookahead) || lexer->lookahead == '*') {
+        ver = ver * 10 + d6;
+        lexer->mark_end(lexer);
+      }
+    }
   }
+  *ver_out = ver;
+  return digits;
+}
+
+static bool scan_version_comment_open(Scanner *scanner, TSLexer *lexer) {
+  lexer->mark_end(lexer);
+  uint32_t ver = 0;
+  unsigned digits = parse_version_guard(lexer, &ver);
+  if (digits > 0 && digits < 5) {
+    scanner->in_version_comment = true;
+    lexer->result_symbol = VERSION_COMMENT_START;
+    return true;
+  }
+  if (digits == 5 && ver > 80499) return scan_block_comment_tail(lexer);
   while (is_space(lexer->lookahead)) advance(lexer);
   if (lexer->lookahead == '*') {
     advance(lexer);

@@ -302,7 +302,7 @@ Line comments, block comments, optimizer hints, and versioned comments
 -- dash comment with space
 --
 # hash comment
-SELECT /*+ BKA(t1) NO_ICP(t1) */ /* normal block */ /*! STRAIGHT_JOIN */ /*!50700 SQL_NO_CACHE */ /*!080400 DISTINCT */ /*!1234 ignored four-digit comment */ /*!*/ /*!50700   */ a -- trailing
+SELECT /*+ BKA(t1) NO_ICP(t1) */ /* normal block */ /*! STRAIGHT_JOIN */ /*!50700 SQL_NO_CACHE */ /*!080400 DISTINCT */ /*!90000 ignored future comment */ /*!*/ /*!50700   */ a -- trailing
 FROM t1;
 
 --------------------------------------------------------------------------------
