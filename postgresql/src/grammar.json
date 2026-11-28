@@ -49828,6 +49828,15 @@
                                         "value": "BINARY"
                                       },
                                       {
+                                        "type": "ALIAS",
+                                        "content": {
+                                          "type": "PATTERN",
+                                          "value": "[Ff][Rr][Ee][Ee][Zz][Ee]"
+                                        },
+                                        "named": false,
+                                        "value": "FREEZE"
+                                      },
+                                      {
                                         "type": "SEQ",
                                         "members": [
                                           {
@@ -50019,8 +50028,29 @@
                                                 "value": "*"
                                               },
                                               {
-                                                "type": "SYMBOL",
-                                                "name": "column_list"
+                                                "type": "SEQ",
+                                                "members": [
+                                                  {
+                                                    "type": "SYMBOL",
+                                                    "name": "_identifier"
+                                                  },
+                                                  {
+                                                    "type": "REPEAT",
+                                                    "content": {
+                                                      "type": "SEQ",
+                                                      "members": [
+                                                        {
+                                                          "type": "STRING",
+                                                          "value": ","
+                                                        },
+                                                        {
+                                                          "type": "SYMBOL",
+                                                          "name": "_identifier"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
                                               }
                                             ]
                                           }
@@ -50062,8 +50092,38 @@
                                             ]
                                           },
                                           {
-                                            "type": "SYMBOL",
-                                            "name": "column_list"
+                                            "type": "CHOICE",
+                                            "members": [
+                                              {
+                                                "type": "STRING",
+                                                "value": "*"
+                                              },
+                                              {
+                                                "type": "SEQ",
+                                                "members": [
+                                                  {
+                                                    "type": "SYMBOL",
+                                                    "name": "_identifier"
+                                                  },
+                                                  {
+                                                    "type": "REPEAT",
+                                                    "content": {
+                                                      "type": "SEQ",
+                                                      "members": [
+                                                        {
+                                                          "type": "STRING",
+                                                          "value": ","
+                                                        },
+                                                        {
+                                                          "type": "SYMBOL",
+                                                          "name": "_identifier"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            ]
                                           }
                                         ]
                                       },
@@ -50094,8 +50154,38 @@
                                             ]
                                           },
                                           {
-                                            "type": "SYMBOL",
-                                            "name": "column_list"
+                                            "type": "CHOICE",
+                                            "members": [
+                                              {
+                                                "type": "STRING",
+                                                "value": "*"
+                                              },
+                                              {
+                                                "type": "SEQ",
+                                                "members": [
+                                                  {
+                                                    "type": "SYMBOL",
+                                                    "name": "_identifier"
+                                                  },
+                                                  {
+                                                    "type": "REPEAT",
+                                                    "content": {
+                                                      "type": "SEQ",
+                                                      "members": [
+                                                        {
+                                                          "type": "STRING",
+                                                          "value": ","
+                                                        },
+                                                        {
+                                                          "type": "SYMBOL",
+                                                          "name": "_identifier"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            ]
                                           }
                                         ]
                                       },
@@ -50276,6 +50366,15 @@
                                         "value": "BINARY"
                                       },
                                       {
+                                        "type": "ALIAS",
+                                        "content": {
+                                          "type": "PATTERN",
+                                          "value": "[Ff][Rr][Ee][Ee][Zz][Ee]"
+                                        },
+                                        "named": false,
+                                        "value": "FREEZE"
+                                      },
+                                      {
                                         "type": "SEQ",
                                         "members": [
                                           {
@@ -50467,8 +50566,29 @@
                                                 "value": "*"
                                               },
                                               {
-                                                "type": "SYMBOL",
-                                                "name": "column_list"
+                                                "type": "SEQ",
+                                                "members": [
+                                                  {
+                                                    "type": "SYMBOL",
+                                                    "name": "_identifier"
+                                                  },
+                                                  {
+                                                    "type": "REPEAT",
+                                                    "content": {
+                                                      "type": "SEQ",
+                                                      "members": [
+                                                        {
+                                                          "type": "STRING",
+                                                          "value": ","
+                                                        },
+                                                        {
+                                                          "type": "SYMBOL",
+                                                          "name": "_identifier"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
                                               }
                                             ]
                                           }
@@ -50510,8 +50630,38 @@
                                             ]
                                           },
                                           {
-                                            "type": "SYMBOL",
-                                            "name": "column_list"
+                                            "type": "CHOICE",
+                                            "members": [
+                                              {
+                                                "type": "STRING",
+                                                "value": "*"
+                                              },
+                                              {
+                                                "type": "SEQ",
+                                                "members": [
+                                                  {
+                                                    "type": "SYMBOL",
+                                                    "name": "_identifier"
+                                                  },
+                                                  {
+                                                    "type": "REPEAT",
+                                                    "content": {
+                                                      "type": "SEQ",
+                                                      "members": [
+                                                        {
+                                                          "type": "STRING",
+                                                          "value": ","
+                                                        },
+                                                        {
+                                                          "type": "SYMBOL",
+                                                          "name": "_identifier"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            ]
                                           }
                                         ]
                                       },
@@ -50542,8 +50692,38 @@
                                             ]
                                           },
                                           {
-                                            "type": "SYMBOL",
-                                            "name": "column_list"
+                                            "type": "CHOICE",
+                                            "members": [
+                                              {
+                                                "type": "STRING",
+                                                "value": "*"
+                                              },
+                                              {
+                                                "type": "SEQ",
+                                                "members": [
+                                                  {
+                                                    "type": "SYMBOL",
+                                                    "name": "_identifier"
+                                                  },
+                                                  {
+                                                    "type": "REPEAT",
+                                                    "content": {
+                                                      "type": "SEQ",
+                                                      "members": [
+                                                        {
+                                                          "type": "STRING",
+                                                          "value": ","
+                                                        },
+                                                        {
+                                                          "type": "SYMBOL",
+                                                          "name": "_identifier"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            ]
                                           }
                                         ]
                                       },
@@ -50688,6 +50868,15 @@
                                 },
                                 "named": false,
                                 "value": "BINARY"
+                              },
+                              {
+                                "type": "ALIAS",
+                                "content": {
+                                  "type": "PATTERN",
+                                  "value": "[Ff][Rr][Ee][Ee][Zz][Ee]"
+                                },
+                                "named": false,
+                                "value": "FREEZE"
                               },
                               {
                                 "type": "SEQ",
@@ -50881,8 +51070,29 @@
                                         "value": "*"
                                       },
                                       {
-                                        "type": "SYMBOL",
-                                        "name": "column_list"
+                                        "type": "SEQ",
+                                        "members": [
+                                          {
+                                            "type": "SYMBOL",
+                                            "name": "_identifier"
+                                          },
+                                          {
+                                            "type": "REPEAT",
+                                            "content": {
+                                              "type": "SEQ",
+                                              "members": [
+                                                {
+                                                  "type": "STRING",
+                                                  "value": ","
+                                                },
+                                                {
+                                                  "type": "SYMBOL",
+                                                  "name": "_identifier"
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
                                       }
                                     ]
                                   }
@@ -50924,8 +51134,38 @@
                                     ]
                                   },
                                   {
-                                    "type": "SYMBOL",
-                                    "name": "column_list"
+                                    "type": "CHOICE",
+                                    "members": [
+                                      {
+                                        "type": "STRING",
+                                        "value": "*"
+                                      },
+                                      {
+                                        "type": "SEQ",
+                                        "members": [
+                                          {
+                                            "type": "SYMBOL",
+                                            "name": "_identifier"
+                                          },
+                                          {
+                                            "type": "REPEAT",
+                                            "content": {
+                                              "type": "SEQ",
+                                              "members": [
+                                                {
+                                                  "type": "STRING",
+                                                  "value": ","
+                                                },
+                                                {
+                                                  "type": "SYMBOL",
+                                                  "name": "_identifier"
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
                                   }
                                 ]
                               },
@@ -50956,8 +51196,38 @@
                                     ]
                                   },
                                   {
-                                    "type": "SYMBOL",
-                                    "name": "column_list"
+                                    "type": "CHOICE",
+                                    "members": [
+                                      {
+                                        "type": "STRING",
+                                        "value": "*"
+                                      },
+                                      {
+                                        "type": "SEQ",
+                                        "members": [
+                                          {
+                                            "type": "SYMBOL",
+                                            "name": "_identifier"
+                                          },
+                                          {
+                                            "type": "REPEAT",
+                                            "content": {
+                                              "type": "SEQ",
+                                              "members": [
+                                                {
+                                                  "type": "STRING",
+                                                  "value": ","
+                                                },
+                                                {
+                                                  "type": "SYMBOL",
+                                                  "name": "_identifier"
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
                                   }
                                 ]
                               },

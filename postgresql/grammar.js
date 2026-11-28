@@ -713,15 +713,16 @@ const copyOptions = ($) => [
       repeat1(
         choice(
           keyword('BINARY'),
+          keyword('FREEZE'),
           seq(keyword('DELIMITER'), optional(keyword('AS')), $.string_literal),
           seq(keyword('NULL'), optional(keyword('AS')), $.string_literal),
           keyword('CSV'),
           keyword('HEADER'),
           seq(keyword('QUOTE'), optional(keyword('AS')), $.string_literal),
           seq(keyword('ESCAPE'), optional(keyword('AS')), $.string_literal),
-          seq(keywords('FORCE QUOTE'), choice('*', $.column_list)),
-          seq(keywords('FORCE NOT NULL'), $.column_list),
-          seq(keywords('FORCE NULL'), $.column_list),
+          seq(keywords('FORCE QUOTE'), choice('*', commaSep1($._identifier))),
+          seq(keywords('FORCE NOT NULL'), choice('*', commaSep1($._identifier))),
+          seq(keywords('FORCE NULL'), choice('*', commaSep1($._identifier))),
           seq(keyword('ENCODING'), $.string_literal)
         )
       )

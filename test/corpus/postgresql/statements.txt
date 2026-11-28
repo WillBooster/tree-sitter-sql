@@ -480,3 +480,29 @@ SET TIME ZONE 'UTC'; SET TIME ZONE utc; SET TIME ZONE "action"; SET TIME ZONE -5
   (create_role_statement
     (identifier)
     (quoted_identifier)))
+
+================================================================================
+Legacy COPY CSV FORCE QUOTE, FORCE NOT NULL, FORCE NULL, and FREEZE options
+:language(postgresql)
+================================================================================
+
+COPY (SELECT 'a' AS item, 'b' AS detail) TO STDOUT CSV FORCE QUOTE item, detail; COPY accounts FROM STDIN FREEZE CSV FORCE NOT NULL item FORCE NULL *;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (copy_statement
+    (select_statement
+      (select_core
+        (result_column
+          (string_literal)
+          (identifier))
+        (result_column
+          (string_literal)
+          (identifier))))
+    (identifier)
+    (identifier))
+  (copy_statement
+    (qualified_name
+      (identifier))
+    (identifier)))
