@@ -415,14 +415,7 @@ const qualifiedObjectName = ($, firstSegment) =>
     )
   );
 
-/**
- * Builds the parallel SQL (`prefix = ''`) and PL/SQL (`prefix = '_plsql'`) expression families so PL/SQL resolves
- * identifiers against `PLSQL_RESERVED` and admits `**` at `PREC.EXPONENT > PREC.UNARY`, while SQL expressions and
- * embedded SQL subqueries reject `**` and SQL-reserved unquoted identifiers. Both families enforce non-associativity on
- * relational and predicate conditions structurally (`_scalar_expression` -> condition -> `_expression`).
- *
- * @param {'' | '_plsql'} prefix
- */
+/** @param {'' | '_plsql'} prefix */
 const buildExpressionFamily = (prefix) => {
   const isPlsql = prefix === '_plsql';
   const k = (/** @type {string} */ base) => `${prefix}${base}`;
@@ -491,9 +484,8 @@ const buildExpressionFamily = (prefix) => {
           $.subquery,
           pub($, 'member_expression'),
           pub($, 'dblink_expression'),
-          pub($, 'cursor_attribute'),
           ...(isPlsql
-            ? [alias($._expr_cc_directive, $.conditional_compilation_directive)]
+            ? [$.cursor_attribute, alias($._expr_cc_directive, $.conditional_compilation_directive)]
             : [$.outer_join_expression, $.model_cell_reference, alias($._ordered_aggregate_call, $.function_call)]),
           pub($, 'function_call'),
           alias(ref($, '_conversion_function_call'), $.function_call),
@@ -512,17 +504,6 @@ const buildExpressionFamily = (prefix) => {
           pub($, 'json_function_expression'),
           pub($, 'json_constructor_expression'),
           pub($, 'xml_function_expression')
-        ),
-    ],
-    [
-      k('_callable_expression'),
-      /** @param {GrammarSymbols<string>} $ */ ($) =>
-        choice(
-          baseIdentifier($),
-          pub($, 'member_expression'),
-          pub($, 'dblink_expression'),
-          pub($, 'function_call'),
-          pub($, 'cursor_attribute')
         ),
     ],
     [
@@ -552,12 +533,6 @@ const buildExpressionFamily = (prefix) => {
     def('dblink_expression', ($) =>
       prec.left(PREC.POSTFIX, seq(field('object', ref($, '_primary_expression')), '@', field('dblink', $.dblink_name)))
     ),
-    def('cursor_attribute', ($) =>
-      prec.left(
-        PREC.POSTFIX,
-        seq(field('cursor', ref($, '_primary_expression')), '%', field('attribute', $._member_name))
-      )
-    ),
     def('new_expression', ($) =>
       seq(
         keyword('NEW'),
@@ -567,11 +542,6 @@ const buildExpressionFamily = (prefix) => {
         ')'
       )
     ),
-    [
-      k('_new_args'),
-      /** @param {GrammarSymbols<string>} $ */ ($) =>
-        commaSep1(isPlsql ? alias($._plsql_function_argument, $.function_argument) : $.function_argument),
-    ],
     [
       k('_new_type_name'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
@@ -1260,6 +1230,20 @@ function buildXmlExpressionRules(k, ref, pub, def) {
 /** @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
 function plsqlOnlyExpressionRules() {
   return {
+    cursor_attribute: ($) =>
+      prec.left(
+        PREC.POSTFIX,
+        seq(field('cursor', $._plsql_primary_expression), '%', field('attribute', $._member_name))
+      ),
+    _plsql_callable_expression: ($) =>
+      choice(
+        $._plsql_identifier,
+        alias($._plsql_member_expression, $.member_expression),
+        alias($._plsql_dblink_expression, $.dblink_expression),
+        alias($._plsql_function_call, $.function_call),
+        $.cursor_attribute
+      ),
+    _plsql_new_args: ($) => commaSep1(alias($._plsql_function_argument, $.function_argument)),
     _plsql_function_call: ($) =>
       seq(field('name', $._plsql_callable_expression), '(', optional($._plsql_func_args), ')'),
     _plsql_func_args: ($) => commaSep1(alias($._plsql_function_argument, $.function_argument)),
@@ -1300,6 +1284,8 @@ function plsqlOnlyExpressionRules() {
 /** @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
 function sqlOnlyExpressionRules() {
   return {
+    _callable_expression: ($) => choice($._identifier, $.member_expression, $.dblink_expression, $.function_call),
+    _new_args: ($) => commaSep1($.function_argument),
     outer_join_expression: ($) =>
       seq(field('column', choice($._identifier, $.member_expression)), $.outer_join_indicator),
     _ordered_aggregate_call: ($) =>
@@ -2391,7 +2377,17 @@ export default grammar({
     insert_statement: ($) =>
       seq(optional($.with_clause), keyword('INSERT'), choice($._single_table_insert, $._multi_table_insert)),
 
+    _plsql_insert_statement: ($) =>
+      seq(optional($.with_clause), keyword('INSERT'), choice($._plsql_single_table_insert, $._multi_table_insert)),
+
     _single_table_insert: ($) =>
+      seq(
+        $.insert_into_clause,
+        choice(alias($._subquery_statement, $.select_statement), $.values_clause),
+        optional($._dml_returning_or_error_tail)
+      ),
+
+    _plsql_single_table_insert: ($) =>
       seq(
         $.insert_into_clause,
         choice(
@@ -5310,7 +5306,7 @@ export default grammar({
           alias($._stmt_cc_directive, $.conditional_compilation_directive),
           $.conditional_error_directive,
           seq(alias($._plsql_select_statement, $.select_statement), ';'),
-          seq($.insert_statement, ';'),
+          seq(alias($._plsql_insert_statement, $.insert_statement), ';'),
           seq(alias($._plsql_update_statement, $.update_statement), ';'),
           seq(alias($._plsql_delete_statement, $.delete_statement), ';'),
           seq($.merge_statement, ';'),
@@ -5577,7 +5573,15 @@ export default grammar({
         $._forall_bounds_clause,
         optional(keywords('SAVE EXCEPTIONS')),
         choice(
-          seq(choice($.insert_statement, $.update_statement, $.delete_statement, $.merge_statement), ';'),
+          seq(
+            choice(
+              alias($._plsql_insert_statement, $.insert_statement),
+              $.update_statement,
+              $.delete_statement,
+              $.merge_statement
+            ),
+            ';'
+          ),
           $.execute_immediate_statement
         )
       ),

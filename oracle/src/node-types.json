@@ -490,10 +490,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -870,10 +866,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -1105,10 +1097,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -1468,10 +1456,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -1759,10 +1743,6 @@
         },
         {
           "type": "compression_clause",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -2409,10 +2389,6 @@
         },
         {
           "type": "compression_clause",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -4787,10 +4763,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -6020,10 +5992,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -8377,10 +8345,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -8778,10 +8742,6 @@
         },
         {
           "type": "constraint_name",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -9483,10 +9443,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -9774,10 +9730,6 @@
         },
         {
           "type": "compression_clause",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -10605,10 +10557,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -10836,10 +10784,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -11939,10 +11883,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -12175,10 +12115,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -12431,19 +12367,11 @@
             "named": true
           },
           {
-            "type": "model_cell_reference",
-            "named": true
-          },
-          {
             "type": "multiset_expression",
             "named": true
           },
           {
             "type": "new_expression",
-            "named": true
-          },
-          {
-            "type": "outer_join_expression",
             "named": true
           },
           {
@@ -12866,10 +12794,6 @@
           },
           {
             "type": "chr_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -13574,10 +13498,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -15210,10 +15130,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -15414,10 +15330,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -15984,10 +15896,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -16191,10 +16099,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -16371,10 +16275,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -16947,10 +16847,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -17365,10 +17261,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -18751,10 +18643,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -19016,10 +18904,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -19243,10 +19127,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -19466,10 +19346,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -19678,10 +19554,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -19881,10 +19753,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -20873,10 +20741,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -21152,10 +21016,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -21884,10 +21744,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -23074,10 +22930,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -23318,10 +23170,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -23522,10 +23370,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -25043,10 +24887,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -25803,10 +25643,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -26134,10 +25970,6 @@
         "required": true,
         "types": [
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "dblink_expression",
             "named": true
           },
@@ -26202,10 +26034,6 @@
         },
         {
           "type": "column_list",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -26454,10 +26282,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -26662,10 +26486,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -26877,10 +26697,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -27551,10 +27367,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -27864,10 +27676,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -28436,10 +28244,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -29012,10 +28816,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -29302,10 +29102,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -29510,10 +29306,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -29962,10 +29754,6 @@
         },
         {
           "type": "column_list",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -33243,10 +33031,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -33384,10 +33168,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -33592,10 +33372,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -33831,10 +33607,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -34962,10 +34734,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -35192,10 +34960,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -35395,10 +35159,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -35725,10 +35485,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -36026,10 +35782,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -36898,10 +36650,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -37183,10 +36931,6 @@
         },
         {
           "type": "column_list",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {
@@ -38854,10 +38598,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -39104,10 +38844,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -39934,10 +39670,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -40410,10 +40142,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -40616,10 +40344,6 @@
           },
           {
             "type": "collate_expression",
-            "named": true
-          },
-          {
-            "type": "cursor_attribute",
             "named": true
           },
           {
@@ -42441,10 +42165,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -43824,10 +43544,6 @@
           "named": true
         },
         {
-          "type": "cursor_attribute",
-          "named": true
-        },
-        {
           "type": "cursor_expression",
           "named": true
         },
@@ -44039,10 +43755,6 @@
             "named": true
           },
           {
-            "type": "cursor_attribute",
-            "named": true
-          },
-          {
             "type": "cursor_expression",
             "named": true
           },
@@ -44243,10 +43955,6 @@
         },
         {
           "type": "collate_expression",
-          "named": true
-        },
-        {
-          "type": "cursor_attribute",
           "named": true
         },
         {

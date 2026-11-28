@@ -10568,7 +10568,85 @@
         }
       ]
     },
+    "_plsql_insert_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "with_clause"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ii][Nn][Ss][Ee][Rr][Tt]"
+          },
+          "named": false,
+          "value": "INSERT"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_plsql_single_table_insert"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_multi_table_insert"
+            }
+          ]
+        }
+      ]
+    },
     "_single_table_insert": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "insert_into_clause"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_subquery_statement"
+              },
+              "named": true,
+              "value": "select_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "values_clause"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_dml_returning_or_error_tail"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_plsql_single_table_insert": {
       "type": "SEQ",
       "members": [
         {
@@ -43130,8 +43208,13 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "insert_statement"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_plsql_insert_statement"
+                  },
+                  "named": true,
+                  "value": "insert_statement"
                 },
                 {
                   "type": "STRING",
@@ -45615,8 +45698,13 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "insert_statement"
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_plsql_insert_statement"
+                      },
+                      "named": true,
+                      "value": "insert_statement"
                     },
                     {
                       "type": "SYMBOL",
@@ -62206,10 +62294,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "cursor_attribute"
-        },
-        {
-          "type": "SYMBOL",
           "name": "outer_join_expression"
         },
         {
@@ -62297,31 +62381,6 @@
         {
           "type": "SYMBOL",
           "name": "xml_function_expression"
-        }
-      ]
-    },
-    "_callable_expression": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "member_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "dblink_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "function_call"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "cursor_attribute"
         }
       ]
     },
@@ -62510,35 +62569,6 @@
         ]
       }
     },
-    "cursor_attribute": {
-      "type": "PREC_LEFT",
-      "value": 13,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "cursor",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_primary_expression"
-            }
-          },
-          {
-            "type": "STRING",
-            "value": "%"
-          },
-          {
-            "type": "FIELD",
-            "name": "attribute",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_member_name"
-            }
-          }
-        ]
-      }
-    },
     "new_expression": {
       "type": "SEQ",
       "members": [
@@ -62583,31 +62613,6 @@
         {
           "type": "STRING",
           "value": ")"
-        }
-      ]
-    },
-    "_new_args": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "function_argument"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": ","
-              },
-              {
-                "type": "SYMBOL",
-                "name": "function_argument"
-              }
-            ]
-          }
         }
       ]
     },
@@ -67750,6 +67755,52 @@
         ]
       }
     },
+    "_callable_expression": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "member_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "dblink_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "function_call"
+        }
+      ]
+    },
+    "_new_args": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "function_argument"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "SYMBOL",
+                "name": "function_argument"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "outer_join_expression": {
       "type": "SEQ",
       "members": [
@@ -68693,13 +68744,8 @@
           "value": "dblink_expression"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_plsql_cursor_attribute"
-          },
-          "named": true,
-          "value": "cursor_attribute"
+          "type": "SYMBOL",
+          "name": "cursor_attribute"
         },
         {
           "type": "ALIAS",
@@ -68855,51 +68901,6 @@
         }
       ]
     },
-    "_plsql_callable_expression": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_plsql_identifier"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_plsql_member_expression"
-          },
-          "named": true,
-          "value": "member_expression"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_plsql_dblink_expression"
-          },
-          "named": true,
-          "value": "dblink_expression"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_plsql_function_call"
-          },
-          "named": true,
-          "value": "function_call"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_plsql_cursor_attribute"
-          },
-          "named": true,
-          "value": "cursor_attribute"
-        }
-      ]
-    },
     "_plsql_expr_identifier": {
       "type": "CHOICE",
       "members": [
@@ -69043,35 +69044,6 @@
         ]
       }
     },
-    "_plsql_cursor_attribute": {
-      "type": "PREC_LEFT",
-      "value": 13,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "cursor",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_plsql_primary_expression"
-            }
-          },
-          {
-            "type": "STRING",
-            "value": "%"
-          },
-          {
-            "type": "FIELD",
-            "name": "attribute",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_member_name"
-            }
-          }
-        ]
-      }
-    },
     "_plsql_new_expression": {
       "type": "SEQ",
       "members": [
@@ -69116,41 +69088,6 @@
         {
           "type": "STRING",
           "value": ")"
-        }
-      ]
-    },
-    "_plsql_new_args": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_plsql_function_argument"
-          },
-          "named": true,
-          "value": "function_argument"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": ","
-              },
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_plsql_function_argument"
-                },
-                "named": true,
-                "value": "function_argument"
-              }
-            ]
-          }
         }
       ]
     },
@@ -74198,6 +74135,110 @@
           }
         ]
       }
+    },
+    "cursor_attribute": {
+      "type": "PREC_LEFT",
+      "value": 13,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "cursor",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_plsql_primary_expression"
+            }
+          },
+          {
+            "type": "STRING",
+            "value": "%"
+          },
+          {
+            "type": "FIELD",
+            "name": "attribute",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_member_name"
+            }
+          }
+        ]
+      }
+    },
+    "_plsql_callable_expression": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_plsql_identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_plsql_member_expression"
+          },
+          "named": true,
+          "value": "member_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_plsql_dblink_expression"
+          },
+          "named": true,
+          "value": "dblink_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_plsql_function_call"
+          },
+          "named": true,
+          "value": "function_call"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "cursor_attribute"
+        }
+      ]
+    },
+    "_plsql_new_args": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_plsql_function_argument"
+          },
+          "named": true,
+          "value": "function_argument"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_plsql_function_argument"
+                },
+                "named": true,
+                "value": "function_argument"
+              }
+            ]
+          }
+        }
+      ]
     },
     "_plsql_function_call": {
       "type": "SEQ",

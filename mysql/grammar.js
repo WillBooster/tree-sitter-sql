@@ -643,13 +643,29 @@ function buildScopedSelectRules(sp) {
       ),
     [k('_parenthesized_select_trailing_into')]: ($) => seq('(', scopedHid($, sp, '_select_trailing_into'), ')'),
     [k('_locking_clauses')]: ($) => repeat1($.locking_clause),
-    [k('_inner_select_no_into')]: ($) =>
+    [k('_no_limit_select_no_into')]: ($) =>
       seq(
         optional(scopedVis($, sp, 'with_clause')),
-        scopedHid($, sp, '_inner_query_body_no_into'),
+        scopedHid($, sp, '_no_limit_query_body'),
         optional(scopedVis($, sp, 'order_by_clause')),
-        optional(scopedVis($, sp, 'limit_clause')),
         optional(scopedHid($, sp, '_locking_clauses'))
+      ),
+    [k('_inner_select_no_into')]: ($) =>
+      choice(
+        seq(
+          optional(scopedVis($, sp, 'with_clause')),
+          scopedHid($, sp, '_no_limit_query_body'),
+          optional(scopedVis($, sp, 'order_by_clause')),
+          optional(scopedVis($, sp, 'limit_clause')),
+          optional(scopedHid($, sp, '_locking_clauses'))
+        ),
+        seq(
+          optional(scopedVis($, sp, 'with_clause')),
+          scopedHid($, sp, '_has_limit_query_body'),
+          optional(scopedVis($, sp, 'order_by_clause')),
+          optional(scopedVis($, sp, 'limit_clause')),
+          optional(scopedHid($, sp, '_locking_clauses'))
+        )
       ),
     [k('_subquery_select')]: ($) => scopedHid($, sp, '_inner_select_no_into'),
     [k('with_clause')]: ($) =>
@@ -766,63 +782,112 @@ function buildScopedCompoundQueryRules(sp) {
         ')'
       ),
     [k('_inner_query_body_no_into')]: ($) =>
+      choice(scopedHid($, sp, '_no_limit_query_body'), scopedHid($, sp, '_has_limit_query_body')),
+    [k('_no_limit_query_body')]: ($) =>
       choice(
-        scopedHid($, sp, '_inner_query_term_no_into'),
-        alias(scopedHid($, sp, '_inner_compound_query'), $.compound_query)
+        scopedHid($, sp, '_no_limit_query_term'),
+        alias(scopedHid($, sp, '_no_limit_compound_query'), $.compound_query)
+      ),
+    [k('_has_limit_query_body')]: ($) =>
+      choice(
+        scopedHid($, sp, '_has_limit_query_term'),
+        alias(scopedHid($, sp, '_has_limit_compound_query'), $.compound_query)
       ),
     [k('_inner_query_body_with_into')]: ($) =>
       choice(
         scopedHid($, sp, '_inner_query_term_with_into'),
         alias(scopedHid($, sp, '_inner_compound_query_with_into'), $.compound_query)
       ),
-    [k('_inner_compound_query')]: ($) =>
+    [k('_no_limit_compound_query')]: ($) =>
       prec.left(
         seq(
-          field('left', scopedHid($, sp, '_inner_query_body_no_into')),
+          field('left', scopedHid($, sp, '_no_limit_query_body')),
           field('operator', alias($._union_or_except_operator, $.compound_operator)),
-          field('right', scopedHid($, sp, '_inner_query_term_no_into'))
+          field('right', scopedHid($, sp, '_no_limit_query_term'))
+        )
+      ),
+    [k('_has_limit_compound_query')]: ($) =>
+      prec.left(
+        choice(
+          seq(
+            field('left', scopedHid($, sp, '_no_limit_query_body')),
+            field('operator', alias($._union_or_except_operator, $.compound_operator)),
+            field('right', scopedHid($, sp, '_has_limit_query_term'))
+          ),
+          seq(
+            field('left', scopedHid($, sp, '_has_limit_query_body')),
+            field('operator', alias($._union_or_except_operator, $.compound_operator)),
+            field('right', scopedHid($, sp, '_inner_query_term_no_into'))
+          )
         )
       ),
     [k('_inner_compound_query_with_into')]: ($) =>
       prec.left(
         seq(
-          field('left', scopedHid($, sp, '_inner_query_body_no_into')),
+          field('left', choice(scopedHid($, sp, '_no_limit_query_body'), scopedHid($, sp, '_has_limit_query_body'))),
           field('operator', alias($._union_or_except_operator, $.compound_operator)),
           field('right', scopedHid($, sp, '_inner_query_term_with_into'))
         )
       ),
     [k('_inner_query_term_no_into')]: ($) =>
+      choice(scopedHid($, sp, '_no_limit_query_term'), scopedHid($, sp, '_has_limit_query_term')),
+    [k('_no_limit_query_term')]: ($) =>
       choice(
-        scopedHid($, sp, '_inner_query_primary_no_into'),
-        alias(scopedHid($, sp, '_inner_intersect_query_no_into'), $.compound_query)
+        scopedHid($, sp, '_no_limit_query_primary'),
+        alias(scopedHid($, sp, '_no_limit_intersect_query'), $.compound_query)
+      ),
+    [k('_has_limit_query_term')]: ($) =>
+      choice(
+        alias(scopedHid($, sp, '_has_limit_parenthesized_query'), $.parenthesized_query),
+        alias(scopedHid($, sp, '_has_limit_intersect_query'), $.compound_query)
       ),
     [k('_inner_query_term_with_into')]: ($) =>
       choice(
         scopedHid($, sp, '_inner_query_primary_with_into'),
         alias(scopedHid($, sp, '_inner_intersect_query_with_into'), $.compound_query)
       ),
-    [k('_inner_intersect_query_no_into')]: ($) =>
+    [k('_no_limit_intersect_query')]: ($) =>
       prec.left(
         seq(
-          field('left', scopedHid($, sp, '_inner_query_term_no_into')),
+          field('left', scopedHid($, sp, '_no_limit_query_term')),
           field('operator', alias($._intersect_operator, $.compound_operator)),
-          field('right', scopedHid($, sp, '_inner_query_primary_no_into'))
+          field('right', scopedHid($, sp, '_no_limit_query_primary'))
+        )
+      ),
+    [k('_has_limit_intersect_query')]: ($) =>
+      prec.left(
+        choice(
+          seq(
+            field('left', scopedHid($, sp, '_no_limit_query_term')),
+            field('operator', alias($._intersect_operator, $.compound_operator)),
+            field('right', alias(scopedHid($, sp, '_has_limit_parenthesized_query'), $.parenthesized_query))
+          ),
+          seq(
+            field('left', scopedHid($, sp, '_has_limit_query_term')),
+            field('operator', alias($._intersect_operator, $.compound_operator)),
+            field('right', scopedHid($, sp, '_inner_query_primary_no_into'))
+          )
         )
       ),
     [k('_inner_intersect_query_with_into')]: ($) =>
       prec.left(
         seq(
-          field('left', scopedHid($, sp, '_inner_query_term_no_into')),
+          field('left', choice(scopedHid($, sp, '_no_limit_query_term'), scopedHid($, sp, '_has_limit_query_term'))),
           field('operator', alias($._intersect_operator, $.compound_operator)),
           field('right', scopedHid($, sp, '_inner_query_primary_with_into'))
         )
       ),
     [k('_inner_query_primary_no_into')]: ($) =>
       choice(
+        scopedHid($, sp, '_no_limit_query_primary'),
+        alias(scopedHid($, sp, '_has_limit_parenthesized_query'), $.parenthesized_query)
+      ),
+    [k('_no_limit_query_primary')]: ($) =>
+      choice(
         alias(scopedHid($, sp, '_inner_select_core'), $.select_core),
         scopedVis($, sp, 'values_statement'),
         $.table_value_statement,
-        alias(scopedHid($, sp, '_inner_parenthesized_query'), $.parenthesized_query)
+        alias(scopedHid($, sp, '_no_limit_parenthesized_query'), $.parenthesized_query)
       ),
     [k('_inner_query_primary_with_into')]: ($) =>
       choice(
@@ -839,15 +904,35 @@ function buildScopedCompoundQueryRules(sp) {
         optional(scopedHid($, sp, '_locking_clauses')),
         ')'
       ),
-    [k('_inner_parenthesized_query')]: ($) =>
+    [k('_no_limit_parenthesized_query')]: ($) =>
       seq(
         '(',
         optional(scopedVis($, sp, 'with_clause')),
-        scopedHid($, sp, '_inner_query_body_no_into'),
+        scopedHid($, sp, '_no_limit_query_body'),
         optional(scopedVis($, sp, 'order_by_clause')),
-        optional(scopedVis($, sp, 'limit_clause')),
         optional(scopedHid($, sp, '_locking_clauses')),
         ')'
+      ),
+    [k('_has_limit_parenthesized_query')]: ($) =>
+      choice(
+        seq(
+          '(',
+          optional(scopedVis($, sp, 'with_clause')),
+          scopedHid($, sp, '_no_limit_query_body'),
+          optional(scopedVis($, sp, 'order_by_clause')),
+          scopedVis($, sp, 'limit_clause'),
+          optional(scopedHid($, sp, '_locking_clauses')),
+          ')'
+        ),
+        seq(
+          '(',
+          optional(scopedVis($, sp, 'with_clause')),
+          scopedHid($, sp, '_has_limit_query_body'),
+          optional(scopedVis($, sp, 'order_by_clause')),
+          optional(scopedVis($, sp, 'limit_clause')),
+          optional(scopedHid($, sp, '_locking_clauses')),
+          ')'
+        )
       ),
   };
 }
@@ -1563,11 +1648,27 @@ function buildScopedClauseRules(sp) {
  */
 function buildScopedExpressionRules(sp) {
   const k = (/** @type {string} */ n) => scopedKey(sp, n);
+  const boolPri = (/** @type {GrammarSymbols<string>} */ $) =>
+    choice(scopedHid($, sp, '_non_subquery_bool_pri'), scopedHid($, sp, '_wrapped_subquery_expression'));
+  const predicate = (/** @type {GrammarSymbols<string>} */ $) =>
+    choice(scopedHid($, sp, '_non_subquery_predicate'), scopedHid($, sp, '_wrapped_subquery_expression'));
+  const bitExpr = (/** @type {GrammarSymbols<string>} */ $) =>
+    choice(scopedHid($, sp, '_non_subquery_bit_expr'), scopedHid($, sp, '_wrapped_subquery_expression'));
+  const simpleExpr = (/** @type {GrammarSymbols<string>} */ $) =>
+    choice(scopedHid($, sp, '_non_subquery_simple_expr'), scopedHid($, sp, '_wrapped_subquery_expression'));
   return {
     [k('row_constructor')]: ($) => seq(keyword('ROW'), '(', commaSep(scopedHid($, sp, '_expression')), ')'),
     [k('_expression')]: ($) =>
+      choice(scopedHid($, sp, '_non_subquery_expression'), scopedHid($, sp, '_wrapped_subquery_expression')),
+    [k('_wrapped_subquery_expression')]: ($) =>
       choice(
-        scopedHid($, sp, '_bool_pri'),
+        scopedVis($, sp, 'subquery'),
+        alias(scopedHid($, sp, '_wrapped_subquery_parens'), $.parenthesized_expression)
+      ),
+    [k('_wrapped_subquery_parens')]: ($) => seq('(', scopedHid($, sp, '_wrapped_subquery_expression'), ')'),
+    [k('_non_subquery_expression')]: ($) =>
+      choice(
+        scopedHid($, sp, '_non_subquery_bool_pri'),
         scopedVis($, sp, 'is_expression'),
         alias(scopedHid($, sp, '_not_expression'), $.unary_expression),
         scopedVis($, sp, 'binary_expression')
@@ -1584,15 +1685,15 @@ function buildScopedExpressionRules(sp) {
       prec.left(
         PREC.IS_BOOL,
         seq(
-          field('left', scopedHid($, sp, '_bool_pri')),
+          field('left', boolPri($)),
           keyword('IS'),
           optional(keyword('NOT')),
           field('right', choice($.boolean_literal, keyword('UNKNOWN')))
         )
       ),
-    [k('_bool_pri')]: ($) =>
+    [k('_non_subquery_bool_pri')]: ($) =>
       choice(
-        scopedHid($, sp, '_predicate'),
+        scopedHid($, sp, '_non_subquery_predicate'),
         alias(scopedHid($, sp, '_is_null_expression'), $.is_expression),
         alias(scopedHid($, sp, '_compare_binary_expression'), $.binary_expression),
         scopedVis($, sp, 'quantified_comparison_expression')
@@ -1600,37 +1701,32 @@ function buildScopedExpressionRules(sp) {
     [k('_is_null_expression')]: ($) =>
       prec.left(
         PREC.COMPARE,
-        seq(
-          field('left', scopedHid($, sp, '_bool_pri')),
-          keyword('IS'),
-          optional(keyword('NOT')),
-          field('right', $.null)
-        )
+        seq(field('left', boolPri($)), keyword('IS'), optional(keyword('NOT')), field('right', $.null))
       ),
     [k('_compare_binary_expression')]: ($) =>
       prec.left(
         PREC.COMPARE,
         seq(
-          field('left', scopedHid($, sp, '_bool_pri')),
+          field('left', boolPri($)),
           field('operator', choice('=', '<=>', '>=', '>', '<=', '<', '<>', '!=')),
-          field('right', scopedHid($, sp, '_predicate'))
+          field('right', predicate($))
         )
       ),
     [k('quantified_comparison_expression')]: ($) =>
       prec.left(
         PREC.COMPARE,
         seq(
-          field('left', scopedHid($, sp, '_bool_pri')),
+          field('left', boolPri($)),
           field('operator', choice('=', '>=', '>', '<=', '<', '<>', '!=')),
           field('quantifier', choice(keyword('ANY'), keyword('SOME'), keyword('ALL'))),
           '(',
-          alias(scopedHid($, sp, '_subquery_select'), $.select_statement),
+          alias(scopedHid($, sp, '_no_limit_select_no_into'), $.select_statement),
           ')'
         )
       ),
-    [k('_predicate')]: ($) =>
+    [k('_non_subquery_predicate')]: ($) =>
       choice(
-        scopedHid($, sp, '_bit_expr'),
+        scopedHid($, sp, '_non_subquery_bit_expr'),
         scopedVis($, sp, 'in_expression'),
         scopedVis($, sp, 'member_of_expression'),
         scopedVis($, sp, 'between_expression'),
@@ -1642,51 +1738,48 @@ function buildScopedExpressionRules(sp) {
         PREC.PREDICATE,
         choice(
           seq(
-            field('left', scopedHid($, sp, '_bit_expr')),
+            field('left', bitExpr($)),
             field('operator', seq(optional(keyword('NOT')), choice(keyword('REGEXP'), keyword('RLIKE')))),
-            field('right', scopedHid($, sp, '_bit_expr'))
+            field('right', bitExpr($))
           ),
-          seq(
-            field('left', scopedHid($, sp, '_bit_expr')),
-            field('operator', keywords('SOUNDS LIKE')),
-            field('right', scopedHid($, sp, '_bit_expr'))
-          )
+          seq(field('left', bitExpr($)), field('operator', keywords('SOUNDS LIKE')), field('right', bitExpr($)))
         )
       ),
     [k('like_expression')]: ($) =>
       prec.right(
         PREC.PREDICATE,
         seq(
-          field('left', scopedHid($, sp, '_bit_expr')),
+          field('left', bitExpr($)),
           optional(keyword('NOT')),
           keyword('LIKE'),
-          field('right', scopedHid($, sp, '_simple_expr')),
-          optional(seq(keyword('ESCAPE'), field('escape', scopedHid($, sp, '_simple_expr'))))
+          field('right', simpleExpr($)),
+          optional(seq(keyword('ESCAPE'), field('escape', simpleExpr($))))
         )
       ),
     [k('between_expression')]: ($) =>
       prec.right(
         PREC.PREDICATE,
         seq(
-          field('value', scopedHid($, sp, '_bit_expr')),
+          field('value', bitExpr($)),
           optional(keyword('NOT')),
           keyword('BETWEEN'),
-          field('low', scopedHid($, sp, '_bit_expr')),
+          field('low', bitExpr($)),
           keyword('AND'),
-          field('high', scopedHid($, sp, '_predicate'))
+          field('high', predicate($))
         )
       ),
     [k('in_expression')]: ($) =>
       prec.left(
         PREC.PREDICATE,
         seq(
-          field('value', scopedHid($, sp, '_bit_expr')),
+          field('value', bitExpr($)),
           optional(keyword('NOT')),
           keyword('IN'),
           '(',
           choice(
-            alias(scopedHid($, sp, '_subquery_select'), $.select_statement),
-            commaSep1(scopedHid($, sp, '_expression'))
+            alias(scopedHid($, sp, '_no_limit_select_no_into'), $.select_statement),
+            scopedHid($, sp, '_non_subquery_expression'),
+            seq(scopedHid($, sp, '_expression'), ',', commaSep1(scopedHid($, sp, '_expression')))
           ),
           ')'
         )
@@ -1694,26 +1787,24 @@ function buildScopedExpressionRules(sp) {
     [k('member_of_expression')]: ($) =>
       prec.left(
         PREC.PREDICATE,
-        seq(
-          field('value', scopedHid($, sp, '_bit_expr')),
-          keywords('MEMBER OF'),
-          '(',
-          field('array', scopedHid($, sp, '_simple_expr')),
-          ')'
-        )
+        seq(field('value', bitExpr($)), keywords('MEMBER OF'), '(', field('array', simpleExpr($)), ')')
       ),
-    [k('_bit_expr')]: ($) =>
-      choice(scopedHid($, sp, '_simple_expr'), alias(scopedHid($, sp, '_bit_binary_expression'), $.binary_expression)),
+    [k('_non_subquery_bit_expr')]: ($) =>
+      choice(
+        scopedHid($, sp, '_non_subquery_simple_expr'),
+        alias(scopedHid($, sp, '_bit_binary_expression'), $.binary_expression)
+      ),
     [k('_bit_binary_expression')]: ($) =>
       choice(
-        leftBinaryOp(PREC.BIT_OR, scopedHid($, sp, '_bit_expr'), '|'),
-        leftBinaryOp(PREC.BIT_AND, scopedHid($, sp, '_bit_expr'), '&'),
-        leftBinaryOp(PREC.BIT_SHIFT, scopedHid($, sp, '_bit_expr'), choice('<<', '>>')),
-        leftBinaryOp(PREC.ADD, scopedHid($, sp, '_bit_expr'), choice('+', '-')),
-        leftBinaryOp(PREC.MUL, scopedHid($, sp, '_bit_expr'), choice('*', '/', keyword('DIV'), '%', keyword('MOD'))),
-        leftBinaryOp(PREC.BIT_XOR, scopedHid($, sp, '_bit_expr'), '^')
+        leftBinaryOp(PREC.BIT_OR, bitExpr($), '|'),
+        leftBinaryOp(PREC.BIT_AND, bitExpr($), '&'),
+        leftBinaryOp(PREC.BIT_SHIFT, bitExpr($), choice('<<', '>>')),
+        leftBinaryOp(PREC.ADD, bitExpr($), choice('+', '-')),
+        leftBinaryOp(PREC.MUL, bitExpr($), choice('*', '/', keyword('DIV'), '%', keyword('MOD'))),
+        leftBinaryOp(PREC.BIT_XOR, bitExpr($), '^')
       ),
-    [k('_simple_expr')]: ($) =>
+    [k('_non_subquery_parens')]: ($) => seq('(', scopedHid($, sp, '_non_subquery_expression'), ')'),
+    [k('_non_subquery_simple_expr')]: ($) =>
       choice(
         $._literal,
         $.column_reference,
@@ -1721,10 +1812,9 @@ function buildScopedExpressionRules(sp) {
         $.system_variable,
         $.placeholder,
         $.current_time_expression,
-        scopedVis($, sp, 'parenthesized_expression'),
+        alias(scopedHid($, sp, '_non_subquery_parens'), $.parenthesized_expression),
         scopedVis($, sp, 'row_value'),
         scopedVis($, sp, 'row_constructor'),
-        scopedVis($, sp, 'subquery'),
         scopedVis($, sp, 'exists_expression'),
         scopedVis($, sp, 'interval_expression'),
         scopedVis($, sp, 'function_call'),
@@ -1745,24 +1835,14 @@ function buildScopedExpressionRules(sp) {
       ),
     [k('unary_expression')]: ($) =>
       choice(
-        prec.right(
-          PREC.UNARY,
-          seq(field('operator', choice('-', '+', '~')), field('operand', scopedHid($, sp, '_simple_expr')))
-        ),
-        prec.right(PREC.BANG, seq(field('operator', '!'), field('operand', scopedHid($, sp, '_simple_expr')))),
-        prec.right(
-          PREC.BINARY,
-          seq(field('operator', keyword('BINARY')), field('operand', scopedHid($, sp, '_simple_expr')))
-        )
+        prec.right(PREC.UNARY, seq(field('operator', choice('-', '+', '~')), field('operand', simpleExpr($)))),
+        prec.right(PREC.BANG, seq(field('operator', '!'), field('operand', simpleExpr($)))),
+        prec.right(PREC.BINARY, seq(field('operator', keyword('BINARY')), field('operand', simpleExpr($))))
       ),
     [k('collate_expression')]: ($) =>
       prec.left(
         PREC.COLLATE,
-        seq(
-          field('value', scopedHid($, sp, '_simple_expr')),
-          keyword('COLLATE'),
-          field('collation', $._identifier_or_string)
-        )
+        seq(field('value', simpleExpr($)), keyword('COLLATE'), field('collation', $._identifier_or_string))
       ),
     [k('interval_expression')]: ($) =>
       seq(
@@ -1770,7 +1850,6 @@ function buildScopedExpressionRules(sp) {
         field('value', prec(PREC.INTERVAL, scopedHid($, sp, '_expression'))),
         field('unit', $.interval_unit)
       ),
-    [k('parenthesized_expression')]: ($) => seq('(', scopedHid($, sp, '_expression'), ')'),
     [k('row_value')]: ($) =>
       prec(-1, seq('(', scopedHid($, sp, '_expression'), ',', commaSep1(scopedHid($, sp, '_expression')), ')')),
     [k('subquery')]: ($) => seq('(', alias(scopedHid($, sp, '_subquery_select'), $.select_statement), ')'),
@@ -1858,7 +1937,7 @@ function buildScopedExpressionRules(sp) {
         seq(
           field('name', alias(keyword('POSITION'), $.identifier)),
           '(',
-          scopedHid($, sp, '_bit_expr'),
+          bitExpr($),
           keyword('IN'),
           scopedHid($, sp, '_expression'),
           ')'
@@ -2056,7 +2135,7 @@ function buildScopedExpressionRules(sp) {
         choice(seq('(', commaSep1($.column_reference), ')'), commaSep1($.column_reference)),
         keyword('AGAINST'),
         '(',
-        field('pattern', scopedHid($, sp, '_bit_expr')),
+        field('pattern', bitExpr($)),
         optional(
           choice(
             seq(keywords('IN NATURAL LANGUAGE MODE'), optional(keywords('WITH QUERY EXPANSION'))),
@@ -2186,10 +2265,10 @@ export default grammar({
     [$.partition_by_clause_ddl],
     [$.group_by_clause],
     [$.check_constraint_body],
-    [$._select_no_into, $.parenthesized_query],
-    [$._sp_select_no_into, $._sp_parenthesized_query],
-    [$._inner_select_no_into, $._inner_parenthesized_query],
-    [$._sp_inner_select_no_into, $._sp_inner_parenthesized_query],
+    [$._inner_select_no_into, $._no_limit_parenthesized_query],
+    [$._sp_inner_select_no_into, $._sp_no_limit_parenthesized_query],
+    [$._inner_select_no_into, $._has_limit_parenthesized_query],
+    [$._sp_inner_select_no_into, $._sp_has_limit_parenthesized_query],
   ],
 
   rules: {
