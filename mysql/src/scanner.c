@@ -267,7 +267,7 @@ static bool is_mysql_charset(const char *word) {
 
 static bool scan_line_comment(TSLexer *lexer, enum TokenType ok_symbol) {
   bool has_nul = false;
-  while (!at_eof(lexer) && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
+  while (!at_eof(lexer) && lexer->lookahead != '\n') {
     if (lexer->lookahead == 0) has_nul = true;
     advance(lexer);
   }
@@ -580,7 +580,7 @@ static void reset_sp_state(Scanner *s) {
 }
 
 static void skip_peek_line_comment(TSLexer *lexer) {
-  while (!at_eof(lexer) && lexer->lookahead != '\n' && lexer->lookahead != '\r') advance(lexer);
+  while (!at_eof(lexer) && lexer->lookahead != '\n') advance(lexer);
 }
 
 static void skip_peek_block_comment(TSLexer *lexer) {
