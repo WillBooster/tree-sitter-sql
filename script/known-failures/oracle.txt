@@ -1,0 +1,5 @@
+examples/flowable/distro/sql/upgrade/all/flowable.oracle.upgradestep.6.2.1.to.6.3.0.all.sql
+examples/flowable/modules/flowable-engine/src/main/resources/org/flowable/db/upgrade/flowable.oracle.upgradestep.514.to.515.engine.sql
+examples/flowable/modules/flowable-engine/src/main/resources/org/flowable/db/upgrade/flowable.oracle.upgradestep.52.to.53.history.sql
+examples/flowable/modules/flowable-engine/src/main/resources/org/flowable/db/upgrade/flowable.oracle.upgradestep.6300.to.6301.engine.sql
+examples/flowable/modules/flowable-event-registry/src/main/resources/org/flowable/eventregistry/db/upgrade/flowable.oracle.upgradestep.6710.to.6720.eventregistry.sql

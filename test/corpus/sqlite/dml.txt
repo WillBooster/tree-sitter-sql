@@ -1,5 +1,6 @@
 ================================================================================
 Insert values
+:language(sqlite)
 ================================================================================
 
 INSERT INTO main.t (a, b) VALUES (1, 2), (3, 4);
@@ -26,6 +27,7 @@ INSERT INTO main.t (a, b) VALUES (1, 2), (3, 4);
 
 ================================================================================
 Insert variants
+:language(sqlite)
 ================================================================================
 
 INSERT OR REPLACE INTO t SELECT * FROM u; REPLACE INTO t VALUES (1); INSERT INTO t DEFAULT VALUES RETURNING *; WITH c AS (SELECT 1) INSERT INTO t AS x SELECT * FROM c;
@@ -80,6 +82,7 @@ INSERT OR REPLACE INTO t SELECT * FROM u; REPLACE INTO t VALUES (1); INSERT INTO
 
 ================================================================================
 Upsert
+:language(sqlite)
 ================================================================================
 
 INSERT INTO t VALUES (1) ON CONFLICT (a) WHERE a > 0 DO UPDATE SET b = excluded.b WHERE b IS NULL ON CONFLICT (c) DO NOTHING ON CONFLICT DO UPDATE SET d = 1 RETURNING a, b AS c;
@@ -137,6 +140,7 @@ INSERT INTO t VALUES (1) ON CONFLICT (a) WHERE a > 0 DO UPDATE SET b = excluded.
 
 ================================================================================
 Upsert after a select with a WHERE clause
+:language(sqlite)
 ================================================================================
 
 INSERT INTO t SELECT * FROM u WHERE true ON CONFLICT DO NOTHING;
@@ -162,6 +166,7 @@ INSERT INTO t SELECT * FROM u WHERE true ON CONFLICT DO NOTHING;
 
 ================================================================================
 Update
+:language(sqlite)
 ================================================================================
 
 WITH c AS (SELECT 1) UPDATE OR ROLLBACK main.t AS x INDEXED BY i SET a = 1, (b, c) = (SELECT 2, 3) FROM u WHERE x.id = u.id RETURNING *;
@@ -216,6 +221,7 @@ WITH c AS (SELECT 1) UPDATE OR ROLLBACK main.t AS x INDEXED BY i SET a = 1, (b, 
 
 ================================================================================
 Delete
+:language(sqlite)
 ================================================================================
 
 DELETE FROM t NOT INDEXED WHERE a = 1 RETURNING a; DELETE FROM main.t AS x;

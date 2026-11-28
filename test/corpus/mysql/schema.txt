@@ -1,0 +1,1078 @@
+================================================================================
+CREATE, ALTER, DROP DATABASE and USE
+:language(mysql)
+================================================================================
+
+CREATE DATABASE IF NOT EXISTS app_db DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_0900_ai_ci DEFAULT ENCRYPTION = 'N';
+ALTER SCHEMA app_db READ ONLY = 1;
+DROP DATABASE IF EXISTS old_db;
+USE app_db;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_database_statement
+    (if_not_exists)
+    (identifier)
+    (database_option
+      (identifier))
+    (database_option
+      (identifier))
+    (database_option
+      (string_literal)))
+  (alter_database_statement
+    (identifier)
+    (database_option
+      (numeric_literal)))
+  (drop_database_statement
+    (if_exists)
+    (identifier))
+  (use_statement
+    (identifier)))
+
+================================================================================
+CREATE TABLE with MySQL data types, generated columns, constraints, and options
+:language(mysql)
+================================================================================
+
+CREATE TEMPORARY TABLE IF NOT EXISTS orders (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code CHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE KEY,
+  status ENUM('new', 'paid', 'shipped') DEFAULT 'new' NOT NULL,
+  flags SET('gift', 'express') DEFAULT '',
+  amount DECIMAL(12, 2) UNSIGNED NOT NULL DEFAULT 0.00,
+  tax DECIMAL(12, 2) GENERATED ALWAYS AS (amount * 0.1) STORED,
+  total DECIMAL(12, 2) AS (amount + tax) VIRTUAL INVISIBLE,
+  payload JSON DEFAULT (JSON_OBJECT()),
+  coords POINT SRID 4326 NOT NULL,
+  created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  customer_id BIGINT UNSIGNED NOT NULL,
+  INDEX idx_customer (customer_id ASC) USING BTREE COMMENT 'customer lookup' VISIBLE,
+  INDEX idx_func ((LOWER(code)) DESC),
+  FULLTEXT KEY ft_code (code) WITH PARSER ngram,
+  SPATIAL KEY sp_coords (coords),
+  CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT chk_amount CHECK (amount >= 0) ENFORCED,
+  CHECK (total >= amount) NOT ENFORCED
+) ENGINE = InnoDB, AUTO_INCREMENT = 1000, DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC COMMENT = 'orders table' COMPRESSION = 'zlib' ENCRYPTION = 'N';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (data_type))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal)
+        (identifier)
+        (identifier)))
+    (column_definition
+      (identifier)
+      (data_type
+        (string_literal)
+        (string_literal)
+        (string_literal))
+      (default_clause
+        (string_literal)))
+    (column_definition
+      (identifier)
+      (data_type
+        (string_literal)
+        (string_literal))
+      (default_clause
+        (string_literal)))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal)
+        (numeric_literal))
+      (default_clause
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal)
+        (numeric_literal))
+      (generated_column_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal)
+        (numeric_literal))
+      (generated_column_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)))))
+    (column_definition
+      (identifier)
+      (data_type)
+      (default_clause
+        (function_call
+          (identifier))))
+    (column_definition
+      (identifier)
+      (data_type)
+      (numeric_literal))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal))
+      (default_clause
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal))
+      (default_clause
+        (numeric_literal))
+      (numeric_literal))
+    (column_definition
+      (identifier)
+      (data_type))
+    (table_constraint
+      (identifier)
+      (key_part
+        (identifier))
+      (index_option
+        (index_type))
+      (index_option
+        (string_literal))
+      (index_option))
+    (table_constraint
+      (identifier)
+      (key_part
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier)))))
+    (table_constraint
+      (identifier)
+      (key_part
+        (identifier))
+      (index_option
+        (identifier)))
+    (table_constraint
+      (identifier)
+      (key_part
+        (identifier)))
+    (table_constraint
+      (constraint_name
+        (identifier))
+      (column_list
+        (identifier))
+      (references_clause
+        (qualified_name
+          (identifier))
+        (column_list
+          (identifier))))
+    (table_constraint
+      (constraint_name
+        (identifier))
+      (check_constraint_body
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))))
+    (table_constraint
+      (check_constraint_body
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)))))
+    (table_option
+      (identifier))
+    (table_option
+      (numeric_literal))
+    (table_option
+      (identifier))
+    (table_option
+      (identifier))
+    (table_option)
+    (table_option
+      (string_literal))
+    (table_option
+      (string_literal))
+    (table_option
+      (string_literal))))
+
+================================================================================
+CREATE TABLE with partitioning, LIKE, and AS SELECT
+:language(mysql)
+================================================================================
+
+CREATE TABLE sales (
+  id INT NOT NULL,
+  sold_on DATE NOT NULL,
+  region VARCHAR(10) NOT NULL
+) ENGINE = InnoDB
+PARTITION BY RANGE (YEAR(sold_on))
+SUBPARTITION BY HASH (MONTH(sold_on)) SUBPARTITIONS 4 (
+  PARTITION p2024 VALUES LESS THAN (2025) ENGINE = InnoDB,
+  PARTITION pmax VALUES LESS THAN MAXVALUE
+);
+
+CREATE TABLE sales_copy LIKE sales;
+CREATE TABLE sales_copy2 (LIKE sales);
+CREATE TABLE sales_summary ENGINE = InnoDB AS SELECT sold_on, COUNT(*) AS cnt FROM sales GROUP BY sold_on;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (data_type))
+    (column_definition
+      (identifier)
+      (data_type))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal)))
+    (table_option
+      (identifier))
+    (partition_by_clause_ddl
+      (function_call
+        (identifier)
+        (column_reference
+          (identifier)))
+      (function_call
+        (identifier)
+        (column_reference
+          (identifier)))
+      (numeric_literal)
+      (partition_definition
+        (identifier)
+        (numeric_literal)
+        (table_option
+          (identifier)))
+      (partition_definition
+        (identifier))))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (table_option
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (result_column
+          (function_call
+            (identifier)
+            (all_columns))
+          (identifier))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))
+        (group_by_clause
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+ALTER TABLE multi-action, RENAME TABLE, TRUNCATE, and INDEX statements
+:language(mysql)
+================================================================================
+
+ALTER TABLE orders
+  ADD COLUMN notes TEXT AFTER payload,
+  MODIFY COLUMN code VARCHAR(32) NOT NULL FIRST,
+  CHANGE COLUMN notes memo MEDIUMTEXT,
+  RENAME COLUMN memo TO remarks,
+  ALTER COLUMN status SET DEFAULT 'paid',
+  ALTER INDEX idx_customer INVISIBLE,
+  ALTER CHECK chk_amount NOT ENFORCED,
+  RENAME INDEX idx_customer TO idx_cust,
+  DROP COLUMN remarks,
+  DROP FOREIGN KEY fk_orders_customer,
+  CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  ALGORITHM = INPLACE,
+  LOCK = NONE;
+
+RENAME TABLE orders TO orders_v1, orders_new TO orders;
+TRUNCATE TABLE orders_v1;
+CREATE UNIQUE INDEX idx_orders_code ON orders (code(8) ASC) USING BTREE LOCK = SHARED;
+DROP INDEX idx_orders_code ON orders ALGORITHM = INPLACE LOCK = NONE;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action
+      (column_definition
+        (identifier)
+        (data_type))
+      (identifier))
+    (alter_table_action
+      (column_definition
+        (identifier)
+        (data_type
+          (numeric_literal))))
+    (alter_table_action
+      (identifier)
+      (column_definition
+        (identifier)
+        (data_type)))
+    (alter_table_action
+      (identifier)
+      (identifier))
+    (alter_table_action
+      (identifier)
+      (default_clause
+        (string_literal)))
+    (alter_table_action
+      (identifier))
+    (alter_table_action
+      (identifier))
+    (alter_table_action
+      (identifier)
+      (identifier))
+    (alter_table_action
+      (identifier))
+    (alter_table_action
+      (identifier))
+    (alter_table_action
+      (identifier)
+      (identifier))
+    (alter_table_action)
+    (alter_table_action))
+  (rename_table_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (truncate_statement
+    (qualified_name
+      (identifier)))
+  (create_index_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (key_part
+      (identifier)
+      (numeric_literal))
+    (index_option
+      (index_type)))
+  (drop_index_statement
+    (identifier)
+    (qualified_name
+      (identifier))))
+
+================================================================================
+Views, triggers, procedures, functions, and events with compound blocks
+:language(mysql)
+================================================================================
+
+CREATE OR REPLACE ALGORITHM = MERGE DEFINER = 'admin'@'localhost' SQL SECURITY INVOKER VIEW active_orders (id, amount)
+AS SELECT id, amount FROM orders WHERE status = 'paid'
+WITH CASCADED CHECK OPTION;
+
+ALTER VIEW active_orders AS SELECT id, amount FROM orders;
+DROP VIEW IF EXISTS active_orders;
+
+CREATE DEFINER = CURRENT_USER TRIGGER trg_orders_bi
+BEFORE INSERT ON orders FOR EACH ROW FOLLOWS other_trg
+BEGIN
+  IF NEW.amount < 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid amount';
+  END IF;
+END;
+
+DROP TRIGGER IF EXISTS trg_orders_bi;
+
+CREATE PROCEDURE proc_sync(IN p_limit INT, OUT p_done INT, INOUT p_tag VARCHAR(20))
+LANGUAGE SQL NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER COMMENT 'sync'
+proc_lbl: BEGIN
+  DECLARE v_id INT DEFAULT p_limit + 1;
+  DECLARE v_finished INT DEFAULT @init_done;
+  DECLARE dup_key CONDITION FOR SQLSTATE '23000';
+  DECLARE cur CURSOR FOR SELECT id FROM orders LIMIT p_limit;
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_finished = 1;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    GET STACKED DIAGNOSTICS CONDITION 1 @msg = MESSAGE_TEXT;
+    RESIGNAL;
+  END;
+
+  OPEN cur;
+  read_loop: LOOP
+    FETCH NEXT FROM cur INTO v_id;
+    IF v_finished = 1 THEN
+      LEAVE read_loop;
+    ELSEIF v_id = 0 THEN
+      ITERATE read_loop;
+    END IF;
+  END LOOP read_loop;
+  CLOSE cur;
+
+  WHILE p_limit > 0 DO
+    SET p_limit = p_limit - 1;
+  END WHILE;
+
+  REPEAT
+    SET p_done = 1;
+  UNTIL p_done = 1 END REPEAT;
+
+  CASE p_done
+    WHEN 1 THEN SET p_tag = 'ok';
+    ELSE SET p_tag = 'none';
+  END CASE;
+END proc_lbl;
+
+CREATE FUNCTION fn_double(n INT) RETURNS INT DETERMINISTIC CONTAINS SQL
+BEGIN
+  RETURN n * 2;
+END;
+
+ALTER PROCEDURE proc_sync COMMENT 'updated';
+DROP PROCEDURE IF EXISTS proc_sync;
+DROP FUNCTION IF EXISTS fn_double;
+
+CREATE EVENT IF NOT EXISTS ev_cleanup
+ON SCHEDULE EVERY 1 DAY STARTS '2026-01-01 00:00:00'
+ON COMPLETION PRESERVE ENABLE COMMENT 'daily'
+DO DELETE FROM logs WHERE created_at < NOW() - INTERVAL 30 DAY;
+
+ALTER EVENT ev_cleanup DISABLE ON REPLICA;
+DROP EVENT IF EXISTS ev_cleanup;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_view_statement
+    (definer_clause
+      (account_name
+        (string_literal)
+        (string_literal)))
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (result_column
+          (column_reference
+            (identifier)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))
+        (where_clause
+          (binary_expression
+            (column_reference
+              (identifier))
+            (string_literal))))))
+  (alter_view_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (result_column
+          (column_reference
+            (identifier)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (drop_view_statement
+    (if_exists)
+    (qualified_name
+      (identifier)))
+  (create_trigger_statement
+    (definer_clause
+      (account_name))
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (compound_statement
+      (if_statement
+        (binary_expression
+          (column_reference
+            (identifier)
+            (identifier))
+          (numeric_literal))
+        (signal_statement
+          (string_literal)
+          (signal_information_item
+            (identifier)
+            (string_literal))))))
+  (drop_trigger_statement
+    (if_exists)
+    (qualified_name
+      (identifier)))
+  (create_procedure_statement
+    (qualified_name
+      (identifier))
+    (procedure_parameter
+      (identifier)
+      (data_type))
+    (procedure_parameter
+      (identifier)
+      (data_type))
+    (procedure_parameter
+      (identifier)
+      (data_type
+        (numeric_literal)))
+    (routine_characteristic)
+    (routine_characteristic)
+    (routine_characteristic)
+    (routine_characteristic)
+    (routine_characteristic
+      (string_literal))
+    (compound_statement
+      (identifier)
+      (declare_statement
+        (identifier)
+        (data_type)
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (declare_statement
+        (identifier)
+        (data_type)
+        (user_variable))
+      (declare_statement
+        (identifier)
+        (string_literal))
+      (declare_statement
+        (identifier)
+        (select_statement
+          (select_core
+            (result_column
+              (column_reference
+                (identifier)))
+            (from_clause
+              (table
+                (qualified_name
+                  (identifier)))))
+          (limit_clause
+            (identifier))))
+      (declare_statement
+        (set_statement
+          (variable_assignment
+            (column_reference
+              (identifier))
+            (numeric_literal))))
+      (declare_statement
+        (compound_statement
+          (get_diagnostics_statement
+            (numeric_literal)
+            (user_variable)
+            (identifier))
+          (resignal_statement)))
+      (open_statement
+        (identifier))
+      (loop_statement
+        (identifier)
+        (fetch_statement
+          (identifier)
+          (identifier))
+        (if_statement
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))
+          (leave_statement
+            (identifier))
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))
+          (iterate_statement
+            (identifier)))
+        (identifier))
+      (close_statement
+        (identifier))
+      (while_statement
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))
+        (set_statement
+          (variable_assignment
+            (column_reference
+              (identifier))
+            (binary_expression
+              (column_reference
+                (identifier))
+              (numeric_literal)))))
+      (repeat_statement
+        (set_statement
+          (variable_assignment
+            (column_reference
+              (identifier))
+            (numeric_literal)))
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (case_statement
+        (column_reference
+          (identifier))
+        (numeric_literal)
+        (set_statement
+          (variable_assignment
+            (column_reference
+              (identifier))
+            (string_literal)))
+        (set_statement
+          (variable_assignment
+            (column_reference
+              (identifier))
+            (string_literal))))
+      (identifier)))
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (identifier)
+      (data_type))
+    (data_type)
+    (routine_characteristic)
+    (routine_characteristic)
+    (compound_statement
+      (return_statement
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))))
+  (alter_routine_statement
+    (qualified_name
+      (identifier))
+    (routine_characteristic
+      (string_literal)))
+  (drop_routine_statement
+    (if_exists)
+    (qualified_name
+      (identifier)))
+  (drop_routine_statement
+    (if_exists)
+    (qualified_name
+      (identifier)))
+  (create_event_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (event_schedule
+      (numeric_literal)
+      (interval_unit)
+      (string_literal))
+    (string_literal)
+    (delete_statement
+      (qualified_name
+        (identifier))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (binary_expression
+            (function_call
+              (identifier))
+            (interval_expression
+              (numeric_literal)
+              (interval_unit)))))))
+  (alter_event_statement
+    (qualified_name
+      (identifier)))
+  (drop_event_statement
+    (if_exists)
+    (qualified_name
+      (identifier))))
+
+================================================================================
+CREATE TABLE with LIST COLUMNS and KEY partitioning
+:language(mysql)
+================================================================================
+
+CREATE TABLE regional_accounts (
+  id INT NOT NULL,
+  country CHAR(2) NOT NULL
+) PARTITION BY LIST COLUMNS (country) (
+  PARTITION p_na VALUES IN ('US', 'CA'),
+  PARTITION p_eu VALUES IN ('DE', 'FR')
+);
+
+CREATE TABLE hashed_kv (
+  k VARCHAR(64) NOT NULL,
+  v BLOB
+) PARTITION BY LINEAR KEY ALGORITHM = 2 (k) PARTITIONS 8;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (data_type))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal)))
+    (partition_by_clause_ddl
+      (identifier)
+      (partition_definition
+        (identifier)
+        (string_literal)
+        (string_literal))
+      (partition_definition
+        (identifier)
+        (string_literal)
+        (string_literal))))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (data_type
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (data_type))
+    (partition_by_clause_ddl
+      (numeric_literal)
+      (identifier)
+      (numeric_literal))))
+
+================================================================================
+ALTER TABLE partition maintenance actions
+:language(mysql)
+================================================================================
+
+ALTER TABLE regional_accounts ADD PARTITION (PARTITION p_apac VALUES IN ('JP', 'AU'));
+ALTER TABLE regional_accounts REORGANIZE PARTITION p_apac INTO (PARTITION p_jp VALUES IN ('JP'), PARTITION p_au VALUES IN ('AU'));
+ALTER TABLE regional_accounts TRUNCATE PARTITION p_au;
+ALTER TABLE regional_accounts DROP PARTITION p_au;
+ALTER TABLE hashed_kv COALESCE PARTITION 2;
+ALTER TABLE hashed_kv REMOVE PARTITIONING;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action
+      (partition_definition
+        (identifier)
+        (string_literal)
+        (string_literal))))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action
+      (identifier)
+      (partition_definition
+        (identifier)
+        (string_literal))
+      (partition_definition
+        (identifier)
+        (string_literal))))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action
+      (identifier)))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action
+      (identifier)))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action
+      (numeric_literal)))
+  (alter_table_statement
+    (qualified_name
+      (identifier))))
+
+================================================================================
+Single-statement trigger without BEGIN END block
+:language(mysql)
+================================================================================
+
+CREATE TRIGGER trg_touch BEFORE UPDATE ON items FOR EACH ROW SET NEW.updated_at = CURRENT_TIMESTAMP;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_trigger_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (set_statement
+      (variable_assignment
+        (column_reference
+          (identifier)
+          (identifier))
+        (current_time_expression)))))
+
+================================================================================
+Versioned comments inside DDL and DML statements
+:language(mysql)
+================================================================================
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+CREATE TABLE t_ver (
+  id INT NOT NULL,
+  /*!50705 geom GEOMETRY NOT NULL, */
+  PRIMARY KEY (id)
+  /*!50705 , SPATIAL KEY idx_geom (geom) */
+) /*!50100 TABLESPACE innodb_system */ ENGINE=InnoDB;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (set_statement
+    (variable_assignment
+      (user_variable)
+      (system_variable)))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (data_type))
+    (column_definition
+      (identifier)
+      (data_type))
+    (table_constraint
+      (key_part
+        (identifier)))
+    (table_constraint
+      (identifier)
+      (key_part
+        (identifier)))
+    (table_option
+      (identifier))
+    (table_option
+      (identifier))))
+
+================================================================================
+ALTER TABLE space-separated options, loadable functions, tablespaces, servers, SRS, resource groups, and ALTER INSTANCE
+:language(mysql)
+================================================================================
+
+ALTER TABLE orders ENGINE = InnoDB ROW_FORMAT = DYNAMIC;
+ALTER TABLE orders SECONDARY_LOAD, SECONDARY_UNLOAD;
+ALTER TABLE orders;
+CREATE AGGREGATE FUNCTION IF NOT EXISTS udf_sum RETURNS REAL SONAME 'udf_sum.so';
+CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd' ENGINE = InnoDB;
+ALTER UNDO TABLESPACE uts1 SET INACTIVE;
+DROP TABLESPACE ts1 ENGINE = InnoDB;
+CREATE LOGFILE GROUP lg1 ADD UNDOFILE 'undo_1.dat' INITIAL_SIZE = 16M ENGINE = NDB;
+DROP LOGFILE GROUP lg1 ENGINE = NDB;
+CREATE SERVER srv1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST '127.0.0.1', PORT 3306);
+DROP SERVER IF EXISTS srv1;
+CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 41001 NAME 'WGS 84' DEFINITION 'GEOGCS[]';
+DROP SPATIAL REFERENCE SYSTEM IF EXISTS 41001;
+CREATE RESOURCE GROUP rg_app TYPE = USER VCPU = 0-1 THREAD_PRIORITY = -5 ENABLE;
+ALTER RESOURCE GROUP rg_app DISABLE FORCE;
+DROP RESOURCE GROUP rg_app FORCE;
+ALTER INSTANCE ROTATE INNODB MASTER KEY;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action
+      (table_option
+        (identifier))
+      (table_option)))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (alter_table_action)
+    (alter_table_action))
+  (alter_table_statement
+    (qualified_name
+      (identifier)))
+  (create_function_statement
+    (if_not_exists)
+    (identifier)
+    (string_literal))
+  (create_tablespace_statement
+    (identifier)
+    (string_literal)
+    (identifier))
+  (alter_tablespace_statement
+    (identifier))
+  (drop_tablespace_statement
+    (identifier)
+    (identifier))
+  (create_logfile_group_statement
+    (identifier)
+    (string_literal)
+    (identifier)
+    (identifier))
+  (drop_logfile_group_statement
+    (identifier)
+    (identifier))
+  (create_server_statement
+    (identifier)
+    (identifier)
+    (string_literal)
+    (numeric_literal))
+  (drop_server_statement
+    (if_exists)
+    (identifier))
+  (create_srs_statement
+    (if_not_exists)
+    (numeric_literal)
+    (string_literal)
+    (string_literal))
+  (drop_srs_statement
+    (if_exists)
+    (numeric_literal))
+  (create_resource_group_statement
+    (identifier)
+    (numeric_literal)
+    (numeric_literal)
+    (numeric_literal))
+  (alter_resource_group_statement
+    (identifier))
+  (drop_resource_group_statement
+    (identifier))
+  (alter_instance_statement))
+
+
+================================================================================
+Stage10 MySQL routine labels, handler scope barriers, function-only RETURN, and executable comments after SP LIMIT
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p_labels(IN n INT)
+BEGIN
+  `lbl_Ä`: LOOP
+    blk: BEGIN
+      LEAVE blk;
+    END blk;
+    BEGIN
+      DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+        inner_blk: BEGIN
+          LEAVE inner_blk;
+        END inner_blk;
+      SELECT 1 LIMIT n/*!80000 , 1 */;
+      SELECT 1 LIMIT n/*!80000 */;
+      LEAVE `lbl_ä`;
+    END;
+  END LOOP `lbl_ä`;
+END;
+CREATE FUNCTION fn_ret(x INT) RETURNS INT DETERMINISTIC
+BEGIN
+  IF x > 0 THEN
+    RETURN x;
+  END IF;
+  RETURN 0;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_procedure_statement
+    (qualified_name
+      (identifier))
+    (procedure_parameter
+      (identifier)
+      (data_type))
+    (compound_statement
+      (loop_statement
+        (quoted_identifier)
+        (compound_statement
+          (identifier)
+          (leave_statement
+            (identifier))
+          (identifier))
+        (compound_statement
+          (declare_statement
+            (compound_statement
+              (identifier)
+              (leave_statement
+                (identifier))
+              (identifier)))
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal)))
+            (limit_clause
+              (identifier)
+              (numeric_literal)))
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal)))
+            (limit_clause
+              (identifier)))
+          (comment)
+          (leave_statement
+            (quoted_identifier)))
+        (quoted_identifier))))
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (identifier)
+      (data_type))
+    (data_type)
+    (routine_characteristic)
+    (compound_statement
+      (if_statement
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))
+        (return_statement
+          (column_reference
+            (identifier))))
+      (return_statement
+        (numeric_literal)))))

@@ -1,5 +1,4 @@
 // @ts-check
-/* oxlint-disable no-control-regex -- Tokens exclude NUL characters, which end the input of C parsers. */
 
 /** @import {RuleOrLiteral} from '@willbooster/web-tree-sitter/dsl' */
 
@@ -34,19 +33,3 @@ export const commaSep1 = (rule) => seq(rule, repeat(seq(',', rule)));
 
 /** @param {RuleOrLiteral} rule */
 export const commaSep = (rule) => optional(commaSep1(rule));
-
-// The tokens below contain no NUL character, which ends the input of SQL parsers written in C, such as SQLite's, and
-// which is therefore an error wherever it appears.
-
-/**
- * A literal enclosed in `quote`, in which two consecutive quotes stand for one.
- *
- * @param {string} quote
- */
-export const quoted = (quote) => new RegExp(`${quote}([^${quote}\\x00]|${quote}${quote})*${quote}`);
-
-/** A line comment from `--` to the end of the line. */
-export const lineComment = seq('--', /[^\n\u0000]*/);
-
-/** A block comment closed by the first `*\/`. */
-export const blockComment = /\/\*[^*\u0000]*\*+([^/*\u0000][^*\u0000]*\*+)*\//;

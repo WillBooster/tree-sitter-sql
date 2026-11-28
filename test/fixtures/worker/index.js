@@ -3,9 +3,12 @@
 import { Language, Parser } from '@willbooster/web-tree-sitter';
 import runtime from '@willbooster/web-tree-sitter/web-tree-sitter.wasm';
 
+import mysql from '../../../tree-sitter-mysql.wasm';
+import oracle from '../../../tree-sitter-oracle.wasm';
+import postgresql from '../../../tree-sitter-postgresql.wasm';
 import sqlite from '../../../tree-sitter-sqlite.wasm';
 
-const modules = { sqlite };
+const modules = { mysql, oracle, postgresql, sqlite };
 const languages = {};
 
 export default {

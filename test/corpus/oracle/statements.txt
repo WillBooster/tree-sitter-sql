@@ -1,0 +1,554 @@
+================================================================================
+Anonymous PL/SQL blocks with loops, CASE statement, and exception handling
+:language(oracle)
+================================================================================
+
+DECLARE
+  v_total NUMBER := 0;
+  v_step PLS_INTEGER := 1;
+BEGIN
+  WHILE v_step <= 5 LOOP
+    CASE v_step
+      WHEN 1 THEN
+        v_total := v_total + 10;
+      ELSE
+        v_total := v_total + v_step;
+    END CASE;
+    v_step := v_step + 1;
+  END LOOP;
+  COMMIT;
+EXCEPTION
+  WHEN NO_DATA_FOUND OR TOO_MANY_ROWS THEN
+    ROLLBACK;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (anonymous_block
+    (variable_declaration
+      (identifier)
+      (type_name)
+      (numeric_literal))
+    (variable_declaration
+      (identifier)
+      (type_name)
+      (numeric_literal))
+    (while_statement
+      (binary_expression
+        (identifier)
+        (numeric_literal))
+      (plsql_case_statement
+        (identifier)
+        (plsql_when_clause
+          (numeric_literal)
+          (assignment_statement
+            (identifier)
+            (binary_expression
+              (identifier)
+              (numeric_literal))))
+        (assignment_statement
+          (identifier)
+          (binary_expression
+            (identifier)
+            (identifier))))
+      (assignment_statement
+        (identifier)
+        (binary_expression
+          (identifier)
+          (numeric_literal))))
+    (commit_statement)
+    (exception_section
+      (exception_handler
+        (identifier)
+        (identifier)
+        (rollback_statement)))))
+
+================================================================================
+Transactions, LOCK TABLE, SET TRANSACTION, and SET CONSTRAINTS
+:language(oracle)
+================================================================================
+
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE NAME 'batch_tx';
+SET CONSTRAINTS ALL DEFERRED;
+SAVEPOINT sp_before_lock;
+LOCK TABLE orders IN ROW EXCLUSIVE MODE WAIT 5;
+ROLLBACK TO SAVEPOINT sp_before_lock;
+COMMIT COMMENT 'completed' WRITE IMMEDIATE NOWAIT;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (set_transaction_statement
+    (string_literal))
+  (set_constraints_statement)
+  (savepoint_statement
+    (identifier))
+  (lock_table_statement
+    (object_name
+      (identifier))
+    (numeric_literal))
+  (rollback_statement
+    (identifier))
+  (commit_statement
+    (string_literal)))
+
+================================================================================
+COMMENT, GRANT, REVOKE, TRUNCATE, RENAME, FLASHBACK, and PURGE
+:language(oracle)
+================================================================================
+
+COMMENT ON TABLE hr.employees IS 'Employee master table';
+COMMENT ON COLUMN hr.employees.salary IS 'Monthly base salary';
+GRANT SELECT, INSERT, UPDATE (salary) ON hr.employees TO app_role WITH GRANT OPTION;
+REVOKE UPDATE ON hr.employees FROM app_role;
+TRUNCATE TABLE staging_logs REUSE STORAGE;
+RENAME old_audit TO archive_audit;
+FLASHBACK TABLE hr.employees TO BEFORE DROP RENAME TO employees_restored;
+PURGE RECYCLEBIN;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment_statement
+    (object_name
+      (identifier)
+      (identifier))
+    (string_literal))
+  (comment_statement
+    (object_name
+      (identifier)
+      (identifier)
+      (identifier))
+    (string_literal))
+  (grant_statement
+    (column_list
+      (identifier))
+    (object_name
+      (identifier)
+      (identifier))
+    (identifier))
+  (revoke_statement
+    (object_name
+      (identifier)
+      (identifier))
+    (identifier))
+  (truncate_statement
+    (object_name
+      (identifier)))
+  (rename_statement
+    (identifier)
+    (identifier))
+  (flashback_table_statement
+    (object_name
+      (identifier)
+      (identifier))
+    (identifier))
+  (purge_statement))
+
+================================================================================
+ALTER SESSION, ALTER SYSTEM, EXPLAIN PLAN, ANALYZE, AUDIT, NOAUDIT, and CALL
+:language(oracle)
+================================================================================
+
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' CURRENT_SCHEMA = hr;
+ALTER SESSION ENABLE PARALLEL DML PARALLEL 4;
+ALTER SYSTEM FLUSH SHARED_POOL;
+EXPLAIN PLAN SET STATEMENT_ID = 'q1' INTO plan_table FOR SELECT * FROM hr.employees;
+ANALYZE TABLE hr.employees VALIDATE STRUCTURE CASCADE;
+AUDIT SELECT TABLE, UPDATE TABLE BY hr WHENEVER NOT SUCCESSFUL;
+NOAUDIT POLICY ora_secureconfig BY app_user;
+CALL pkg_orders.process_batch(50);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_session_statement
+    (session_parameter_assignment
+      (identifier)
+      (string_literal))
+    (session_parameter_assignment
+      (identifier)
+      (identifier)))
+  (alter_session_statement
+    (numeric_literal))
+  (alter_system_statement)
+  (explain_plan_statement
+    (string_literal)
+    (object_name
+      (identifier))
+    (select_statement
+      (select_core
+        (select_list
+          (all_columns))
+        (from_clause
+          (table_reference
+            (object_name
+              (identifier)
+              (identifier)))))))
+  (analyze_statement
+    (object_name
+      (identifier)
+      (identifier)))
+  (audit_statement
+    (identifier))
+  (noaudit_statement
+    (identifier)
+    (identifier))
+  (call_statement
+    (function_call
+      (member_expression
+        (identifier)
+        (identifier))
+      (function_argument
+        (numeric_literal)))))
+
+================================================================================
+User, role, profile, directory, and tablespace administration statements
+:language(oracle)
+================================================================================
+
+CREATE DIRECTORY export_dir AS '/u01/app/oracle/exports';
+CREATE ROLE analyst_role NOT IDENTIFIED;
+CREATE PROFILE app_profile LIMIT FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LIFE_TIME 90;
+CREATE BIGFILE TABLESPACE app_data DATAFILE '/u01/oradata/app01.dbf' SIZE 100M AUTOEXTEND ON NEXT 10M MAXSIZE 2G;
+CREATE USER app_user IDENTIFIED BY "Str0ng#Pass" DEFAULT TABLESPACE app_data QUOTA 50M ON app_data PROFILE app_profile ACCOUNT UNLOCK;
+ALTER USER app_user QUOTA UNLIMITED ON app_data;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_directory_statement
+    (identifier)
+    (string_literal))
+  (create_role_statement
+    (identifier))
+  (create_profile_statement
+    (identifier)
+    (identifier)
+    (size_spec
+      (numeric_literal))
+    (identifier)
+    (size_spec
+      (numeric_literal)))
+  (create_tablespace_statement
+    (identifier)
+    (datafile_spec
+      (string_literal)
+      (size_spec
+        (size_literal))
+      (size_spec
+        (size_literal))
+      (size_spec
+        (size_literal))))
+  (create_user_statement
+    (identifier)
+    (quoted_identifier)
+    (identifier)
+    (size_spec
+      (size_literal))
+    (identifier)
+    (identifier))
+  (alter_user_statement
+    (identifier)
+    (identifier)))
+
+================================================================================
+PL/SQL labels, GOTO, CONTINUE WHEN, dynamic ref cursor, and pipelined function
+:language(oracle)
+================================================================================
+
+CREATE OR REPLACE FUNCTION gen_rows(p_max NUMBER) RETURN num_tab PIPELINED IS
+  v_cur SYS_REFCURSOR;
+  v_val NUMBER;
+BEGIN
+  OPEN v_cur FOR 'SELECT :1 FROM dual' USING p_max;
+  FETCH v_cur INTO v_val;
+  CLOSE v_cur;
+
+  <<row_loop>>
+  FOR i IN 1..p_max LOOP
+    CONTINUE row_loop WHEN i = 2;
+    PIPE ROW (i);
+    IF i >= v_val THEN
+      GOTO done_label;
+    END IF;
+  END LOOP row_loop;
+
+  <<done_label>>
+  RETURN;
+END gen_rows;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_function_statement
+    (object_name
+      (identifier))
+    (plsql_parameter_list
+      (plsql_parameter
+        (identifier)
+        (type_name)))
+    (type_name
+      (object_name
+        (identifier)))
+    (variable_declaration
+      (identifier)
+      (type_name
+        (object_name
+          (identifier))))
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (open_statement
+      (identifier)
+      (string_literal)
+      (identifier))
+    (fetch_statement
+      (identifier)
+      (into_clause
+        (identifier)))
+    (close_statement
+      (identifier))
+    (plsql_label
+      (identifier))
+    (for_statement
+      (identifier)
+      (numeric_literal)
+      (identifier)
+      (continue_statement
+        (identifier)
+        (binary_expression
+          (identifier)
+          (numeric_literal)))
+      (pipe_row_statement
+        (identifier))
+      (if_statement
+        (binary_expression
+          (identifier)
+          (identifier))
+        (goto_statement
+          (identifier)))
+      (identifier))
+    (plsql_label
+      (identifier))
+    (return_statement)
+    (identifier)))
+
+================================================================================
+PL/SQL SELECT INTO with CTE, dynamic RETURNING INTO, and subscripted cursor attributes
+:language(oracle)
+================================================================================
+
+DECLARE
+  file BFILE;
+  v_err NUMBER;
+BEGIN
+  WITH cte AS (SELECT 1 AS n FROM dual) SELECT n INTO v_err FROM cte;
+  EXECUTE IMMEDIATE 'UPDATE emp SET sal = :1 RETURNING empno INTO :2' USING 100 RETURNING INTO v_err;
+  EXECUTE IMMEDIATE 'DELETE FROM emp RETURNING empno INTO :1' RETURNING BULK COLLECT INTO v_ids;
+  v_err := SQL%BULK_EXCEPTIONS(1).ERROR_INDEX;
+  v_err := SQL%BULK_ROWCOUNT(1);
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (anonymous_block
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (select_statement
+      (with_clause
+        (common_table_expression
+          (identifier)
+          (select_statement
+            (select_core
+              (select_list
+                (select_item
+                  (numeric_literal)
+                  (identifier)))
+              (from_clause
+                (table_reference
+                  (object_name
+                    (identifier))))))))
+      (select_core
+        (select_list
+          (select_item
+            (identifier)))
+        (into_clause
+          (identifier))
+        (from_clause
+          (table_reference
+            (object_name
+              (identifier))))))
+    (execute_immediate_statement
+      (string_literal)
+      (numeric_literal)
+      (dynamic_returning_clause
+        (into_clause
+          (identifier))))
+    (execute_immediate_statement
+      (string_literal)
+      (dynamic_returning_clause
+        (into_clause
+          (identifier))))
+    (assignment_statement
+      (identifier)
+      (member_expression
+        (function_call
+          (cursor_attribute
+            (identifier)
+            (identifier))
+          (function_argument
+            (numeric_literal)))
+        (identifier)))
+    (assignment_statement
+      (identifier)
+      (function_call
+        (cursor_attribute
+          (identifier)
+          (identifier))
+        (function_argument
+          (numeric_literal))))))
+
+================================================================================
+Edition and multi-word system privileges, and PL/SQL special-keyword variable assignments and calls
+:language(oracle)
+================================================================================
+
+GRANT CREATE ANY EDITION, MANAGE TABLESPACE, ADMINISTER SQL MANAGEMENT OBJECT TO app_user;
+REVOKE DROP ANY EDITION FROM app_user;
+DECLARE
+  json NUMBER;
+  timestamp DATE;
+BEGIN
+  json := 1;
+  timestamp := SYSDATE;
+  translate;
+  json(1) := 2;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (grant_statement
+    (identifier))
+  (revoke_statement
+    (identifier))
+  (anonymous_block
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (variable_declaration
+      (identifier)
+      (type_name))
+    (assignment_statement
+      (identifier)
+      (numeric_literal))
+    (assignment_statement
+      (identifier)
+      (pseudocolumn))
+    (procedure_call_statement
+      (identifier))
+    (assignment_statement
+      (function_call
+        (identifier)
+        (function_argument
+          (numeric_literal)))
+      (numeric_literal))))
+
+================================================================================
+System privileges, AUDIT SESSION, RETURNING OLD/NEW, and PL/SQL 23ai features
+:language(oracle)
+================================================================================
+
+GRANT ADMINISTER DATABASE TRIGGER, DEBUG CONNECT ANY, USE ANY JOB RESOURCE TO app_user;
+GRANT READ ANY ANALYTIC VIEW CACHE, WRITE ANY ANALYTIC VIEW CACHE, CREATE LOGICAL PARTITION TRACKING, DROP LOGICAL PARTITION TRACKING TO app_user;
+AUDIT SESSION BY scott WHENEVER NOT SUCCESSFUL;
+NOAUDIT SESSION;
+UPDATE emp log SET log.sal = 1 RETURNING OLD sal, NEW sal INTO :o, :n;
+DECLARE
+  file VARCHAR2(10);
+BEGIN
+  $IF $$debug $THEN
+    file := TRANSLATE(file, 'a', 'b');
+    s := t_arr(1 => 'a', OTHERS => 'z');
+    FOR i IN 1, 3, 5..7 WHEN i > 0 LOOP
+      CASE i WHEN > 2, 1 THEN p@dblink(i); END CASE;
+    END LOOP;
+  $END
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (grant_statement
+    (identifier))
+  (grant_statement
+    (identifier))
+  (audit_statement
+    (identifier))
+  (noaudit_statement)
+  (update_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (set_clause
+      (update_assignment
+        (object_name
+          (identifier)
+          (identifier))
+        (numeric_literal)))
+    (returning_into_clause
+      (identifier)
+      (identifier)
+      (bind_variable)
+      (bind_variable)))
+  (anonymous_block
+    (variable_declaration
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (conditional_compilation_directive
+      (inquiry_directive)
+      (assignment_statement
+        (identifier)
+        (translate_expression
+          (identifier)
+          (string_literal)
+          (string_literal)))
+      (assignment_statement
+        (identifier)
+        (function_call
+          (identifier)
+          (function_argument
+            (numeric_literal)
+            (string_literal))
+          (function_argument
+            (string_literal))))
+      (for_statement
+        (identifier)
+        (numeric_literal)
+        (numeric_literal)
+        (numeric_literal)
+        (numeric_literal)
+        (binary_expression
+          (identifier)
+          (numeric_literal))
+        (plsql_case_statement
+          (identifier)
+          (plsql_when_clause
+            (numeric_literal)
+            (numeric_literal)
+            (procedure_call_statement
+              (function_call
+                (dblink_expression
+                  (identifier)
+                  (dblink_name
+                    (identifier)))
+                (function_argument
+                  (identifier))))))))))

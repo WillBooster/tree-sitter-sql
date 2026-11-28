@@ -1,0 +1,502 @@
+================================================================================
+INSERT VALUES with row alias and ON DUPLICATE KEY UPDATE
+:language(mysql)
+================================================================================
+
+INSERT HIGH_PRIORITY IGNORE INTO users PARTITION (p0) (id, name, visits)
+VALUES (1, 'Alice', DEFAULT), (2, 'Bob', 1) AS incoming (id, name, visits)
+ON DUPLICATE KEY UPDATE name = incoming.name, visits = visits + VALUES(visits);
+INSERT INTO users VALUES ROW(1, 'Alice', DEFAULT), ROW(2, 'Bob', 1);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (partition_names_clause
+      (identifier))
+    (column_reference
+      (identifier))
+    (column_reference
+      (identifier))
+    (column_reference
+      (identifier))
+    (insert_values_row
+      (numeric_literal)
+      (string_literal))
+    (insert_values_row
+      (numeric_literal)
+      (string_literal)
+      (numeric_literal))
+    (identifier)
+    (column_list
+      (identifier)
+      (identifier)
+      (identifier))
+    (on_duplicate_key_update_clause
+      (assignment
+        (column_reference
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier)))
+      (assignment
+        (column_reference
+          (identifier))
+        (binary_expression
+          (column_reference
+            (identifier))
+          (function_call
+            (identifier)
+            (column_reference
+              (identifier)))))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (values_statement
+        (row_constructor
+          (numeric_literal)
+          (string_literal))
+        (row_constructor
+          (numeric_literal)
+          (string_literal)
+          (numeric_literal))))))
+
+================================================================================
+INSERT SET, INSERT SELECT, INSERT TABLE, and empty VALUES
+:language(mysql)
+================================================================================
+
+INSERT INTO logs SET msg = 'started', created_at = NOW() AS new_row ON DUPLICATE KEY UPDATE msg = new_row.msg;
+INSERT INTO archive (id, msg) SELECT id, msg FROM logs;
+INSERT INTO copy_tbl TABLE source_tbl;
+INSERT INTO defaults_only () VALUE ();
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier))
+        (string_literal))
+      (assignment
+        (column_reference
+          (identifier))
+        (function_call
+          (identifier))))
+    (identifier)
+    (on_duplicate_key_update_clause
+      (assignment
+        (column_reference
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier)))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (column_reference
+      (identifier))
+    (column_reference
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (result_column
+          (column_reference
+            (identifier)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (table_value_statement
+        (qualified_name
+          (identifier)))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (insert_values_row)))
+
+================================================================================
+REPLACE statements
+:language(mysql)
+================================================================================
+
+REPLACE LOW_PRIORITY INTO kv (k, v) VALUES ('a', 1);
+REPLACE INTO kv SET k = 'b', v = 2;
+REPLACE INTO kv SELECT k, v FROM kv_staging;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (replace_statement
+    (qualified_name
+      (identifier))
+    (column_reference
+      (identifier))
+    (column_reference
+      (identifier))
+    (insert_values_row
+      (string_literal)
+      (numeric_literal)))
+  (replace_statement
+    (qualified_name
+      (identifier))
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier))
+        (string_literal))
+      (assignment
+        (column_reference
+          (identifier))
+        (numeric_literal))))
+  (replace_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (result_column
+          (column_reference
+            (identifier)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))))))
+
+================================================================================
+Single-table and multi-table UPDATE
+:language(mysql)
+================================================================================
+
+UPDATE LOW_PRIORITY IGNORE items SET price = price * 1.1, updated_at = DEFAULT WHERE active = 1 ORDER BY id DESC LIMIT 100;
+WITH top_customers AS (SELECT id FROM customers WHERE tier = 'gold')
+UPDATE orders o JOIN top_customers tc ON o.customer_id = tc.id SET o.discount = 15 WHERE o.status = 'open';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (table
+      (qualified_name
+        (identifier)))
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier))
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (assignment
+        (column_reference
+          (identifier))))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier))
+        (numeric_literal)))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier))))
+    (limit_clause
+      (numeric_literal)))
+  (update_statement
+    (with_clause
+      (common_table_expression
+        (identifier)
+        (select_statement
+          (select_core
+            (result_column
+              (column_reference
+                (identifier)))
+            (from_clause
+              (table
+                (qualified_name
+                  (identifier))))
+            (where_clause
+              (binary_expression
+                (column_reference
+                  (identifier))
+                (string_literal)))))))
+    (table
+      (qualified_name
+        (identifier))
+      (identifier))
+    (table
+      (qualified_name
+        (identifier))
+      (identifier))
+    (join_constraint
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier))))
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier)
+          (identifier))
+        (numeric_literal)))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (string_literal)))))
+
+================================================================================
+Single-table and multi-table DELETE
+:language(mysql)
+================================================================================
+
+DELETE LOW_PRIORITY QUICK IGNORE FROM sessions AS s PARTITION (p_old) WHERE s.expires_at < NOW() ORDER BY s.id LIMIT 500;
+DELETE t1, t2.* FROM t1 INNER JOIN t2 ON t1.id = t2.t1_id WHERE t1.archived = 1;
+DELETE FROM t1, db.t2.* USING t1 JOIN db.t2 ON t1.id = db.t2.id WHERE t1.deleted = 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (delete_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (partition_names_clause
+      (identifier))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (function_call
+          (identifier))))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier)
+          (identifier))))
+    (limit_clause
+      (numeric_literal)))
+  (delete_statement
+    (delete_target
+      (identifier))
+    (delete_target
+      (identifier))
+    (table
+      (qualified_name
+        (identifier)))
+    (table
+      (qualified_name
+        (identifier)))
+    (join_constraint
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier))))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (numeric_literal))))
+  (delete_statement
+    (delete_target
+      (identifier))
+    (delete_target
+      (identifier)
+      (identifier))
+    (table
+      (qualified_name
+        (identifier)))
+    (table
+      (qualified_name
+        (identifier)
+        (identifier)))
+    (join_constraint
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier)
+          (identifier))))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (numeric_literal)))))
+
+================================================================================
+LOAD DATA and LOAD XML INFILE
+:language(mysql)
+================================================================================
+
+LOAD DATA LOCAL INFILE '/tmp/users.csv'
+REPLACE INTO TABLE users PARTITION (p0)
+CHARACTER SET utf8mb4
+FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' ESCAPED BY '\\'
+LINES STARTING BY '>' TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(id, name, @raw_date)
+SET created_at = STR_TO_DATE(@raw_date, '%Y-%m-%d');
+
+LOAD XML LOCAL INFILE '/tmp/items.xml'
+IGNORE INTO TABLE items
+CHARACTER SET utf8mb4
+ROWS IDENTIFIED BY '<item>'
+IGNORE 2 ROWS
+(id, title);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (load_statement
+    (string_literal)
+    (qualified_name
+      (identifier))
+    (partition_names_clause
+      (identifier))
+    (identifier)
+    (string_literal)
+    (string_literal)
+    (string_literal)
+    (string_literal)
+    (string_literal)
+    (numeric_literal)
+    (column_reference
+      (identifier))
+    (column_reference
+      (identifier))
+    (user_variable)
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier))
+        (function_call
+          (identifier)
+          (user_variable)
+          (string_literal)))))
+  (load_statement
+    (string_literal)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (string_literal)
+    (numeric_literal)
+    (column_reference
+      (identifier))
+    (column_reference
+      (identifier))))
+
+
+================================================================================
+INSERT and REPLACE compound queries starting with VALUES ROW
+:language(mysql)
+================================================================================
+
+INSERT INTO t VALUES ROW(1) UNION SELECT 2 INTERSECT VALUES ROW(3);
+REPLACE INTO t VALUES ROW(1) INTERSECT TABLE u;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (compound_query
+        (values_statement
+          (row_constructor
+            (numeric_literal)))
+        (compound_operator)
+        (compound_query
+          (select_core
+            (result_column
+              (numeric_literal)))
+          (compound_operator)
+          (values_statement
+            (row_constructor
+              (numeric_literal)))))))
+  (replace_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (compound_query
+        (values_statement
+          (row_constructor
+            (numeric_literal)))
+        (compound_operator)
+        (table_value_statement
+          (qualified_name
+            (identifier)))))))
+
+
+================================================================================
+Parenthesized single-table UPDATE with ORDER BY and LIMIT
+:language(mysql)
+================================================================================
+
+UPDATE (a PARTITION(p0) AS b) SET b.x = 1 ORDER BY b.id LIMIT 1;
+UPDATE ((a)) SET x = 1 LIMIT 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (join_table
+      (table
+        (qualified_name
+          (identifier))
+        (partition_names_clause
+          (identifier))
+        (identifier)))
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier)
+          (identifier))
+        (numeric_literal)))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier)
+          (identifier))))
+    (limit_clause
+      (numeric_literal)))
+  (update_statement
+    (join_table
+      (join_table
+        (table
+          (qualified_name
+            (identifier)))))
+    (set_clause
+      (assignment
+        (column_reference
+          (identifier))
+        (numeric_literal)))
+    (limit_clause
+      (numeric_literal))))

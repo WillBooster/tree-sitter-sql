@@ -1,5 +1,6 @@
 ================================================================================
 Operator precedence
+:language(sqlite)
 ================================================================================
 
 SELECT 1 + 2 * 3 - 4 / 5 % 6, a OR b AND NOT c, 1 << 2 & 3 | 4, -a || b -> '$' ->> 'k', ~1 + 2;
@@ -58,6 +59,7 @@ SELECT 1 + 2 * 3 - 4 / 5 % 6, a OR b AND NOT c, 1 << 2 & 3 | 4, -a || b -> '$' -
 
 ================================================================================
 Comparison operators
+:language(sqlite)
 ================================================================================
 
 SELECT a = b, a == b, a != b, a <> b, a < b, a <= b, a > b, a >= b, a IS b, a IS NOT b, a IS DISTINCT FROM b, a IS NOT DISTINCT FROM b;
@@ -142,6 +144,7 @@ SELECT a = b, a == b, a != b, a <> b, a < b, a <= b, a > b, a >= b, a IS b, a IS
 
 ================================================================================
 Equality is weaker than comparison
+:language(sqlite)
 ================================================================================
 
 SELECT a = b < c, a < b = c;
@@ -172,6 +175,7 @@ SELECT a = b < c, a < b = c;
 
 ================================================================================
 Pattern matching
+:language(sqlite)
 ================================================================================
 
 SELECT a LIKE 'x%' ESCAPE '\', a NOT GLOB '*', a REGEXP 'r', a NOT MATCH 'm';
@@ -205,6 +209,7 @@ SELECT a LIKE 'x%' ESCAPE '\', a NOT GLOB '*', a REGEXP 'r', a NOT MATCH 'm';
 
 ================================================================================
 Between
+:language(sqlite)
 ================================================================================
 
 SELECT a BETWEEN 1 AND 2 AND b, a NOT BETWEEN b + 1 AND c;
@@ -236,6 +241,7 @@ SELECT a BETWEEN 1 AND 2 AND b, a NOT BETWEEN b + 1 AND c;
 
 ================================================================================
 In
+:language(sqlite)
 ================================================================================
 
 SELECT a IN (1, 2), a NOT IN (SELECT b FROM t), a IN t, a IN main.t, a IN f(1, 2), a IN ();
@@ -292,6 +298,7 @@ SELECT a IN (1, 2), a NOT IN (SELECT b FROM t), a IN t, a IN main.t, a IN f(1, 2
 
 ================================================================================
 Null tests
+:language(sqlite)
 ================================================================================
 
 SELECT a ISNULL, a NOTNULL, a NOT NULL, a IS NULL, a IS NOT NULL;
@@ -326,6 +333,7 @@ SELECT a ISNULL, a NOTNULL, a NOT NULL, a IS NULL, a IS NOT NULL;
 
 ================================================================================
 Collate
+:language(sqlite)
 ================================================================================
 
 SELECT a COLLATE nocase, a || b COLLATE "binary";
@@ -351,6 +359,7 @@ SELECT a COLLATE nocase, a || b COLLATE "binary";
 
 ================================================================================
 Function calls
+:language(sqlite)
 ================================================================================
 
 SELECT count(*), count(DISTINCT a), max(a, b), f(), group_concat(a ORDER BY b), sum(a) FILTER (WHERE a > 0), sum(a) FILTER (WHERE a > 0) OVER (PARTITION BY b), replace(a, 'x', 'y'), "f"(1);
@@ -429,6 +438,7 @@ SELECT count(*), count(DISTINCT a), max(a, b), f(), group_concat(a ORDER BY b), 
 
 ================================================================================
 Cast and case
+:language(sqlite)
 ================================================================================
 
 SELECT CAST(a AS INTEGER), CAST(a AS VARCHAR(10)), CAST(a AS), CASE a WHEN 1 THEN 'one' ELSE 'other' END, CASE WHEN a THEN b END;
@@ -473,6 +483,7 @@ SELECT CAST(a AS INTEGER), CAST(a AS VARCHAR(10)), CAST(a AS), CASE a WHEN 1 THE
 
 ================================================================================
 Subqueries and exists
+:language(sqlite)
 ================================================================================
 
 SELECT (SELECT 1), EXISTS (SELECT 1), NOT EXISTS (SELECT 2);
@@ -504,6 +515,7 @@ SELECT (SELECT 1), EXISTS (SELECT 1), NOT EXISTS (SELECT 2);
 
 ================================================================================
 Row values
+:language(sqlite)
 ================================================================================
 
 SELECT (1, 2) = (3, 4), (a);
@@ -528,6 +540,7 @@ SELECT (1, 2) = (3, 4), (a);
 
 ================================================================================
 Column references
+:language(sqlite)
 ================================================================================
 
 SELECT a, t.a, main.t.a, 't'.a, "t"."a", [t].[a], `a`;
@@ -567,6 +580,7 @@ SELECT a, t.a, main.t.a, 't'.a, "t"."a", [t].[a], `a`;
 
 ================================================================================
 Raise
+:language(sqlite)
 ================================================================================
 
 SELECT RAISE(IGNORE), RAISE(ABORT, 'message'), RAISE(FAIL, 'x' || 'y');
@@ -589,6 +603,7 @@ SELECT RAISE(IGNORE), RAISE(ABORT, 'message'), RAISE(FAIL, 'x' || 'y');
 
 ================================================================================
 Bind parameters
+:language(sqlite)
 ================================================================================
 
 SELECT ?, ?1, :name, @name, $name, $a::b(c), #name;
@@ -615,6 +630,7 @@ SELECT ?, ?1, :name, @name, $name, $a::b(c), #name;
 
 ================================================================================
 Signed values and numbered parameters
+:language(sqlite)
 ================================================================================
 
 CREATE TABLE t (a DEFAULT -1); PRAGMA x = +2; SELECT ?0001, x'ab', ax'ab';
@@ -648,6 +664,7 @@ CREATE TABLE t (a DEFAULT -1); PRAGMA x = +2; SELECT ?0001, x'ab', ax'ab';
 
 ================================================================================
 Comparison in an escape operand
+:language(sqlite)
 ================================================================================
 
 SELECT a LIKE b ESCAPE c > 1, a LIKE b ESCAPE c = d;
@@ -681,6 +698,7 @@ SELECT a LIKE b ESCAPE c > 1, a LIKE b ESCAPE c = d;
 
 ================================================================================
 ESCAPE of a LIKE under NOT
+:language(sqlite)
 ================================================================================
 
 SELECT 1 LIKE NOT 'a' LIKE '%' ESCAPE '%', 1 LIKE NOT 0 LIKE 0 ESCAPE 1 ESCAPE 1;

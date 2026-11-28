@@ -1,4 +1,5 @@
 examples/anki/rslib/src/storage/notetype/field_names_for_notes.sql
+examples/spring-batch/spring-batch-core/src/main/resources/org/springframework/batch/core/migration/5.0/migration-sqlite.sql
 examples/synapse/synapse/storage/schema/main/delta/54/account_validity_with_renewal.sql
 examples/synapse/synapse/storage/schema/main/delta/87/02_per_connection_state.sql
 examples/synapse/synapse/storage/schema/state/delta/89/01_state_groups_deletion.sql

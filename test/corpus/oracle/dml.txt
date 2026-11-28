@@ -1,0 +1,707 @@
+================================================================================
+Single-table INSERT with multi-row VALUES, RETURNING INTO, and LOG ERRORS
+:language(oracle)
+================================================================================
+
+INSERT INTO employees (emp_id, ename, hire_date)
+VALUES (1, 'Alice', SYSDATE), (2, 'Bob', DEFAULT)
+RETURNING emp_id INTO :out_id
+LOG ERRORS INTO err$_employees ('load_batch') REJECT LIMIT UNLIMITED;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (insert_into_clause
+      (object_name
+        (identifier))
+      (column_list
+        (identifier)
+        (identifier)
+        (identifier)))
+    (values_clause
+      (values_row
+        (numeric_literal)
+        (string_literal)
+        (pseudocolumn))
+      (values_row
+        (numeric_literal)
+        (string_literal)))
+    (returning_into_clause
+      (identifier)
+      (bind_variable))
+    (error_logging_clause
+      (object_name
+        (identifier))
+      (string_literal))))
+
+================================================================================
+Multi-table unconditional and conditional INSERT ALL and INSERT FIRST
+:language(oracle)
+================================================================================
+
+INSERT ALL
+  INTO archive_2025 (id, total) VALUES (order_id, order_total)
+  INTO audit_log (id, created_at) VALUES (order_id, SYSDATE)
+SELECT order_id, order_total FROM staging_orders;
+
+INSERT FIRST
+  WHEN order_total >= 10000 THEN
+    INTO vip_orders (id, amount) VALUES (order_id, order_total)
+  WHEN order_total >= 1000 THEN
+    INTO priority_orders (id, amount) VALUES (order_id, order_total)
+  ELSE
+    INTO standard_orders (id, amount) VALUES (order_id, order_total)
+SELECT order_id, order_total FROM staging_orders;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (insert_into_clause
+      (object_name
+        (identifier))
+      (column_list
+        (identifier)
+        (identifier)))
+    (values_row
+      (identifier)
+      (identifier))
+    (insert_into_clause
+      (object_name
+        (identifier))
+      (column_list
+        (identifier)
+        (identifier)))
+    (values_row
+      (identifier)
+      (pseudocolumn))
+    (select_statement
+      (select_core
+        (select_list
+          (select_item
+            (identifier))
+          (select_item
+            (identifier)))
+        (from_clause
+          (table_reference
+            (object_name
+              (identifier)))))))
+  (insert_statement
+    (binary_expression
+      (identifier)
+      (numeric_literal))
+    (insert_into_clause
+      (object_name
+        (identifier))
+      (column_list
+        (identifier)
+        (identifier)))
+    (values_row
+      (identifier)
+      (identifier))
+    (binary_expression
+      (identifier)
+      (numeric_literal))
+    (insert_into_clause
+      (object_name
+        (identifier))
+      (column_list
+        (identifier)
+        (identifier)))
+    (values_row
+      (identifier)
+      (identifier))
+    (insert_into_clause
+      (object_name
+        (identifier))
+      (column_list
+        (identifier)
+        (identifier)))
+    (values_row
+      (identifier)
+      (identifier))
+    (select_statement
+      (select_core
+        (select_list
+          (select_item
+            (identifier))
+          (select_item
+            (identifier)))
+        (from_clause
+          (table_reference
+            (object_name
+              (identifier))))))))
+
+================================================================================
+UPDATE with subquery target, multi-column SET, Oracle 23ai FROM, and RETURNING
+:language(oracle)
+================================================================================
+
+UPDATE (SELECT sal, comm FROM emp WHERE dept_id = 10)
+SET (sal, comm) = (SELECT AVG(sal), 0 FROM emp)
+RETURNING sal INTO :new_sal;
+
+UPDATE accounts a
+SET a.balance = a.balance + t.delta
+FROM transfers t
+WHERE a.account_id = t.account_id;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (subquery_table
+      (select_statement
+        (select_core
+          (select_list
+            (select_item
+              (identifier))
+            (select_item
+              (identifier)))
+          (from_clause
+            (table_reference
+              (object_name
+                (identifier))))
+          (where_clause
+            (binary_expression
+              (identifier)
+              (numeric_literal))))))
+    (set_clause
+      (update_assignment
+        (column_list
+          (identifier)
+          (identifier))
+        (subquery
+          (select_statement
+            (select_core
+              (select_list
+                (select_item
+                  (function_call
+                    (identifier)
+                    (function_argument
+                      (identifier))))
+                (select_item
+                  (numeric_literal)))
+              (from_clause
+                (table_reference
+                  (object_name
+                    (identifier)))))))))
+    (returning_into_clause
+      (identifier)
+      (bind_variable)))
+  (update_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (set_clause
+      (update_assignment
+        (object_name
+          (identifier)
+          (identifier))
+        (binary_expression
+          (member_expression
+            (identifier)
+            (identifier))
+          (member_expression
+            (identifier)
+            (identifier)))))
+    (from_clause
+      (table_reference
+        (object_name
+          (identifier))
+        (identifier)))
+    (where_clause
+      (binary_expression
+        (member_expression
+          (identifier)
+          (identifier))
+        (member_expression
+          (identifier)
+          (identifier))))))
+
+================================================================================
+DELETE with optional FROM, Oracle 23ai direct join FROM, and RETURNING INTO
+:language(oracle)
+================================================================================
+
+DELETE emp WHERE emp_id = :1 RETURNING ename INTO :deleted_name;
+
+DELETE FROM sessions s
+FROM expired_tokens t
+WHERE s.token_id = t.token_id;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (delete_statement
+    (object_name
+      (identifier))
+    (where_clause
+      (binary_expression
+        (identifier)
+        (bind_variable)))
+    (returning_into_clause
+      (identifier)
+      (bind_variable)))
+  (delete_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (from_clause
+      (table_reference
+        (object_name
+          (identifier))
+        (identifier)))
+    (where_clause
+      (binary_expression
+        (member_expression
+          (identifier)
+          (identifier))
+        (member_expression
+          (identifier)
+          (identifier))))))
+
+================================================================================
+MERGE statement with UPDATE, DELETE WHERE, INSERT, and LOG ERRORS
+:language(oracle)
+================================================================================
+
+MERGE INTO bonuses b
+USING (SELECT emp_id, sal, dept_id FROM employees) e
+ON (b.emp_id = e.emp_id)
+WHEN MATCHED THEN UPDATE
+  SET b.bonus = b.bonus + e.sal * 0.1
+  WHERE e.dept_id = 20
+  DELETE WHERE e.sal > 50000
+WHEN NOT MATCHED THEN INSERT (b.emp_id, b.bonus)
+  VALUES (e.emp_id, e.sal * 0.05)
+  WHERE e.sal <= 50000
+LOG ERRORS INTO err$_bonuses REJECT LIMIT 10;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (merge_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (subquery_table
+      (select_statement
+        (select_core
+          (select_list
+            (select_item
+              (identifier))
+            (select_item
+              (identifier))
+            (select_item
+              (identifier)))
+          (from_clause
+            (table_reference
+              (object_name
+                (identifier)))))))
+    (identifier)
+    (binary_expression
+      (member_expression
+        (identifier)
+        (identifier))
+      (member_expression
+        (identifier)
+        (identifier)))
+    (merge_update_clause
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier)
+            (identifier))
+          (binary_expression
+            (member_expression
+              (identifier)
+              (identifier))
+            (binary_expression
+              (member_expression
+                (identifier)
+                (identifier))
+              (numeric_literal)))))
+      (where_clause
+        (binary_expression
+          (member_expression
+            (identifier)
+            (identifier))
+          (numeric_literal)))
+      (where_clause
+        (binary_expression
+          (member_expression
+            (identifier)
+            (identifier))
+          (numeric_literal))))
+    (merge_insert_clause
+      (object_name
+        (identifier)
+        (identifier))
+      (object_name
+        (identifier)
+        (identifier))
+      (values_row
+        (member_expression
+          (identifier)
+          (identifier))
+        (binary_expression
+          (member_expression
+            (identifier)
+            (identifier))
+          (numeric_literal)))
+      (where_clause
+        (binary_expression
+          (member_expression
+            (identifier)
+            (identifier))
+          (numeric_literal))))
+    (error_logging_clause
+      (object_name
+        (identifier))
+      (numeric_literal))))
+
+================================================================================
+INSERT INTO with CTE subquery
+:language(oracle)
+================================================================================
+
+INSERT INTO dept_totals (dept_id, total_sal)
+WITH totals AS (
+  SELECT dept_id, SUM(sal) AS total_sal FROM emp GROUP BY dept_id
+)
+SELECT dept_id, total_sal FROM totals;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (insert_into_clause
+      (object_name
+        (identifier))
+      (column_list
+        (identifier)
+        (identifier)))
+    (select_statement
+      (with_clause
+        (common_table_expression
+          (identifier)
+          (select_statement
+            (select_core
+              (select_list
+                (select_item
+                  (identifier))
+                (select_item
+                  (function_call
+                    (identifier)
+                    (function_argument
+                      (identifier)))
+                  (identifier)))
+              (from_clause
+                (table_reference
+                  (object_name
+                    (identifier))))
+              (group_by_clause
+                (identifier))))))
+      (select_core
+        (select_list
+          (select_item
+            (identifier))
+          (select_item
+            (identifier)))
+        (from_clause
+          (table_reference
+            (object_name
+              (identifier))))))))
+
+================================================================================
+UPDATE and DELETE with WHERE CURRENT OF cursor
+:language(oracle)
+================================================================================
+
+BEGIN
+  UPDATE emp SET sal = sal * 1.05 WHERE CURRENT OF c_emp;
+  DELETE FROM emp WHERE CURRENT OF c_emp;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (anonymous_block
+    (update_statement
+      (object_name
+        (identifier))
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier))
+          (binary_expression
+            (identifier)
+            (numeric_literal))))
+      (where_clause
+        (identifier)))
+    (delete_statement
+      (object_name
+        (identifier))
+      (where_clause
+        (identifier)))))
+
+================================================================================
+UPDATE and MERGE targeting column named VALUE and FORALL record element INSERT
+:language(oracle)
+================================================================================
+
+UPDATE cfg SET value = 1;
+MERGE INTO cfg USING src ON (cfg.id = src.id)
+  WHEN MATCHED THEN UPDATE SET value = src.value
+  WHEN NOT MATCHED THEN INSERT (value) VALUES (src.value);
+BEGIN
+  FORALL i IN 1..l.COUNT INSERT INTO t VALUES l(i);
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (object_name
+      (identifier))
+    (set_clause
+      (update_assignment
+        (object_name
+          (identifier))
+        (numeric_literal))))
+  (merge_statement
+    (object_name
+      (identifier))
+    (table_reference
+      (object_name
+        (identifier)))
+    (binary_expression
+      (member_expression
+        (identifier)
+        (identifier))
+      (member_expression
+        (identifier)
+        (identifier)))
+    (merge_update_clause
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier))
+          (member_expression
+            (identifier)
+            (identifier)))))
+    (merge_insert_clause
+      (object_name
+        (identifier))
+      (values_row
+        (member_expression
+          (identifier)
+          (identifier)))))
+  (anonymous_block
+    (forall_statement
+      (identifier)
+      (numeric_literal)
+      (member_expression
+        (identifier)
+        (identifier))
+      (insert_statement
+        (insert_into_clause
+          (object_name
+            (identifier)))
+        (function_call
+          (identifier)
+          (function_argument
+            (identifier)))))))
+
+
+================================================================================
+Oracle 23ai MERGE with RETURNING INTO in SQL and PL/SQL
+:language(oracle)
+================================================================================
+
+MERGE INTO items t
+USING (SELECT 1 id, 10 new_price FROM dual) s
+ON (t.id = s.id)
+WHEN MATCHED THEN UPDATE SET t.price = s.new_price
+RETURNING OLD price, NEW price INTO :old_price, :new_price;
+
+BEGIN
+  MERGE INTO items t
+  USING src s
+  ON (t.id = s.id)
+  WHEN NOT MATCHED THEN INSERT (id, price) VALUES (s.id, s.new_price)
+  RETURNING price BULK COLLECT INTO l_prices;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (merge_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (subquery_table
+      (select_statement
+        (select_core
+          (select_list
+            (select_item
+              (numeric_literal)
+              (identifier))
+            (select_item
+              (numeric_literal)
+              (identifier)))
+          (from_clause
+            (table_reference
+              (object_name
+                (identifier)))))))
+    (identifier)
+    (binary_expression
+      (member_expression
+        (identifier)
+        (identifier))
+      (member_expression
+        (identifier)
+        (identifier)))
+    (merge_update_clause
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier)
+            (identifier))
+          (member_expression
+            (identifier)
+            (identifier)))))
+    (returning_into_clause
+      (identifier)
+      (identifier)
+      (bind_variable)
+      (bind_variable)))
+  (anonymous_block
+    (merge_statement
+      (object_name
+        (identifier))
+      (identifier)
+      (table_reference
+        (object_name
+          (identifier))
+        (identifier))
+      (binary_expression
+        (member_expression
+          (identifier)
+          (identifier))
+        (member_expression
+          (identifier)
+          (identifier)))
+      (merge_insert_clause
+        (object_name
+          (identifier))
+        (object_name
+          (identifier))
+        (values_row
+          (member_expression
+            (identifier)
+            (identifier))
+          (member_expression
+            (identifier)
+            (identifier))))
+      (returning_into_clause
+        (identifier)
+        (identifier)))))
+
+
+================================================================================
+Stage10 Oracle static DML RETURNING nested OLD/NEW operands and writable INTO targets
+:language(oracle)
+================================================================================
+
+MERGE INTO items t
+USING src s
+ON (t.id = s.id)
+WHEN MATCHED THEN UPDATE SET t.price = s.price
+RETURNING SUM(NEW price), AVG(OLD price) INTO :s, :a;
+
+UPDATE items SET price = price + 10 RETURNING NEW price - OLD price INTO :out_val INDICATOR :out_ind;
+
+BEGIN
+  UPDATE items SET price = 20 WHERE id = 1 RETURNING price, id INTO l_rec.price, l_arr(1);
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (merge_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (table_reference
+      (object_name
+        (identifier))
+      (identifier))
+    (binary_expression
+      (member_expression
+        (identifier)
+        (identifier))
+      (member_expression
+        (identifier)
+        (identifier)))
+    (merge_update_clause
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier)
+            (identifier))
+          (member_expression
+            (identifier)
+            (identifier)))))
+    (returning_into_clause
+      (function_call
+        (identifier)
+        (function_argument
+          (identifier)))
+      (function_call
+        (identifier)
+        (function_argument
+          (identifier)))
+      (bind_variable)
+      (bind_variable)))
+  (update_statement
+    (object_name
+      (identifier))
+    (set_clause
+      (update_assignment
+        (object_name
+          (identifier))
+        (binary_expression
+          (identifier)
+          (numeric_literal))))
+    (returning_into_clause
+      (binary_expression
+        (identifier)
+        (identifier))
+      (bind_variable)
+      (bind_variable)))
+  (anonymous_block
+    (update_statement
+      (object_name
+        (identifier))
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier))
+          (numeric_literal)))
+      (where_clause
+        (binary_expression
+          (identifier)
+          (numeric_literal)))
+      (returning_into_clause
+        (identifier)
+        (identifier)
+        (member_expression
+          (identifier)
+          (identifier))
+        (function_call
+          (identifier)
+          (function_argument
+            (numeric_literal)))))))

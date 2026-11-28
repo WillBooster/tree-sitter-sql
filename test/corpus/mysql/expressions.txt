@@ -1,0 +1,1176 @@
+================================================================================
+Arithmetic, bitwise, and shift precedence
+:language(mysql)
+================================================================================
+
+SELECT 1 | 2 & 3 << 4 + 5 * 6 ^ 7, 10 DIV 3 MOD 2 % 1 / 4 - 5 >> 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (numeric_literal)
+          (binary_expression
+            (numeric_literal)
+            (binary_expression
+              (numeric_literal)
+              (binary_expression
+                (numeric_literal)
+                (binary_expression
+                  (numeric_literal)
+                  (binary_expression
+                    (numeric_literal)
+                    (numeric_literal))))))))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (binary_expression
+              (binary_expression
+                (binary_expression
+                  (binary_expression
+                    (numeric_literal)
+                    (numeric_literal))
+                  (numeric_literal))
+                (numeric_literal))
+              (numeric_literal))
+            (numeric_literal))
+          (numeric_literal))))))
+
+================================================================================
+Unary operators, BANG vs NOT, BINARY, COLLATE, and INTERVAL precedence
+:language(mysql)
+================================================================================
+
+SELECT !a AND NOT b, -~+a ^ b, BINARY a COLLATE utf8mb4_bin = 'x', d + INTERVAL 1 + 2 DAY_HOUR;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (unary_expression
+            (column_reference
+              (identifier)))
+          (unary_expression
+            (column_reference
+              (identifier)))))
+      (result_column
+        (binary_expression
+          (unary_expression
+            (unary_expression
+              (unary_expression
+                (column_reference
+                  (identifier)))))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (unary_expression
+            (collate_expression
+              (column_reference
+                (identifier))
+              (identifier)))
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (interval_expression
+            (binary_expression
+              (numeric_literal)
+              (numeric_literal))
+            (interval_unit)))))))
+
+================================================================================
+Logical OR, pipes, XOR, AND, and user variable assignment precedence
+:language(mysql)
+================================================================================
+
+SELECT @a := @b := 1 || 2 XOR 3 && 4, a OR b XOR c AND NOT d;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (assignment_expression
+          (user_variable)
+          (assignment_expression
+            (user_variable)
+            (binary_expression
+              (numeric_literal)
+              (binary_expression
+                (numeric_literal)
+                (binary_expression
+                  (numeric_literal)
+                  (numeric_literal)))))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (binary_expression
+            (column_reference
+              (identifier))
+            (binary_expression
+              (column_reference
+                (identifier))
+              (unary_expression
+                (column_reference
+                  (identifier))))))))))
+
+================================================================================
+Comparison, NULL-safe equal, IS, SOUNDS LIKE, REGEXP, and RLIKE
+:language(mysql)
+================================================================================
+
+SELECT a <=> b, a <> b, a != c, x IS NULL, x IS NOT TRUE, y IS UNKNOWN, name SOUNDS LIKE 'Smith', s REGEXP '^a', s NOT RLIKE '[0-9]+';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (null)))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))
+          (boolean_literal)))
+      (result_column
+        (is_expression
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (string_literal))))))
+
+================================================================================
+LIKE with ESCAPE, BETWEEN, IN, MEMBER OF, and quantified comparisons
+:language(mysql)
+================================================================================
+
+SELECT s LIKE '%\_%' ESCAPE '\\', s NOT LIKE 'a%', x BETWEEN 1 + 1 AND 5 + 5 AND y NOT BETWEEN 0 AND 1, x IN (1, 2, 3), y NOT IN (SELECT id FROM t), 'a' MEMBER OF (doc), x >= ANY (SELECT n FROM t), y <> ALL (SELECT n FROM t), z = SOME (SELECT n FROM t);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (string_literal)))
+      (result_column
+        (like_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (between_expression
+            (column_reference
+              (identifier))
+            (binary_expression
+              (numeric_literal)
+              (numeric_literal))
+            (binary_expression
+              (numeric_literal)
+              (numeric_literal)))
+          (between_expression
+            (column_reference
+              (identifier))
+            (numeric_literal)
+            (numeric_literal))))
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (in_expression
+          (column_reference
+            (identifier))
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))))))
+      (result_column
+        (member_of_expression
+          (string_literal)
+          (column_reference
+            (identifier))))
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))))))
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))))))
+      (result_column
+        (quantified_comparison_expression
+          (column_reference
+            (identifier))
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier)))))))))))
+
+================================================================================
+JSON path operators
+:language(mysql)
+================================================================================
+
+SELECT doc->'$.user.name', doc->>'$.items[0]' = 'book';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (column_reference
+              (identifier))
+            (string_literal))
+          (string_literal))))))
+
+================================================================================
+CASE, CAST, CONVERT, and MATCH AGAINST expressions
+:language(mysql)
+================================================================================
+
+SELECT CASE x WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'other' END,
+       CASE WHEN a > 0 THEN a END,
+       CAST(x AS UNSIGNED INTEGER),
+       CAST('[1,2]' AS UNSIGNED ARRAY),
+       CAST(s AS CHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci),
+       CONVERT(x, DECIMAL(10, 2)),
+       CONVERT(s USING utf8mb4),
+       MATCH (title, body) AGAINST ('+mysql -oracle' IN BOOLEAN MODE),
+       MATCH (title) AGAINST ('database' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (case_expression
+          (column_reference
+            (identifier))
+          (when_clause
+            (numeric_literal)
+            (string_literal))
+          (when_clause
+            (numeric_literal)
+            (string_literal))
+          (string_literal)))
+      (result_column
+        (case_expression
+          (when_clause
+            (binary_expression
+              (column_reference
+                (identifier))
+              (numeric_literal))
+            (column_reference
+              (identifier)))))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (cast_type)))
+      (result_column
+        (cast_expression
+          (string_literal)
+          (cast_type)))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (cast_type
+            (numeric_literal)
+            (identifier)
+            (identifier))))
+      (result_column
+        (convert_expression
+          (column_reference
+            (identifier))
+          (cast_type
+            (numeric_literal)
+            (numeric_literal))))
+      (result_column
+        (convert_expression
+          (column_reference
+            (identifier))
+          (identifier)))
+      (result_column
+        (match_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (result_column
+        (match_expression
+          (column_reference
+            (identifier))
+          (string_literal))))))
+
+================================================================================
+Built-in special functions, reserved-word functions, and window functions
+:language(mysql)
+================================================================================
+
+SELECT IF(a > 0, 'yes', 'no'),
+       MOD(10, 3),
+       LEFT(s, 2),
+       RIGHT(s, 2),
+       INSERT(s, 1, 2, 'x'),
+       REPLACE(s, 'a', 'b'),
+       REPEAT('x', 3),
+       DATABASE(),
+       SCHEMA(),
+       VALUES(col1),
+       DEFAULT(col1),
+       INTERVAL(5, 1, 3, 7, 10),
+       CHAR(77, 121, 83, 81, 76 USING utf8mb4),
+       EXTRACT(YEAR_MONTH FROM dt),
+       EXTRACT(YEAR FROM dt),
+       POSITION('b' IN 'abc'),
+       TRIM(BOTH ' ' FROM s),
+       SUBSTRING(s FROM 2 FOR 3),
+       GROUP_CONCAT(DISTINCT name ORDER BY name DESC SEPARATOR ', '),
+       JSON_VALUE(doc, '$.id' RETURNING UNSIGNED DEFAULT 0 ON EMPTY ERROR ON ERROR),
+       ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC),
+       LEAD(salary, 1, 0) RESPECT NULLS OVER w,
+       NTH_VALUE(salary, 2) FROM FIRST RESPECT NULLS OVER (w ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))
+          (string_literal)
+          (string_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)
+          (string_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (string_literal)
+          (string_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (string_literal)
+          (numeric_literal)))
+      (result_column
+        (function_call
+          (identifier)))
+      (result_column
+        (function_call
+          (identifier)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal)
+          (identifier)))
+      (result_column
+        (function_call
+          (identifier)
+          (interval_unit)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (interval_unit)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (string_literal)
+          (string_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (string_literal)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (order_by_clause
+            (ordering_term
+              (column_reference
+                (identifier))))
+          (string_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (string_literal)
+          (cast_type)
+          (numeric_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (over_clause
+            (window_definition
+              (partition_by_clause
+                (column_reference
+                  (identifier)))
+              (order_by_clause
+                (ordering_term
+                  (column_reference
+                    (identifier))))))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (numeric_literal)
+          (over_clause
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (over_clause
+            (window_definition
+              (identifier)
+              (frame_clause
+                (frame_bound
+                  (numeric_literal))
+                (frame_bound)))))))))
+
+================================================================================
+Row constructors and subqueries
+:language(mysql)
+================================================================================
+
+SELECT (1, 2) = ROW(1, 2), EXISTS (SELECT 1 FROM DUAL), (SELECT MAX(id) FROM t);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (row_value
+            (numeric_literal)
+            (numeric_literal))
+          (row_constructor
+            (numeric_literal)
+            (numeric_literal))))
+      (result_column
+        (exists_expression
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal))
+              (from_clause)))))
+      (result_column
+        (subquery
+          (select_statement
+            (select_core
+              (result_column
+                (function_call
+                  (identifier)
+                  (column_reference
+                    (identifier))))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier)))))))))))
+
+================================================================================
+Right-associativity of user variable assignment
+:language(mysql)
+================================================================================
+
+SELECT @x := @y := @z := 1 + 2;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (assignment_expression
+          (user_variable)
+          (assignment_expression
+            (user_variable)
+            (assignment_expression
+              (user_variable)
+              (binary_expression
+                (numeric_literal)
+                (numeric_literal)))))))))
+
+================================================================================
+Left-associativity of multiplicative, additive, shift, and logical operators
+:language(mysql)
+================================================================================
+
+SELECT 8 / 4 * 2, 10 - 3 + 1, 16 >> 2 << 1, a AND b AND c, a OR b OR c, a XOR b XOR c;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (binary_expression
+            (numeric_literal)
+            (numeric_literal))
+          (numeric_literal)))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (numeric_literal)
+            (numeric_literal))
+          (numeric_literal)))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (numeric_literal)
+            (numeric_literal))
+          (numeric_literal)))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))
+          (column_reference
+            (identifier))))
+      (result_column
+        (binary_expression
+          (binary_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))
+          (column_reference
+            (identifier)))))))
+
+================================================================================
+BETWEEN bounds and sibling predicate precedence
+:language(mysql)
+================================================================================
+
+SELECT a BETWEEN 1 AND b LIKE c ESCAPE '\\', x BETWEEN 1 AND 2 = 0, a BETWEEN b AND c IS NOT NULL;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (between_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)
+          (like_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier))
+            (string_literal))))
+      (result_column
+        (binary_expression
+          (between_expression
+            (column_reference
+              (identifier))
+            (numeric_literal)
+            (numeric_literal))
+          (numeric_literal)))
+      (result_column
+        (is_expression
+          (between_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))
+          (null))))))
+
+================================================================================
+CAST with DOUBLE PRECISION, AT TIME ZONE, and CHAR BINARY attributes
+:language(mysql)
+================================================================================
+
+SELECT CAST(b AS DOUBLE PRECISION),
+       CAST(ts AT TIME ZONE '+00:00' AS DATETIME),
+       CAST(ts AT TIME ZONE INTERVAL '+00:00' AS DATETIME(6)),
+       CAST(a AS CHAR(10) BINARY),
+       CONVERT(a, CHAR BINARY);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (cast_type)))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (cast_type)))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (string_literal)
+          (cast_type
+            (numeric_literal))))
+      (result_column
+        (cast_expression
+          (column_reference
+            (identifier))
+          (cast_type
+            (numeric_literal))))
+      (result_column
+        (convert_expression
+          (column_reference
+            (identifier))
+          (cast_type))))))
+
+================================================================================
+Collate binds tighter than comparison and binary operators
+:language(mysql)
+================================================================================
+
+SELECT a COLLATE utf8mb4_bin = b COLLATE utf8mb4_general_ci;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (collate_expression
+            (column_reference
+              (identifier))
+            (identifier))
+          (collate_expression
+            (column_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Charset introducer with COLLATE expression
+:language(mysql)
+================================================================================
+
+SELECT _utf8mb4'hello' COLLATE utf8mb4_danish_ci;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (collate_expression
+          (string_literal
+            (charset_introducer))
+          (identifier))))))
+
+================================================================================
+Escaped backslash before closing quote in strings
+:language(mysql)
+================================================================================
+
+SELECT 'abc\\', "def\\", 'a\\''b', "c\\""d";
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal)))))
+
+================================================================================
+BANG binds tighter than comparison while NOT binds looser than comparison
+:language(mysql)
+================================================================================
+
+SELECT !a = b, NOT a = b, -!a;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (unary_expression
+            (column_reference
+              (identifier)))
+          (column_reference
+            (identifier))))
+      (result_column
+        (unary_expression
+          (binary_expression
+            (column_reference
+              (identifier))
+            (column_reference
+              (identifier)))))
+      (result_column
+        (unary_expression
+          (unary_expression
+            (column_reference
+              (identifier))))))))
+
+================================================================================
+Qualified stored function call
+:language(mysql)
+================================================================================
+
+SELECT app_db.calc_tax(100, 0.08), app_db.`select`(1);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (identifier)
+          (numeric_literal)
+          (numeric_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (quoted_identifier)
+          (numeric_literal))))))
+
+================================================================================
+Typed temporal literals, ODBC escapes, unparenthesized MATCH, and dot-qualified charset names
+:language(mysql)
+================================================================================
+
+SELECT DATE '2020-01-01', TIME '12:30:00', TIMESTAMP '2020-01-01 12:30:00', {d '2020-01-01'}, date, t._utf8mb4, _bogus
+FROM orders t
+WHERE MATCH title, t.body AGAINST ('db' IN BOOLEAN MODE);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (temporal_literal
+          (string_literal)))
+      (result_column
+        (temporal_literal
+          (string_literal)))
+      (result_column
+        (temporal_literal
+          (string_literal)))
+      (result_column
+        (odbc_escape_expression
+          (identifier)
+          (string_literal)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier)))
+      (where_clause
+        (match_expression
+          (column_reference
+            (identifier))
+          (column_reference
+            (identifier)
+            (identifier))
+          (string_literal))))))
+
+
+================================================================================
+Quoted string alias after typed temporal literal
+:language(mysql)
+================================================================================
+
+SELECT DATE '2020-01-01' 'created', TIME '12:00:00' 'clock', TIMESTAMP '2020-01-01 00:00:00' AS 'ts';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (temporal_literal
+          (string_literal))
+        (string_literal))
+      (result_column
+        (temporal_literal
+          (string_literal))
+        (string_literal))
+      (result_column
+        (temporal_literal
+          (string_literal))
+        (string_literal)))))
+
+================================================================================
+DISTINCTROW in aggregate arguments
+:language(mysql)
+================================================================================
+
+SELECT COUNT(DISTINCTROW x), SUM(DISTINCTROW x), GROUP_CONCAT(DISTINCTROW x) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+
+================================================================================
+CONVERT USING with BINARY and quoted charset name
+:language(mysql)
+================================================================================
+
+SELECT CONVERT('a' USING binary), CONVERT('a' USING 'latin1');
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (convert_expression
+          (string_literal)))
+      (result_column
+        (convert_expression
+          (string_literal)
+          (string_literal))))))
+
+================================================================================
+GROUP_CONCAT hex and bit separators and WEIGHT_STRING hex counts
+:language(mysql)
+================================================================================
+
+SELECT GROUP_CONCAT(x SEPARATOR X'2C'), GROUP_CONCAT(x SEPARATOR 0b101100), WEIGHT_STRING('x' AS CHAR(0x02)), WEIGHT_STRING('x' AS BINARY(X'02')) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (hex_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (bit_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (string_literal)
+          (hex_literal)))
+      (result_column
+        (function_call
+          (identifier)
+          (string_literal)
+          (hex_literal)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Constant TIMESTAMPDIFF, TIMESTAMPADD, and GET_FORMAT in RANGE INTERVAL frame bounds
+:language(mysql)
+================================================================================
+
+SELECT SUM(a) OVER (
+  ORDER BY d
+  RANGE BETWEEN INTERVAL TIMESTAMPDIFF(DAY, '2020-01-01', TIMESTAMPADD(SQL_TSI_DAY, 1, '2020-01-02')) DAY PRECEDING
+            AND INTERVAL CHAR_LENGTH(GET_FORMAT(DATETIME, 'ISO')) DAY FOLLOWING
+) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (over_clause
+            (window_definition
+              (order_by_clause
+                (ordering_term
+                  (column_reference
+                    (identifier))))
+              (frame_clause
+                (frame_bound
+                  (interval_expression
+                    (function_call
+                      (identifier)
+                      (interval_unit)
+                      (string_literal)
+                      (function_call
+                        (identifier)
+                        (interval_unit)
+                        (numeric_literal)
+                        (string_literal)))
+                    (interval_unit)))
+                (frame_bound
+                  (interval_expression
+                    (function_call
+                      (identifier)
+                      (function_call
+                        (identifier)
+                        (identifier)
+                        (string_literal)))
+                    (interval_unit))))))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Supplementary characters in string literals and user variables with BMP identifiers
+:language(mysql)
+================================================================================
+
+SELECT '𠀀', _utf8mb4'🚀', @𠀀 := 1, @`🚀`, 表 FROM `列`;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal
+          (charset_introducer)))
+      (result_column
+        (assignment_expression
+          (user_variable)
+          (numeric_literal)))
+      (result_column
+        (user_variable))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (quoted_identifier)))))))
+
+

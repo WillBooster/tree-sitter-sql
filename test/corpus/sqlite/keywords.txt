@@ -1,5 +1,6 @@
 ================================================================================
 Non-reserved keywords as names
+:language(sqlite)
 ================================================================================
 
 CREATE TABLE key(action, after, plan, query, row, replace, temp, view, virtual, do, first, last, nulls);
@@ -39,6 +40,7 @@ CREATE TABLE key(action, after, plan, query, row, replace, temp, view, virtual, 
 
 ================================================================================
 Join keywords as names
+:language(sqlite)
 ================================================================================
 
 SELECT left, right FROM natural AS cross;
@@ -62,6 +64,7 @@ SELECT left, right FROM natural AS cross;
 
 ================================================================================
 Window keywords as aliases
+:language(sqlite)
 ================================================================================
 
 SELECT sum(a) over, count(*) filter, b window FROM t window;
@@ -94,6 +97,7 @@ SELECT sum(a) over, count(*) filter, b window FROM t window;
 
 ================================================================================
 Window keywords as names
+:language(sqlite)
 ================================================================================
 
 SELECT over, filter, window FROM window AS over;
@@ -120,6 +124,7 @@ SELECT over, filter, window FROM window AS over;
 
 ================================================================================
 Keywords as function names
+:language(sqlite)
 ================================================================================
 
 SELECT replace(a, b, c), glob(a, b), like(a, b), if(a, b, c), left(a);
@@ -169,6 +174,7 @@ SELECT replace(a, b, c), glob(a, b), like(a, b), if(a, b, c), left(a);
 
 ================================================================================
 A keyword that is valid where it appears is no name
+:language(sqlite)
 ================================================================================
 
 SELECT a FROM t WHERE x LIKE y;
@@ -194,6 +200,7 @@ SELECT a FROM t WHERE x LIKE y;
 
 ================================================================================
 WINDOW before a name and AS
+:language(sqlite)
 ================================================================================
 
 SELECT * FROM t window /* c */ w AS (); CREATE TABLE u (a WINDOW w, b);

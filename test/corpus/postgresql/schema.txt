@@ -1,0 +1,1342 @@
+================================================================================
+CREATE TABLE with multi-word types, arrays, and constraints
+:language(postgresql)
+================================================================================
+
+CREATE TABLE accounts (id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 100 INCREMENT BY 1), code CHARACTER VARYING(32) NOT NULL, ratio DOUBLE PRECISION DEFAULT 1.0 NOT NULL, created_at TIMESTAMP(6) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, span INTERVAL DAY TO SECOND(3), flags BIT VARYING(16), tags TEXT[4][], email TEXT CONSTRAINT uq_email UNIQUE NULLS NOT DISTINCT, parent_id BIGINT REFERENCES accounts (id) MATCH SIMPLE ON DELETE SET NULL (parent_id) DEFERRABLE INITIALLY DEFERRED NOT ENFORCED, score INT GENERATED ALWAYS AS (id * 2) STORED, vscore INT GENERATED ALWAYS AS (id + 1) VIRTUAL, CHECK (ratio >= 0) NO INHERIT);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name)
+      (generated_identity_constraint
+        (numeric_literal)
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal))
+      (not_null_constraint))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (numeric_literal))
+      (not_null_constraint))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal))
+      (default_constraint
+        (current_value)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier))
+      (constraint_name
+        (identifier))
+      (unique_constraint))
+    (column_definition
+      (identifier)
+      (type_name)
+      (foreign_key_clause
+        (qualified_name
+          (identifier))
+        (identifier)
+        (foreign_key_match)
+        (foreign_key_action
+          (column_list
+            (identifier)))))
+    (column_definition
+      (identifier)
+      (type_name)
+      (generated_column_constraint
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (type_name)
+      (generated_column_constraint
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))))
+    (check_constraint
+      (binary_expression
+        (column_reference
+          (identifier))
+        (numeric_literal)))))
+
+================================================================================
+Partitioned tables, PARTITION OF, INHERITS, and LIKE
+:language(postgresql)
+================================================================================
+
+CREATE TABLE events (id BIGINT, created_at DATE, payload JSONB, LIKE event_template INCLUDING DEFAULTS EXCLUDING INDEXES) PARTITION BY RANGE (created_at); CREATE TABLE events_2026 PARTITION OF events (PRIMARY KEY (id, created_at)) FOR VALUES FROM ('2026-01-01') TO ('2027-01-01') PARTITION BY HASH (id); CREATE TABLE events_default PARTITION OF events DEFAULT; CREATE TABLE audit_events (extra TEXT) INHERITS (events);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (table_like_clause
+      (qualified_name
+        (identifier)))
+    (partition_by_spec
+      (index_element
+        (identifier))))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (primary_key_constraint
+      (identifier)
+      (identifier))
+    (partition_bound_spec
+      (string_literal)
+      (string_literal))
+    (partition_by_spec
+      (index_element
+        (identifier))))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (partition_bound_spec))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (qualified_name
+      (identifier))))
+
+================================================================================
+EXCLUDE USING and PostgreSQL 18 WITHOUT OVERLAPS and PERIOD constraints
+:language(postgresql)
+================================================================================
+
+CREATE TABLE bookings (room_id INT, valid_at DATERANGE, guest TEXT, PRIMARY KEY (room_id, valid_at WITHOUT OVERLAPS), EXCLUDE USING gist (room_id WITH =, valid_at WITH &&) INCLUDE (guest) WHERE (guest IS NOT NULL)); CREATE TABLE booking_notes (room_id INT, valid_at DATERANGE, FOREIGN KEY (room_id, PERIOD valid_at) REFERENCES bookings (room_id, PERIOD valid_at));
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (primary_key_constraint
+      (identifier)
+      (identifier))
+    (exclude_constraint
+      (identifier)
+      (index_element
+        (identifier))
+      (index_element
+        (identifier))
+      (custom_operator)
+      (column_list
+        (identifier))
+      (is_expression
+        (column_reference
+          (identifier))
+        (null))))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (foreign_key_constraint
+      (identifier)
+      (identifier)
+      (foreign_key_clause
+        (qualified_name
+          (identifier))
+        (identifier)
+        (identifier)))))
+
+================================================================================
+CREATE UNLOGGED and TEMP TABLE AS SELECT
+:language(postgresql)
+================================================================================
+
+CREATE TEMP TABLE scratch ON COMMIT DELETE ROWS AS SELECT 1 AS id WITH NO DATA; CREATE UNLOGGED TABLE cache (k TEXT PRIMARY KEY, v BYTEA) WITH (fillfactor = 80, autovacuum_enabled = false) TABLESPACE pg_default;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)
+          (identifier)))))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier))
+      (primary_key_constraint))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (storage_parameters
+      (identifier)
+      (numeric_literal)
+      (identifier)
+      (boolean_literal))
+    (identifier)))
+
+================================================================================
+Multi-action ALTER TABLE and partition management
+:language(postgresql)
+================================================================================
+
+ALTER TABLE IF EXISTS ONLY accounts ADD COLUMN IF NOT EXISTS note TEXT, DROP COLUMN IF EXISTS legacy CASCADE, ALTER COLUMN code SET DATA TYPE TEXT COLLATE "C" USING trim(code), ALTER COLUMN ratio SET (n_distinct = -0.5), ALTER COLUMN ratio DROP NOT NULL, ADD CONSTRAINT nn_code NOT NULL code NOT VALID, VALIDATE CONSTRAINT nn_code, ENABLE ALWAYS TRIGGER audit_trg, FORCE ROW LEVEL SECURITY, REPLICA IDENTITY FULL, OWNER TO CURRENT_USER; ALTER TABLE events ATTACH PARTITION events_p1 FOR VALUES WITH (MODULUS 4, REMAINDER 0); ALTER TABLE events DETACH PARTITION events_p1 CONCURRENTLY;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_table_statement
+    (if_exists)
+    (qualified_name
+      (identifier))
+    (if_not_exists)
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)))
+    (if_exists)
+    (identifier)
+    (identifier)
+    (type_name
+      (identifier))
+    (collate_clause
+      (qualified_name
+        (quoted_identifier)))
+    (trim_expression
+      (column_reference
+        (identifier)))
+    (identifier)
+    (identifier)
+    (unary_expression
+      (numeric_literal))
+    (identifier)
+    (constraint_name
+      (identifier))
+    (not_null_constraint
+      (identifier))
+    (identifier)
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (partition_bound_spec
+      (numeric_literal)
+      (numeric_literal)))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))))
+
+================================================================================
+CREATE and ALTER INDEX
+:language(postgresql)
+================================================================================
+
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_accounts_lower_email ON ONLY accounts USING btree (lower(email) COLLATE "C" text_pattern_ops ASC NULLS LAST) INCLUDE (id) NULLS NOT DISTINCT WITH (deduplicate_items = on) TABLESPACE pg_default WHERE email IS NOT NULL; ALTER INDEX IF EXISTS idx_accounts_lower_email SET (fastupdate = off);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_index_statement
+    (if_not_exists)
+    (identifier)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (index_element
+      (function_call
+        (identifier)
+        (function_argument
+          (column_reference
+            (identifier))))
+      (collate_clause
+        (qualified_name
+          (quoted_identifier)))
+      (qualified_name
+        (identifier)))
+    (column_list
+      (identifier))
+    (storage_parameters
+      (identifier))
+    (identifier)
+    (where_clause
+      (is_expression
+        (column_reference
+          (identifier))
+        (null))))
+  (alter_index_statement
+    (if_exists)
+    (qualified_name
+      (identifier))
+    (identifier)))
+
+================================================================================
+CREATE and ALTER SEQUENCE
+:language(postgresql)
+================================================================================
+
+CREATE UNLOGGED SEQUENCE IF NOT EXISTS order_seq AS BIGINT INCREMENT BY 5 MINVALUE 1 NO MAXVALUE START WITH 10 CACHE 20 CYCLE OWNED BY orders.id; ALTER SEQUENCE IF EXISTS order_seq RESTART WITH 100 NO CYCLE;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_sequence_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (type_name)
+    (numeric_literal)
+    (numeric_literal)
+    (numeric_literal)
+    (numeric_literal)
+    (column_reference
+      (identifier)
+      (identifier)))
+  (alter_sequence_statement
+    (if_exists)
+    (qualified_name
+      (identifier))
+    (numeric_literal)))
+
+================================================================================
+Views and materialized views
+:language(postgresql)
+================================================================================
+
+CREATE OR REPLACE TEMP VIEW active_users (id, name) WITH (security_barrier = true) AS SELECT id, name FROM users WHERE active WITH LOCAL CHECK OPTION; CREATE MATERIALIZED VIEW user_totals AS SELECT user_id, count(*) FROM orders GROUP BY user_id WITH NO DATA; REFRESH MATERIALIZED VIEW CONCURRENTLY user_totals WITH DATA; ALTER MATERIALIZED VIEW IF EXISTS user_totals CLUSTER ON user_totals_idx;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_view_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (identifier))
+    (storage_parameters
+      (identifier)
+      (boolean_literal))
+    (select_statement
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (result_column
+          (column_reference
+            (identifier)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))
+        (where_clause
+          (column_reference
+            (identifier))))))
+  (create_view_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (result_column
+          (function_call
+            (identifier)
+            (all_columns)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))
+        (group_by_clause
+          (column_reference
+            (identifier))))))
+  (refresh_materialized_view_statement
+    (qualified_name
+      (identifier)))
+  (alter_view_statement
+    (if_exists)
+    (qualified_name
+      (identifier))
+    (identifier)))
+
+================================================================================
+CREATE SCHEMA, TYPE, DOMAIN, and EXTENSION
+:language(postgresql)
+================================================================================
+
+CREATE SCHEMA IF NOT EXISTS app_empty AUTHORIZATION CURRENT_USER; CREATE SCHEMA app AUTHORIZATION CURRENT_USER CREATE TABLE items (id INT PRIMARY KEY); CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy'); CREATE TYPE pair AS (k TEXT, v INT); CREATE TYPE floatrange AS RANGE (subtype = float8); ALTER TYPE mood ADD VALUE IF NOT EXISTS 'ecstatic' AFTER 'happy'; CREATE DOMAIN posint AS INT DEFAULT 1 CONSTRAINT pos CHECK (VALUE > 0); ALTER DOMAIN posint VALIDATE CONSTRAINT pos; CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public VERSION '1.3' CASCADE;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_schema_statement
+    (if_not_exists)
+    (identifier))
+  (create_schema_statement
+    (identifier)
+    (create_table_statement
+      (qualified_name
+        (identifier))
+      (column_definition
+        (identifier)
+        (type_name)
+        (primary_key_constraint))))
+  (create_type_statement
+    (qualified_name
+      (identifier))
+    (string_literal)
+    (string_literal)
+    (string_literal))
+  (create_type_statement
+    (qualified_name
+      (identifier))
+    (table_func_column
+      (identifier)
+      (type_name
+        (identifier)))
+    (table_func_column
+      (identifier)
+      (type_name)))
+  (create_type_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier)))
+  (alter_type_statement
+    (qualified_name
+      (identifier))
+    (if_not_exists)
+    (string_literal)
+    (string_literal))
+  (create_domain_statement
+    (qualified_name
+      (identifier))
+    (type_name)
+    (default_constraint
+      (numeric_literal))
+    (constraint_name
+      (identifier))
+    (check_constraint
+      (binary_expression
+        (column_reference
+          (identifier))
+        (numeric_literal))))
+  (alter_domain_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (create_extension_statement
+    (if_not_exists)
+    (identifier)
+    (identifier)
+    (string_literal)))
+
+================================================================================
+CREATE FUNCTION and PROCEDURE with dollar-quoted and SQL-standard bodies
+:language(postgresql)
+================================================================================
+
+CREATE OR REPLACE FUNCTION add_tax(amount NUMERIC, rate NUMERIC DEFAULT 0.1) RETURNS NUMERIC LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE SECURITY DEFINER SET search_path = pg_catalog, public AS $$ BEGIN RETURN amount * (1 + rate); END; $$; CREATE FUNCTION double_it(x INT) RETURNS INT LANGUAGE sql RETURN x * 2; CREATE PROCEDURE log_event(IN msg TEXT) LANGUAGE sql BEGIN ATOMIC INSERT INTO logs (message) VALUES (msg); END; ALTER FUNCTION add_tax(NUMERIC, NUMERIC) OWNER TO CURRENT_USER;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (identifier)
+      (type_name))
+    (function_parameter
+      (identifier)
+      (type_name)
+      (numeric_literal))
+    (type_name)
+    (identifier)
+    (set_statement
+      (qualified_name
+        (identifier))
+      (identifier)
+      (identifier))
+    (string_literal))
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (identifier)
+      (type_name))
+    (type_name)
+    (identifier)
+    (sql_function_body
+      (binary_expression
+        (column_reference
+          (identifier))
+        (numeric_literal))))
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (identifier)
+      (type_name
+        (identifier)))
+    (identifier)
+    (sql_function_body
+      (insert_statement
+        (qualified_name
+          (identifier))
+        (column_list
+          (identifier))
+        (select_statement
+          (values_clause
+            (row
+              (column_reference
+                (identifier))))))))
+  (alter_routine_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (type_name))
+    (function_parameter
+      (type_name))))
+
+================================================================================
+CREATE TRIGGER, EVENT TRIGGER, RULE, and POLICY
+:language(postgresql)
+================================================================================
+
+CREATE OR REPLACE TRIGGER trg_users_upd AFTER UPDATE OF email, name OR INSERT ON users REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows FOR EACH STATEMENT WHEN (true) EXECUTE FUNCTION notify_users_change(); CREATE EVENT TRIGGER evt_ddl ON ddl_command_end WHEN TAG IN ('CREATE TABLE', 'ALTER TABLE') EXECUTE FUNCTION audit_ddl(); CREATE OR REPLACE RULE r_ignore AS ON DELETE TO audit_logs DO INSTEAD NOTHING; CREATE POLICY user_isolation ON accounts AS RESTRICTIVE FOR ALL TO PUBLIC USING (owner_id = current_setting('app.user_id')::bigint) WITH CHECK (owner_id > 0);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_trigger_statement
+    (identifier)
+    (identifier)
+    (identifier)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (identifier)
+    (boolean_literal)
+    (qualified_name
+      (identifier)))
+  (create_event_trigger_statement
+    (identifier)
+    (identifier)
+    (identifier)
+    (string_literal)
+    (string_literal)
+    (qualified_name
+      (identifier)))
+  (create_rule_statement
+    (identifier)
+    (qualified_name
+      (identifier)))
+  (create_policy_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (binary_expression
+      (column_reference
+        (identifier))
+      (cast_expression
+        (function_call
+          (identifier)
+          (function_argument
+            (string_literal)))
+        (type_name)))
+    (binary_expression
+      (column_reference
+        (identifier))
+      (numeric_literal))))
+
+================================================================================
+PUBLICATION, SUBSCRIPTION, and foreign data wrappers
+:language(postgresql)
+================================================================================
+
+CREATE PUBLICATION pub_main FOR TABLE ONLY accounts (id, code) WHERE (id > 0), TABLES IN SCHEMA public WITH (publish = 'insert, update'); CREATE SUBSCRIPTION sub_main CONNECTION 'host=db2 dbname=app' PUBLICATION pub_main WITH (copy_data = false); CREATE FOREIGN DATA WRAPPER fdw_pg HANDLER postgres_fdw_handler OPTIONS (debug 'true'); CREATE SERVER IF NOT EXISTS srv_remote FOREIGN DATA WRAPPER fdw_pg OPTIONS (host 'db2', port '5432'); CREATE FOREIGN TABLE IF NOT EXISTS remote_users (id INT, name TEXT OPTIONS (column_name 'full_name')) SERVER srv_remote OPTIONS (table_name 'users'); CREATE USER MAPPING IF NOT EXISTS FOR CURRENT_USER SERVER srv_remote OPTIONS (user 'bob'); IMPORT FOREIGN SCHEMA public LIMIT TO (users, orders) FROM SERVER srv_remote INTO local_remote;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_publication_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (identifier))
+    (binary_expression
+      (column_reference
+        (identifier))
+      (numeric_literal))
+    (identifier)
+    (storage_parameters
+      (identifier)
+      (string_literal)))
+  (create_subscription_statement
+    (identifier)
+    (string_literal)
+    (identifier)
+    (storage_parameters
+      (identifier)
+      (boolean_literal)))
+  (create_foreign_data_wrapper_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (string_literal))
+  (create_server_statement
+    (if_not_exists)
+    (identifier)
+    (identifier)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal))
+  (create_foreign_table_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier))
+      (identifier)
+      (string_literal))
+    (identifier)
+    (identifier)
+    (string_literal))
+  (create_user_mapping_statement
+    (if_not_exists)
+    (identifier)
+    (identifier)
+    (string_literal))
+  (import_foreign_schema_statement
+    (identifier)
+    (identifier)
+    (identifier)
+    (identifier)
+    (identifier)))
+
+================================================================================
+AGGREGATE, OPERATOR, CAST, COLLATION, TEXT SEARCH, STATISTICS, and DROP
+:language(postgresql)
+================================================================================
+
+CREATE OR REPLACE AGGREGATE array_accum (anycompatible) (sfunc = array_append, stype = anycompatiblearray, initcond = '{}'); CREATE OPERATOR === (leftarg = int4, rightarg = int4, function = int4eq, commutator = ===); CREATE CAST (text AS int4) WITH INOUT AS IMPLICIT; CREATE COLLATION IF NOT EXISTS french_ci (provider = icu, locale = 'fr-u-ks-level2', deterministic = false); CREATE TEXT SEARCH CONFIGURATION public.en_cfg (COPY = pg_catalog.english); ALTER TEXT SEARCH CONFIGURATION public.en_cfg ADD MAPPING FOR asciiword WITH english_stem; CREATE STATISTICS IF NOT EXISTS st_acc (dependencies, ndistinct) ON code, (lower(email)) FROM accounts; DROP TABLE IF EXISTS scratch, cache CASCADE; DROP INDEX CONCURRENTLY IF EXISTS idx_old; DROP FUNCTION IF EXISTS add_tax(NUMERIC, NUMERIC) RESTRICT;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_aggregate_statement
+    (qualified_name
+      (identifier))
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (string_literal))
+  (create_operator_statement
+    (custom_operator)
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (custom_operator))
+  (create_cast_statement
+    (type_name
+      (identifier))
+    (type_name
+      (identifier)))
+  (create_collation_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (string_literal)
+    (identifier)
+    (boolean_literal))
+  (create_text_search_statement
+    (qualified_name
+      (identifier)
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier)
+      (identifier)))
+  (alter_text_search_statement
+    (qualified_name
+      (identifier)
+      (identifier))
+    (identifier)
+    (qualified_name
+      (identifier)))
+  (create_statistics_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (identifier)
+    (identifier)
+    (function_call
+      (identifier)
+      (function_argument
+        (column_reference
+          (identifier))))
+    (qualified_name
+      (identifier)))
+  (drop_statement
+    (if_exists)
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (drop_statement
+    (if_exists)
+    (qualified_name
+      (identifier)))
+  (drop_statement
+    (if_exists)
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (type_name))
+    (function_parameter
+      (type_name))))
+
+================================================================================
+Routine parameter modes, %TYPE, func_name keywords, definitions, and languages
+:language(postgresql)
+================================================================================
+
+CREATE FUNCTION left(blkno OUT bigint, a IN t.c%TYPE, b INOUT int, c VARIADIC int[]) RETURNS SETOF s.t.c%TYPE LANGUAGE c AS 'a'; CREATE FUNCTION s.coalesce(int) RETURNS int LANGUAGE sql RETURN $1; CREATE OPERATOR <-> (LEFTARG = int2, RIGHTARG = int2, PROCEDURE = int2_dist, COMMUTATOR = '<->', HASHES, MERGES); ALTER OPERATOR = (ltree, ltree) SET (HASHES); CREATE AGGREGATE left(x IN int) (SFUNC = f, STYPE = int, FINALFUNC_EXTRA); CREATE OR REPLACE TRUSTED PROCEDURAL LANGUAGE plperl HANDLER h INLINE i VALIDATOR v; ALTER PROCEDURAL LANGUAGE plperl OWNER TO CURRENT_USER; ALTER LARGE OBJECT 42 OWNER TO CURRENT_USER;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (identifier)
+      (type_name))
+    (function_parameter
+      (identifier)
+      (type_name
+        (identifier)
+        (identifier)))
+    (function_parameter
+      (identifier)
+      (type_name))
+    (function_parameter
+      (identifier)
+      (type_name))
+    (type_name
+      (identifier)
+      (identifier)
+      (identifier))
+    (identifier)
+    (string_literal))
+  (create_function_statement
+    (qualified_name
+      (identifier)
+      (identifier))
+    (function_parameter
+      (type_name))
+    (type_name)
+    (identifier)
+    (sql_function_body
+      (positional_parameter)))
+  (create_operator_statement
+    (custom_operator)
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (string_literal)
+    (identifier)
+    (identifier))
+  (alter_operator_statement
+    (type_name
+      (identifier))
+    (type_name
+      (identifier))
+    (identifier))
+  (create_aggregate_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (type_name)
+    (identifier)
+    (type_name
+      (identifier))
+    (identifier)
+    (type_name)
+    (identifier))
+  (create_language_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (alter_language_statement
+    (identifier))
+  (alter_large_object_statement
+    (numeric_literal)))
+
+================================================================================
+Views, materialized views, column storage, tablespaces, publications, event triggers, and statistics
+:language(postgresql)
+================================================================================
+
+CREATE OR REPLACE TEMP RECURSIVE VIEW v_rec (n) AS SELECT 1; CREATE UNLOGGED MATERIALIZED VIEW IF NOT EXISTS mv_u USING heap WITH (fillfactor = 80) TABLESPACE pg_default AS SELECT 1 WITH NO DATA; ALTER MATERIALIZED VIEW mv_u SET (fillfactor = 70), CLUSTER ON mv_idx; ALTER TABLE ALL IN TABLESPACE ts_a OWNED BY CURRENT_USER SET TABLESPACE ts_b NOWAIT; ALTER TABLE accounts ALTER COLUMN ratio SET STATISTICS DEFAULT; CREATE TABLE col_opts (c TEXT STORAGE MAIN COMPRESSION lz4 DEFAULT 'x' COLLATE "C" NOT NULL, r INT REFERENCES accounts MATCH SIMPLE ON UPDATE NO ACTION ON DELETE CASCADE); CREATE PUBLICATION pub2 FOR TABLE a (c1) WHERE (c1 > 0), b, TABLES IN SCHEMA s1, s2; ALTER PUBLICATION pub2 ADD TABLE a, b; CREATE EVENT TRIGGER evt2 ON ddl_command_end WHEN TAG IN ('CREATE TABLE') AND TAG IN ('DROP TABLE') EXECUTE FUNCTION left(); CREATE INDEX ON accounts (cast(id AS text), current_date, collation for (code)); CREATE STATISTICS st2 ON lower(code), coalesce(code, 'a'), id FROM accounts; ALTER SERVER srv_remote VERSION '2' OPTIONS (host 'db3', SET port '5433', DROP debug);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_view_statement
+    (temporary)
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier))
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (create_view_statement
+    (if_not_exists)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (storage_parameters
+      (identifier)
+      (numeric_literal))
+    (identifier)
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (alter_view_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (numeric_literal)
+    (identifier))
+  (alter_table_statement
+    (identifier)
+    (identifier))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier))
+      (identifier)
+      (identifier)
+      (default_constraint
+        (string_literal))
+      (collate_clause
+        (qualified_name
+          (quoted_identifier)))
+      (not_null_constraint))
+    (column_definition
+      (identifier)
+      (type_name)
+      (foreign_key_clause
+        (qualified_name
+          (identifier))
+        (foreign_key_match)
+        (foreign_key_action)
+        (foreign_key_action))))
+  (create_publication_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier))
+    (binary_expression
+      (column_reference
+        (identifier))
+      (numeric_literal))
+    (qualified_name
+      (identifier))
+    (identifier)
+    (qualified_name
+      (identifier)))
+  (alter_publication_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (qualified_name
+      (identifier)))
+  (create_event_trigger_statement
+    (identifier)
+    (identifier)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (qualified_name
+      (identifier)))
+  (create_index_statement
+    (qualified_name
+      (identifier))
+    (index_element
+      (cast_expression
+        (column_reference
+          (identifier))
+        (type_name
+          (identifier))))
+    (index_element
+      (current_value))
+    (index_element
+      (collation_for_expression
+        (column_reference
+          (identifier)))))
+  (create_statistics_statement
+    (qualified_name
+      (identifier))
+    (function_call
+      (identifier)
+      (function_argument
+        (column_reference
+          (identifier))))
+    (function_call
+      (identifier)
+      (function_argument
+        (column_reference
+          (identifier)))
+      (function_argument
+        (string_literal)))
+    (identifier)
+    (qualified_name
+      (identifier)))
+  (alter_server_statement
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier)))
+
+================================================================================
+Unprefixed ADD/SET/DROP option names, ON DELETE SET NULL columns, and ROLE options
+:language(postgresql)
+================================================================================
+
+ALTER SERVER srv OPTIONS (ADD 'a', SET 'b', DROP 'c', ADD host 'd', DROP port); CREATE TABLE posts (tenant INT, author INT, FOREIGN KEY (tenant, author) REFERENCES users (tenant, author) ON DELETE SET NULL (author) ON UPDATE SET DEFAULT); CREATE ROLE app_role WITH CREATEDB NOLOGIN PASSWORD 'secret' CONNECTION LIMIT 5 IN ROLE readers; ALTER ROLE app_role WITH BYPASSRLS VALID UNTIL '2030-01-01';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (alter_server_statement
+    (identifier)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier)
+    (string_literal)
+    (identifier))
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name))
+    (column_definition
+      (identifier)
+      (type_name))
+    (foreign_key_constraint
+      (identifier)
+      (identifier)
+      (foreign_key_clause
+        (qualified_name
+          (identifier))
+        (identifier)
+        (identifier)
+        (foreign_key_action
+          (column_list
+            (identifier)))
+        (foreign_key_action))))
+  (create_role_statement
+    (identifier)
+    (string_literal)
+    (numeric_literal)
+    (identifier))
+  (alter_role_statement
+    (identifier)
+    (string_literal)))
+
+
+================================================================================
+Subquery indirection and prefix custom operators in DEFAULT, FDW options, ALTER STATISTICS IF EXISTS, and scoped RESET targets
+:language(postgresql)
+================================================================================
+
+CREATE TABLE defaults_test (a INT DEFAULT (SELECT arr FROM u)[1], b INT DEFAULT (SELECT r FROM u).f, c INT DEFAULT ~ 1 & 3, d INT DEFAULT OPERATOR(pg_catalog.~) 1 & 3); ALTER FOREIGN DATA WRAPPER fdw_pg NO HANDLER VALIDATOR fdw_val OPTIONS (ADD debug 'false'); ALTER FOREIGN DATA WRAPPER fdw_pg OPTIONS (SET debug 'true'); ALTER STATISTICS IF EXISTS st_acc SET STATISTICS 100; ALTER STATISTICS st_acc SET STATISTICS DEFAULT; ALTER ROLE app_role RESET TIME ZONE; ALTER USER app_role RESET TRANSACTION ISOLATION LEVEL; ALTER DATABASE app_db RESET SESSION AUTHORIZATION; CREATE FUNCTION f_reset() RETURNS INT LANGUAGE sql RESET TIME ZONE RETURN 1; ALTER FUNCTION f_reset() RESET TRANSACTION ISOLATION LEVEL;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (subscript_expression
+          (subquery
+            (select_statement
+              (select_core
+                (result_column
+                  (column_reference
+                    (identifier)))
+                (from_clause
+                  (table
+                    (qualified_name
+                      (identifier)))))))
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (field_selection
+          (subquery
+            (select_statement
+              (select_core
+                (result_column
+                  (column_reference
+                    (identifier)))
+                (from_clause
+                  (table
+                    (qualified_name
+                      (identifier)))))))
+          (identifier))))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (binary_expression
+          (unary_expression
+            (custom_operator)
+            (numeric_literal))
+          (custom_operator)
+          (numeric_literal))))
+    (column_definition
+      (identifier)
+      (type_name)
+      (default_constraint
+        (binary_expression
+          (unary_expression
+            (operator_invocation
+              (identifier)
+              (custom_operator))
+            (numeric_literal))
+          (custom_operator)
+          (numeric_literal)))))
+  (alter_foreign_data_wrapper_statement
+    (identifier)
+    (qualified_name
+      (identifier))
+    (identifier)
+    (string_literal))
+  (alter_foreign_data_wrapper_statement
+    (identifier)
+    (identifier)
+    (string_literal))
+  (alter_statistics_statement
+    (if_exists)
+    (qualified_name
+      (identifier))
+    (numeric_literal))
+  (alter_statistics_statement
+    (qualified_name
+      (identifier)))
+  (alter_role_statement
+    (identifier))
+  (alter_role_statement
+    (identifier))
+  (alter_database_statement
+    (identifier))
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (type_name)
+    (identifier)
+    (sql_function_body
+      (numeric_literal)))
+  (alter_routine_statement
+    (qualified_name
+      (identifier))))
+
+
+================================================================================
+Quoted and Unicode-escaped role options and 32-bit role integer limits
+:language(postgresql)
+================================================================================
+
+CREATE ROLE r1 "login" "createdb" U&"\006eologin" U&"!006eo!0069nherit" UESCAPE '!' SYSID 2147483647 CONNECTION LIMIT -1;
+ALTER ROLE r1 WITH "bypassrls" "noreplication" CONNECTION LIMIT +100;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_role_statement
+    (identifier)
+    (quoted_identifier)
+    (quoted_identifier)
+    (quoted_identifier)
+    (quoted_identifier)
+    (numeric_literal)
+    (unary_expression
+      (numeric_literal)))
+  (alter_role_statement
+    (identifier)
+    (quoted_identifier)
+    (quoted_identifier)
+    (unary_expression
+      (numeric_literal))))
+
+================================================================================
+Signed 64-bit sequence and identity options including INT64_MIN and radix forms
+:language(postgresql)
+================================================================================
+
+CREATE SEQUENCE s_bounds MINVALUE -9223372036854775808 MAXVALUE +9223372036854775807 START WITH -/*c*/0x8000_0000_0000_0000 INCREMENT BY -1 CACHE 1_000;
+ALTER TABLE t ALTER COLUMN id RESTART WITH -5;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_sequence_statement
+    (qualified_name
+      (identifier))
+    (unary_expression
+      (numeric_literal))
+    (unary_expression
+      (numeric_literal))
+    (unary_expression
+      (comment)
+      (numeric_literal))
+    (unary_expression
+      (numeric_literal))
+    (numeric_literal))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (unary_expression
+      (numeric_literal))))
+
+
+
+================================================================================
+Stage10 PostgreSQL BIT typmods, ALTER FUNCTION common options, SERVER VERSION NULL, and INTERVAL precision
+:language(postgresql)
+================================================================================
+
+CREATE TABLE bit_and_interval_specs (
+  b1 BIT(1),
+  b2 BIT VARYING(83886080),
+  b3 BIT('4'),
+  b4 BIT("8"),
+  b5 BIT(0x10),
+  b6 VARBIT(U&'12'),
+  iv INTERVAL MINUTE TO SECOND(4)
+);
+SELECT INTERVAL(2) '1.23', INTERVAL '1.23' SECOND(2), INTERVAL '1 02:03:04.5' DAY TO SECOND(3);
+ALTER FUNCTION add_tax(NUMERIC, NUMERIC) IMMUTABLE PARALLEL SAFE COST 10 ROWS 50 LEAKPROOF SECURITY INVOKER SET search_path TO public;
+CREATE SERVER srv_null TYPE 'pg' VERSION NULL FOREIGN DATA WRAPPER fdw_pg OPTIONS (host 'db');
+ALTER SERVER srv_null VERSION NULL OPTIONS (SET host 'db2');
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (identifier)
+        (string_literal)))
+    (column_definition
+      (identifier)
+      (type_name
+        (numeric_literal))))
+  (select_statement
+    (select_core
+      (result_column
+        (typed_literal
+          (type_name
+            (numeric_literal))
+          (string_literal)))
+      (result_column
+        (typed_literal
+          (type_name)
+          (string_literal)
+          (numeric_literal)))
+      (result_column
+        (typed_literal
+          (type_name)
+          (string_literal)
+          (numeric_literal)))))
+  (alter_routine_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (type_name))
+    (function_parameter
+      (type_name))
+    (numeric_literal)
+    (numeric_literal)
+    (set_statement
+      (qualified_name
+        (identifier))
+      (identifier)))
+  (create_server_statement
+    (identifier)
+    (string_literal)
+    (null)
+    (identifier)
+    (identifier)
+    (string_literal))
+  (alter_server_statement
+    (identifier)
+    (null)
+    (identifier)
+    (string_literal)))

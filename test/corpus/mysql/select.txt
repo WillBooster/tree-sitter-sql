@@ -1,0 +1,793 @@
+================================================================================
+SELECT modifiers, aliases, and INTO clauses
+:language(mysql)
+================================================================================
+
+SELECT DISTINCT HIGH_PRIORITY SQL_CALC_FOUND_ROWS t.a AS col_a, t.b 'Col B', t.*
+INTO @va, @vb
+FROM db.t AS t
+WHERE t.a > 0;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier))
+        (string_literal))
+      (table_columns
+        (identifier))
+      (into_clause
+        (user_variable)
+        (user_variable))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)
+            (identifier))
+          (identifier)))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier)
+            (identifier))
+          (numeric_literal))))))
+
+================================================================================
+SELECT INTO OUTFILE and DUMPFILE
+:language(mysql)
+================================================================================
+
+SELECT a, b FROM t INTO OUTFILE '/tmp/out.csv' CHARACTER SET utf8mb4 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' ESCAPED BY '\\' LINES TERMINATED BY '\n';
+SELECT blob_col FROM t LIMIT 1 INTO DUMPFILE '/tmp/blob.bin';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (into_clause
+      (string_literal)
+      (identifier)
+      (string_literal)
+      (string_literal)
+      (string_literal)
+      (string_literal)))
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))
+    (limit_clause
+      (numeric_literal))
+    (into_clause
+      (string_literal))))
+
+================================================================================
+Joins, partitions, index hints, and LATERAL derived tables
+:language(mysql)
+================================================================================
+
+SELECT *
+FROM t1 PARTITION (p0, p1) AS a USE INDEX FOR JOIN (idx_a) IGNORE KEY FOR ORDER BY (idx_b)
+INNER JOIN t2 b ON a.id = b.id
+LEFT OUTER JOIN t3 c USING (id)
+RIGHT JOIN t4 ON c.id = t4.id
+STRAIGHT_JOIN t5 ON t4.id = t5.id
+NATURAL LEFT OUTER JOIN t6
+CROSS JOIN LATERAL (SELECT x FROM t7 WHERE t7.id = a.id) AS dt (x);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (partition_names_clause
+            (identifier)
+            (identifier))
+          (identifier)
+          (index_hint
+            (identifier))
+          (index_hint
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (join_constraint
+          (column_list
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (table
+          (qualified_name
+            (identifier)))
+        (binary_expression
+          (column_reference
+            (identifier)
+            (identifier))
+          (column_reference
+            (identifier)
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (subquery_table
+          (select_statement
+            (select_core
+              (result_column
+                (column_reference
+                  (identifier)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))
+              (where_clause
+                (binary_expression
+                  (column_reference
+                    (identifier)
+                    (identifier))
+                  (column_reference
+                    (identifier)
+                    (identifier))))))
+          (identifier)
+          (column_list
+            (identifier)))))))
+
+================================================================================
+JSON_TABLE in FROM clause
+:language(mysql)
+================================================================================
+
+SELECT jt.*
+FROM JSON_TABLE(
+  doc,
+  '$.items[*]' COLUMNS (
+    rowid FOR ORDINALITY,
+    id INT PATH '$.id' DEFAULT '0' ON EMPTY NULL ON ERROR,
+    active INT EXISTS PATH '$.active',
+    NESTED PATH '$.tags[*]' COLUMNS (tag VARCHAR(32) PATH '$')
+  )
+) AS jt;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (table_columns
+        (identifier))
+      (from_clause
+        (json_table
+          (column_reference
+            (identifier))
+          (string_literal)
+          (json_table_column
+            (identifier))
+          (json_table_column
+            (identifier)
+            (data_type)
+            (string_literal)
+            (string_literal))
+          (json_table_column
+            (identifier)
+            (data_type)
+            (string_literal))
+          (json_table_column
+            (string_literal)
+            (json_table_column
+              (identifier)
+              (data_type
+                (numeric_literal))
+              (string_literal)))
+          (identifier))))))
+
+================================================================================
+GROUP BY and ORDER BY WITH ROLLUP, WINDOW, LIMIT, and locking reads
+:language(mysql)
+================================================================================
+
+SELECT dept, SUM(salary) AS total, GROUPING(dept)
+FROM emp
+GROUP BY dept WITH ROLLUP
+HAVING total > 1000
+WINDOW w AS (PARTITION BY dept ORDER BY salary DESC ROWS BETWEEN UNBOUNDED PRECEDING AND 1 FOLLOWING)
+ORDER BY dept ASC
+LIMIT 10, 20
+FOR UPDATE OF emp NOWAIT
+FOR SHARE OF emp SKIP LOCKED;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier)))
+        (identifier))
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (group_by_clause
+        (column_reference
+          (identifier)))
+      (having_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))
+      (window_clause
+        (named_window
+          (identifier)
+          (window_definition
+            (partition_by_clause
+              (column_reference
+                (identifier)))
+            (order_by_clause
+              (ordering_term
+                (column_reference
+                  (identifier))))
+            (frame_clause
+              (frame_bound)
+              (frame_bound
+                (numeric_literal)))))))
+    (order_by_clause
+      (ordering_term
+        (column_reference
+          (identifier))))
+    (limit_clause
+      (numeric_literal)
+      (numeric_literal))
+    (locking_clause
+      (qualified_name
+        (identifier)))
+    (locking_clause
+      (qualified_name
+        (identifier)))))
+
+================================================================================
+WITH RECURSIVE CTE, compound queries, VALUES, and TABLE statements
+:language(mysql)
+================================================================================
+
+WITH RECURSIVE seq (n) AS (
+  SELECT 1
+  UNION ALL
+  SELECT n + 1 FROM seq WHERE n < 5
+)
+(SELECT n FROM seq ORDER BY n DESC LIMIT 3 OFFSET 1)
+INTERSECT DISTINCT
+TABLE other_seq
+EXCEPT ALL
+VALUES ROW(1), ROW(2)
+ORDER BY 1
+LIMIT 5
+LOCK IN SHARE MODE;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (with_clause
+      (common_table_expression
+        (identifier)
+        (column_list
+          (identifier))
+        (select_statement
+          (compound_query
+            (select_core
+              (result_column
+                (numeric_literal)))
+            (compound_operator)
+            (select_core
+              (result_column
+                (binary_expression
+                  (column_reference
+                    (identifier))
+                  (numeric_literal)))
+              (from_clause
+                (table
+                  (qualified_name
+                    (identifier))))
+              (where_clause
+                (binary_expression
+                  (column_reference
+                    (identifier))
+                  (numeric_literal))))))))
+    (compound_query
+      (compound_query
+        (parenthesized_query
+          (select_core
+            (result_column
+              (column_reference
+                (identifier)))
+            (from_clause
+              (table
+                (qualified_name
+                  (identifier)))))
+          (order_by_clause
+            (ordering_term
+              (column_reference
+                (identifier))))
+          (limit_clause
+            (numeric_literal)
+            (numeric_literal)))
+        (compound_operator)
+        (table_value_statement
+          (qualified_name
+            (identifier))))
+      (compound_operator)
+      (values_statement
+        (row_constructor
+          (numeric_literal))
+        (row_constructor
+          (numeric_literal))))
+    (order_by_clause
+      (ordering_term
+        (numeric_literal)))
+    (limit_clause
+      (numeric_literal))
+    (locking_clause)))
+
+================================================================================
+SELECT FROM DUAL and trailing INTO clause
+:language(mysql)
+================================================================================
+
+SELECT 1 + 1 FROM DUAL INTO @sum;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (numeric_literal)
+          (numeric_literal)))
+      (from_clause))
+    (into_clause
+      (user_variable))))
+
+================================================================================
+Parenthesized join table and comma cross join
+:language(mysql)
+================================================================================
+
+SELECT * FROM t1, (t2 JOIN t3 ON t2.id = t3.id) LEFT JOIN t4 ON t3.id = t4.id;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (join_table
+          (table
+            (qualified_name
+              (identifier)))
+          (table
+            (qualified_name
+              (identifier)))
+          (join_constraint
+            (binary_expression
+              (column_reference
+                (identifier)
+                (identifier))
+              (column_reference
+                (identifier)
+                (identifier)))))
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))))))
+
+================================================================================
+Named window inheritance and RANGE frame bounds
+:language(mysql)
+================================================================================
+
+SELECT SUM(v) OVER w2
+FROM metrics
+WINDOW w1 AS (PARTITION BY grp), w2 AS (w1 ORDER BY ts RANGE UNBOUNDED PRECEDING);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (over_clause
+            (identifier))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))))
+      (window_clause
+        (named_window
+          (identifier)
+          (window_definition
+            (partition_by_clause
+              (column_reference
+                (identifier)))))
+        (named_window
+          (identifier)
+          (window_definition
+            (identifier)
+            (order_by_clause
+              (ordering_term
+                (column_reference
+                  (identifier))))
+            (frame_clause
+              (frame_bound))))))))
+
+================================================================================
+Standalone VALUES and TABLE statements
+:language(mysql)
+================================================================================
+
+VALUES ROW(1, 'a'), ROW(2, 'b');
+TABLE users;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (values_statement
+      (row_constructor
+        (numeric_literal)
+        (string_literal))
+      (row_constructor
+        (numeric_literal)
+        (string_literal))))
+  (select_statement
+    (table_value_statement
+      (qualified_name
+        (identifier)))))
+
+================================================================================
+SELECT with bare string alias after non-string expression
+:language(mysql)
+================================================================================
+
+SELECT 1 + 2 'sum_col', ('a') 'str_col', 'x' AS 'as_str_col';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (numeric_literal)
+          (numeric_literal))
+        (string_literal))
+      (result_column
+        (parenthesized_expression
+          (string_literal))
+        (string_literal))
+      (result_column
+        (string_literal)
+        (string_literal)))))
+
+================================================================================
+Comma join and INNER JOIN without ON clause
+:language(mysql)
+================================================================================
+
+SELECT * FROM a JOIN b CROSS JOIN c INNER JOIN d;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+INTERSECT precedence over UNION and EXCEPT, FOR UPDATE INTO, PRIMARY index hint, ODBC escape, nested joins, and FULL alias
+:language(mysql)
+================================================================================
+
+SELECT 1 UNION SELECT 2 INTERSECT SELECT 3;
+SELECT * FROM t FORCE INDEX (PRIMARY) FOR UPDATE INTO @out_var;
+SELECT * FROM a JOIN b JOIN c ON b.x = c.x ON a.x = b.x;
+SELECT * FROM ((SELECT 1) AS a JOIN b);
+SELECT * FROM { OJ a LEFT OUTER JOIN b ON a.x = b.x };
+SELECT full.id FROM t full JOIN u ON full.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (compound_query
+      (select_core
+        (result_column
+          (numeric_literal)))
+      (compound_operator)
+      (compound_query
+        (select_core
+          (result_column
+            (numeric_literal)))
+        (compound_operator)
+        (select_core
+          (result_column
+            (numeric_literal))))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (index_hint))))
+    (locking_clause)
+    (into_clause
+      (user_variable)))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier)))))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (join_table
+          (subquery_table
+            (select_statement
+              (select_core
+                (result_column
+                  (numeric_literal))))
+            (identifier))
+          (table
+            (qualified_name
+              (identifier)))))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier)))))))
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))
+        (table
+          (qualified_name
+            (identifier)))
+        (join_constraint
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))))))
+
+
+================================================================================
+Compound SELECT INTO on final block, JSON_TABLE reversed handlers, and max uint64 LIMIT
+:language(mysql)
+================================================================================
+
+SELECT 1 UNION SELECT 2 INTO @out_v;
+(SELECT 1) UNION (SELECT 1 INTO @var);
+SELECT * FROM JSON_TABLE('[1]', '$[*]' COLUMNS (x INT PATH '$' ERROR ON ERROR NULL ON EMPTY)) AS j LIMIT 18446744073709551615;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (compound_query
+      (select_core
+        (result_column
+          (numeric_literal)))
+      (compound_operator)
+      (select_core
+        (result_column
+          (numeric_literal))
+        (into_clause
+          (user_variable)))))
+  (select_statement
+    (compound_query
+      (parenthesized_query
+        (select_core
+          (result_column
+            (numeric_literal))))
+      (compound_operator)
+      (parenthesized_query
+        (select_core
+          (result_column
+            (numeric_literal))
+          (into_clause
+            (user_variable))))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (json_table
+          (string_literal)
+          (string_literal)
+          (json_table_column
+            (identifier)
+            (data_type)
+            (string_literal))
+          (identifier))))
+    (limit_clause
+      (numeric_literal))))
+
+================================================================================
+Parenthesized statement trailing INTO and JSON_TABLE charset-introduced defaults
+:language(mysql)
+================================================================================
+
+(SELECT a FROM t INTO @v);
+SELECT * FROM JSON_TABLE('[{}]', '$[*]' COLUMNS (x INT PATH '$.x' DEFAULT _utf8mb4 X'30' ON EMPTY, y INT PATH '$.y' DEFAULT _ascii 0b00110000 ON ERROR)) AS j;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (parenthesized_query
+      (select_core
+        (result_column
+          (column_reference
+            (identifier)))
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))
+      (into_clause
+        (user_variable))))
+  (select_statement
+    (select_core
+      (all_columns)
+      (from_clause
+        (json_table
+          (string_literal)
+          (string_literal)
+          (json_table_column
+            (identifier)
+            (data_type)
+            (string_literal)
+            (hex_literal
+              (charset_introducer)))
+          (json_table_column
+            (identifier)
+            (data_type)
+            (string_literal)
+            (bit_literal
+              (charset_introducer)))
+          (identifier))))))

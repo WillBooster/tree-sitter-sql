@@ -2,8 +2,8 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export function generationInputMtime(root: string): number {
-  const corpus = path.join(root, 'test/corpus');
+export function generationInputMtime(root: string, dialect: string): number {
+  const corpus = path.join(root, 'test/corpus', dialect);
   const examples = execFileSync('git', ['ls-files', '-z', '--', 'examples'], {
     cwd: root,
     encoding: 'utf8',

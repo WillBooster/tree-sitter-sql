@@ -1,0 +1,393 @@
+================================================================================
+INSERT with OVERRIDING and DEFAULT VALUES
+:language(postgresql)
+================================================================================
+
+INSERT INTO items AS i (id, name) OVERRIDING SYSTEM VALUE VALUES (1, 'widget'), (2, DEFAULT); INSERT INTO items DEFAULT VALUES RETURNING *;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (column_list
+      (identifier)
+      (identifier))
+    (overriding_clause)
+    (select_statement
+      (values_clause
+        (row
+          (numeric_literal)
+          (string_literal))
+        (row
+          (numeric_literal)))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (returning_clause
+      (all_columns))))
+
+================================================================================
+INSERT ON CONFLICT DO UPDATE and DO NOTHING
+:language(postgresql)
+================================================================================
+
+INSERT INTO kv (k, v) VALUES ('a', 1) ON CONFLICT (lower(k) COLLATE "C") WHERE v > 0 DO UPDATE SET v = EXCLUDED.v + 1, updated_at = DEFAULT WHERE kv.v < 100 RETURNING kv.*; INSERT INTO kv VALUES ('b', 2) ON CONFLICT ON CONSTRAINT kv_pkey DO NOTHING;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (string_literal)
+          (numeric_literal))))
+    (on_conflict_clause
+      (conflict_target
+        (index_element
+          (function_call
+            (identifier)
+            (function_argument
+              (column_reference
+                (identifier))))
+          (collate_clause
+            (qualified_name
+              (quoted_identifier))))
+        (where_clause
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))))
+      (set_clause
+        (assignment
+          (identifier)
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (numeric_literal)))
+        (assignment
+          (identifier)))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier)
+            (identifier))
+          (numeric_literal))))
+    (returning_clause
+      (table_columns
+        (identifier))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (string_literal)
+          (numeric_literal))))
+    (on_conflict_clause
+      (conflict_target
+        (identifier)))))
+
+================================================================================
+UPDATE ONLY with multi-column, subscript, and FROM
+:language(postgresql)
+================================================================================
+
+UPDATE ONLY accounts AS a SET balance = a.balance + t.delta, (updated_by, updated_at) = ROW('sys', now()), tags[1] = 'active', meta.flag = true FROM transfers t WHERE a.id = t.account_id;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (set_clause
+      (assignment
+        (identifier)
+        (binary_expression
+          (column_reference
+            (identifier)
+            (identifier))
+          (column_reference
+            (identifier)
+            (identifier))))
+      (assignment
+        (identifier)
+        (identifier)
+        (string_literal)
+        (function_call
+          (identifier)))
+      (assignment
+        (identifier)
+        (numeric_literal)
+        (string_literal))
+      (assignment
+        (identifier)
+        (identifier)
+        (boolean_literal)))
+    (from_clause
+      (table
+        (qualified_name
+          (identifier))
+        (identifier)))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier))))))
+
+================================================================================
+DELETE with USING and WHERE CURRENT OF
+:language(postgresql)
+================================================================================
+
+DELETE FROM sessions * AS s USING expired_tokens e WHERE s.token_id = e.id RETURNING s.id; DELETE FROM ONLY sessions WHERE CURRENT OF session_cur;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (delete_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (table
+      (qualified_name
+        (identifier))
+      (identifier))
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier))))
+    (returning_clause
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))))
+  (delete_statement
+    (qualified_name
+      (identifier))
+    (where_clause
+      (identifier))))
+
+================================================================================
+PostgreSQL 18 RETURNING WITH OLD and NEW aliases
+:language(postgresql)
+================================================================================
+
+UPDATE products SET price = price * 1.1 RETURNING WITH (OLD AS o, NEW AS n) o.price AS old_price, n.price AS new_price;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (qualified_name
+      (identifier))
+    (set_clause
+      (assignment
+        (identifier)
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))))
+    (returning_clause
+      (identifier)
+      (identifier)
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier))
+        (identifier))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier))
+        (identifier)))))
+
+================================================================================
+MERGE with MATCHED, NOT MATCHED BY SOURCE, NOT MATCHED BY TARGET, and RETURNING
+:language(postgresql)
+================================================================================
+
+MERGE INTO inventory AS i USING incoming AS s ON i.sku = s.sku WHEN MATCHED AND s.qty = 0 THEN DELETE WHEN MATCHED THEN UPDATE SET qty = i.qty + s.qty WHEN NOT MATCHED BY TARGET AND s.qty > 0 THEN INSERT (sku, qty) OVERRIDING USER VALUE VALUES (s.sku, s.qty) WHEN NOT MATCHED BY SOURCE THEN DO NOTHING RETURNING merge_action(), i.*;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (merge_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (table
+      (qualified_name
+        (identifier))
+      (identifier))
+    (binary_expression
+      (column_reference
+        (identifier)
+        (identifier))
+      (column_reference
+        (identifier)
+        (identifier)))
+    (merge_when_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (numeric_literal)))
+    (merge_when_clause
+      (set_clause
+        (assignment
+          (identifier)
+          (binary_expression
+            (column_reference
+              (identifier)
+              (identifier))
+            (column_reference
+              (identifier)
+              (identifier))))))
+    (merge_when_clause
+      (binary_expression
+        (column_reference
+          (identifier)
+          (identifier))
+        (numeric_literal))
+      (column_list
+        (identifier)
+        (identifier))
+      (overriding_clause)
+      (row
+        (column_reference
+          (identifier)
+          (identifier))
+        (column_reference
+          (identifier)
+          (identifier))))
+    (merge_when_clause)
+    (returning_clause
+      (result_column
+        (function_call
+          (identifier)))
+      (table_columns
+        (identifier)))))
+
+================================================================================
+INSERT and MERGE target column indirection and whole-row VALUES
+:language(postgresql)
+================================================================================
+
+INSERT INTO t (a[1], b.c) VALUES (1, 2); INSERT INTO u VALUES (n.*) ON CONFLICT DO NOTHING; MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (a.b, c[1]) VALUES (1, 2);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (numeric_literal)
+      (identifier)
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (numeric_literal)
+          (numeric_literal)))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (table_columns
+            (identifier)))))
+    (on_conflict_clause))
+  (merge_statement
+    (qualified_name
+      (identifier))
+    (table
+      (qualified_name
+        (identifier)))
+    (binary_expression
+      (column_reference
+        (identifier)
+        (identifier))
+      (column_reference
+        (identifier)
+        (identifier)))
+    (merge_when_clause
+      (column_list
+        (identifier)
+        (identifier)
+        (identifier)
+        (numeric_literal))
+      (row
+        (numeric_literal)
+        (numeric_literal)))))
+
+================================================================================
+UPDATE and INSERT array slice assignment targets with omitted bounds
+:language(postgresql)
+================================================================================
+
+UPDATE t SET arr[:2] = a, arr[1:] = b, arr[:] = c, arr[1:][:2] = d; INSERT INTO t (arr[:2], arr[1:], arr[:]) VALUES (1, 2, 3);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (update_statement
+    (qualified_name
+      (identifier))
+    (set_clause
+      (assignment
+        (identifier)
+        (numeric_literal)
+        (column_reference
+          (identifier)))
+      (assignment
+        (identifier)
+        (numeric_literal)
+        (column_reference
+          (identifier)))
+      (assignment
+        (identifier)
+        (column_reference
+          (identifier)))
+      (assignment
+        (identifier)
+        (numeric_literal)
+        (numeric_literal)
+        (column_reference
+          (identifier)))))
+  (insert_statement
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (numeric_literal)
+      (identifier)
+      (numeric_literal)
+      (identifier))
+    (select_statement
+      (values_clause
+        (row
+          (numeric_literal)
+          (numeric_literal)
+          (numeric_literal))))))

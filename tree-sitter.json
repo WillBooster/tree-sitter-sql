@@ -8,12 +8,36 @@
       "path": "sqlite",
       "file-types": ["sql"],
       "injection-regex": "^sqlite$"
+    },
+    {
+      "name": "postgresql",
+      "camelcase": "PostgreSQL",
+      "scope": "source.sql.postgresql",
+      "path": "postgresql",
+      "file-types": ["sql"],
+      "injection-regex": "^(postgres|postgresql|pgsql)$"
+    },
+    {
+      "name": "mysql",
+      "camelcase": "MySQL",
+      "scope": "source.sql.mysql",
+      "path": "mysql",
+      "file-types": ["sql"],
+      "injection-regex": "^mysql$"
+    },
+    {
+      "name": "oracle",
+      "camelcase": "Oracle",
+      "scope": "source.sql.oracle",
+      "path": "oracle",
+      "file-types": ["sql"],
+      "injection-regex": "^(oracle|plsql)$"
     }
   ],
   "metadata": {
     "version": "0.0.0",
     "license": "MIT",
-    "description": "SQL grammars (SQLite) for tree-sitter",
+    "description": "SQL grammars (SQLite, PostgreSQL, MySQL, and Oracle) for tree-sitter",
     "authors": [
       {
         "name": "WillBooster Inc."

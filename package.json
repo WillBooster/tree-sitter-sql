@@ -1,9 +1,12 @@
 {
   "name": "@willbooster/tree-sitter-sql",
   "version": "0.0.0-semantically-released",
-  "description": "SQL grammars (SQLite) for tree-sitter",
+  "description": "SQL grammars (SQLite, PostgreSQL, MySQL, and Oracle) for tree-sitter",
   "keywords": [
+    "mysql",
+    "oracle",
     "parsing",
+    "postgresql",
     "sql",
     "sqlite",
     "tree-sitter"
@@ -16,6 +19,15 @@
   },
   "files": [
     "common/common.mjs",
+    "mysql/grammar.js",
+    "mysql/package.json",
+    "mysql/src/node-types.json",
+    "oracle/grammar.js",
+    "oracle/package.json",
+    "oracle/src/node-types.json",
+    "postgresql/grammar.js",
+    "postgresql/package.json",
+    "postgresql/src/node-types.json",
     "sqlite/grammar.js",
     "sqlite/package.json",
     "sqlite/src/node-types.json",

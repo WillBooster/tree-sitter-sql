@@ -28,46 +28,78 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run test/ci-setup
       - run: bun run build/ci
-      # Release builds regenerate sqlite/src/ from all script/generate inputs. Detect committed output drift here,
+      # Release builds regenerate */src/ from all script/generate inputs. Detect committed output drift here,
       # including new untracked generated files, which git diff would otherwise miss.
-      - run: git add --intent-to-add -- sqlite/src/ && git diff --exit-code -- sqlite/src/
+      - run: |
+          git add --intent-to-add -- sqlite/src/ postgresql/src/ mysql/src/ oracle/src/
+          git diff --exit-code -- sqlite/src/ postgresql/src/ mysql/src/ oracle/src/
       - run: bun run test/ci
   # Runs each parser under libFuzzer with AddressSanitizer and UndefinedBehaviorSanitizer, seeded with the
-  # input of each corpus case. A grammar change alters which tokens the scanner is asked for, so it runs on every
-  # change, not only on scanner changes. The parser runs on WillBooster/tree-sitter at the willbooster-tree-sitter
-  # version in Cargo.lock, the runtime the Rust tests use: the error recovery of upstream's runtime never ends on some
-  # inputs.
+  # input of each corpus case of that dialect. A grammar change alters which tokens the scanner is asked for, so it runs
+  # on every change affecting that dialect, not only on scanner changes. The parser runs on WillBooster/tree-sitter at
+  # the willbooster-tree-sitter version in Cargo.lock, the runtime the Rust tests use: the error recovery of upstream's
+  # runtime never ends on some inputs.
   fuzz:
     strategy:
       fail-fast: false
       matrix:
         grammar:
           - sqlite
+          - postgresql
+          - mysql
+          - oracle
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
         with:
+          fetch-depth: 2
           persist-credentials: false
+      - id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          GRAMMAR: ${{ matrix.grammar }}
+        run: |
+          if [[ $EVENT_NAME != pull_request ]]; then
+            echo "should_fuzz=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          status=0
+          git diff --quiet HEAD^1 HEAD -- \
+            common/ script/ Cargo.lock .github/workflows/robustness.yml "$GRAMMAR/" "test/corpus/$GRAMMAR/" || status=$?
+          if [[ $status -eq 0 ]]; then
+            echo "No inputs affecting $GRAMMAR changed; skipping fuzz run."
+            echo "should_fuzz=false" >> "$GITHUB_OUTPUT"
+          elif [[ $status -eq 1 ]]; then
+            echo "should_fuzz=true" >> "$GITHUB_OUTPUT"
+          else
+            exit "$status"
+          fi
       - id: runtime
+        if: steps.filter.outputs.should_fuzz == 'true'
         run: |
           version=$(script/runtime-version)
           echo "ref=v$version" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7.0.1
+        if: steps.filter.outputs.should_fuzz == 'true'
         with:
           repository: WillBooster/tree-sitter
           ref: ${{ steps.runtime.outputs.ref }}
           path: .tmp/tree-sitter
           persist-credentials: false
-      - run: |
+      - if: steps.filter.outputs.should_fuzz == 'true'
+        env:
+          GRAMMAR: ${{ matrix.grammar }}
+        run: |
           mkdir -p .tmp/fuzz-seeds
-          script/fuzz-seeds .tmp/fuzz-seeds $(find test/corpus -name '*.txt' | LC_ALL=C sort)
+          script/fuzz-seeds .tmp/fuzz-seeds $(find "test/corpus/$GRAMMAR" -name '*.txt' | LC_ALL=C sort)
           # libFuzzer runs just as well without seeds, so the seeds must show that every NUL character reached them.
-          corpus_nuls=$(find test/corpus -name '*.txt' -exec cat {} + | tr -dc '\000' | wc -c)
+          corpus_nuls=$(find "test/corpus/$GRAMMAR" -name '*.txt' -exec cat {} + | tr -dc '\000' | wc -c)
           seed_nuls=$(find .tmp/fuzz-seeds -type f -exec cat {} + | tr -dc '\000' | wc -c)
-          echo "NUL characters: $corpus_nuls in the corpus, $seed_nuls in the seeds"
+          echo "NUL characters ($GRAMMAR): $corpus_nuls in the corpus, $seed_nuls in the seeds"
           test "$corpus_nuls" -gt 0
           test "$seed_nuls" -eq "$corpus_nuls"
       - name: Build the fuzzer
+        if: steps.filter.outputs.should_fuzz == 'true'
         run: |
           jq '.. | select((.type? == "STRING" or (.type? == "ALIAS" and .named? == false)) and .value? != "") | .value' \
             "$GRAMMAR/src/grammar.json" | grep -v '\\' | iconv -c -f UTF-8 -t ASCII//TRANSLIT > .tmp/fuzz-dict
@@ -103,6 +135,7 @@ jobs:
         env:
           GRAMMAR: ${{ matrix.grammar }}
       - name: Fuzz
+        if: steps.filter.outputs.should_fuzz == 'true'
         run: |
           mkdir -p .tmp/fuzz-out .tmp/fuzz-artifacts
           .tmp/fuzzer .tmp/fuzz-out .tmp/fuzz-seeds -dict=.tmp/fuzz-dict -artifact_prefix=.tmp/fuzz-artifacts/ \

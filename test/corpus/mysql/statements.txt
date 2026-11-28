@@ -1,0 +1,824 @@
+================================================================================
+Transactions, savepoints, and table locks
+:language(mysql)
+================================================================================
+
+START TRANSACTION WITH CONSISTENT SNAPSHOT, READ WRITE;
+SAVEPOINT sp1;
+ROLLBACK WORK TO SAVEPOINT sp1;
+RELEASE SAVEPOINT sp1;
+COMMIT WORK AND NO CHAIN NO RELEASE;
+BEGIN WORK;
+ROLLBACK AND CHAIN;
+LOCK TABLES orders AS o READ LOCAL, logs WRITE;
+UNLOCK TABLES;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (start_transaction_statement)
+  (savepoint_statement
+    (identifier))
+  (rollback_statement
+    (identifier))
+  (release_savepoint_statement
+    (identifier))
+  (commit_statement)
+  (begin_statement)
+  (rollback_statement)
+  (lock_tables_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (qualified_name
+      (identifier)))
+  (unlock_tables_statement))
+
+================================================================================
+SET statements
+:language(mysql)
+================================================================================
+
+SET @a = 1, @b := 2, GLOBAL max_connections = 500, @@SESSION.sql_mode = 'TRADITIONAL', PERSIST innodb_sort_buffer_size = DEFAULT;
+SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+SET CHARACTER SET utf8mb4;
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (set_statement
+    (variable_assignment
+      (user_variable)
+      (numeric_literal))
+    (variable_assignment
+      (user_variable)
+      (numeric_literal))
+    (variable_assignment
+      (column_reference
+        (identifier))
+      (numeric_literal))
+    (variable_assignment
+      (system_variable)
+      (string_literal))
+    (variable_assignment
+      (column_reference
+        (identifier))))
+  (set_statement
+    (identifier)
+    (identifier))
+  (set_statement
+    (identifier))
+  (set_statement))
+
+================================================================================
+SHOW, DESCRIBE, and EXPLAIN statements
+:language(mysql)
+================================================================================
+
+SHOW DATABASES LIKE 'app%';
+SHOW FULL TABLES FROM app_db WHERE Table_type = 'BASE TABLE';
+SHOW FULL COLUMNS FROM orders FROM app_db LIKE 'id%';
+SHOW INDEX FROM orders;
+SHOW GLOBAL VARIABLES LIKE 'innodb%';
+SHOW SESSION STATUS;
+SHOW CREATE TABLE orders;
+SHOW CREATE USER 'admin'@'localhost';
+SHOW GRANTS FOR 'admin'@'localhost' USING 'dba';
+SHOW FULL PROCESSLIST;
+SHOW WARNINGS LIMIT 5;
+SHOW COUNT(*) ERRORS;
+SHOW ENGINE InnoDB STATUS;
+SHOW REPLICA STATUS FOR CHANNEL 'ch1';
+DESCRIBE orders id;
+EXPLAIN orders '%id%';
+DESCRIBE SELECT 1;
+EXPLAIN ANALYZE SELECT * FROM orders WHERE id = 1;
+EXPLAIN FORMAT = JSON UPDATE orders SET status = 'paid' WHERE id = 1;
+EXPLAIN FOR CONNECTION 42;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (show_statement
+    (string_literal))
+  (show_statement
+    (identifier)
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier))
+        (string_literal))))
+  (show_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (string_literal))
+  (show_statement
+    (qualified_name
+      (identifier)))
+  (show_statement
+    (string_literal))
+  (show_statement)
+  (show_statement
+    (qualified_name
+      (identifier)))
+  (show_statement
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (show_statement
+    (account_name
+      (string_literal)
+      (string_literal))
+    (account_name
+      (string_literal)))
+  (show_statement)
+  (show_statement
+    (limit_clause
+      (numeric_literal)))
+  (show_statement)
+  (show_statement
+    (identifier))
+  (show_statement
+    (string_literal))
+  (describe_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (describe_statement
+    (qualified_name
+      (identifier))
+    (string_literal))
+  (explain_statement
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (explain_statement
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))
+        (where_clause
+          (binary_expression
+            (column_reference
+              (identifier))
+            (numeric_literal))))))
+  (explain_statement
+    (update_statement
+      (table
+        (qualified_name
+          (identifier)))
+      (set_clause
+        (assignment
+          (column_reference
+            (identifier))
+          (string_literal)))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal)))))
+  (explain_statement
+    (numeric_literal)))
+
+================================================================================
+Users, roles, GRANT, and REVOKE
+:language(mysql)
+================================================================================
+
+CREATE USER IF NOT EXISTS 'app'@'%' IDENTIFIED WITH caching_sha2_password BY 'secret' REQUIRE SSL WITH MAX_CONNECTIONS_PER_HOUR 100 PASSWORD EXPIRE INTERVAL 90 DAY ACCOUNT UNLOCK;
+ALTER USER IF EXISTS 'app'@'%' ACCOUNT LOCK;
+ALTER USER 'app'@'%' IDENTIFIED WITH 'caching_sha2_password' AS 0x244124303035241C;
+RENAME USER 'app'@'%' TO 'app_v2'@'%';
+CREATE ROLE IF NOT EXISTS 'app_read', 'app_write';
+CREATE ROLE `event`, app_role;
+GRANT SELECT, INSERT (code, amount) ON app_db.orders TO 'app_v2'@'%' WITH GRANT OPTION;
+GRANT 'app_read' TO 'app_v2'@'%' WITH ADMIN OPTION;
+SET DEFAULT ROLE ALL TO 'app_v2'@'%';
+SET ROLE ALL EXCEPT 'app_write';
+SET PASSWORD FOR 'app_v2'@'%' = 'new_secret' RETAIN CURRENT PASSWORD;
+REVOKE INSERT (code, amount) ON app_db.orders FROM 'app_v2'@'%';
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'app_v2'@'%';
+DROP ROLE IF EXISTS 'app_read', 'app_write';
+DROP USER IF EXISTS 'app_v2'@'%';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_user_statement
+    (if_not_exists)
+    (user_specification
+      (account_name
+        (string_literal)
+        (string_literal))
+      (user_auth_option
+        (identifier)
+        (string_literal)))
+    (numeric_literal)
+    (numeric_literal))
+  (alter_user_statement
+    (if_exists)
+    (user_specification
+      (account_name
+        (string_literal)
+        (string_literal))))
+  (alter_user_statement
+    (user_specification
+      (account_name
+        (string_literal)
+        (string_literal))
+      (user_auth_option
+        (string_literal)
+        (hex_literal))))
+  (rename_user_statement
+    (account_name
+      (string_literal)
+      (string_literal))
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (create_role_statement
+    (if_not_exists)
+    (account_name
+      (string_literal))
+    (account_name
+      (string_literal)))
+  (create_role_statement
+    (account_name
+      (quoted_identifier))
+    (account_name
+      (identifier)))
+  (grant_statement
+    (privilege_item)
+    (privilege_item
+      (column_list
+        (identifier)
+        (identifier)))
+    (privilege_level
+      (qualified_name
+        (identifier)
+        (identifier)))
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (grant_statement
+    (account_name
+      (string_literal))
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (set_default_role_statement
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (set_role_statement
+    (account_name
+      (string_literal)))
+  (set_password_statement
+    (account_name
+      (string_literal)
+      (string_literal))
+    (string_literal))
+  (revoke_statement
+    (privilege_item
+      (column_list
+        (identifier)
+        (identifier)))
+    (privilege_level
+      (qualified_name
+        (identifier)
+        (identifier)))
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (revoke_statement
+    (privilege_item)
+    (privilege_item)
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (drop_role_statement
+    (if_exists)
+    (account_name
+      (string_literal))
+    (account_name
+      (string_literal)))
+  (drop_user_statement
+    (if_exists)
+    (account_name
+      (string_literal)
+      (string_literal))))
+
+================================================================================
+Table maintenance, FLUSH, RESET, PURGE, KILL, prepared statements, CALL, DO, HANDLER
+:language(mysql)
+================================================================================
+
+ANALYZE LOCAL TABLE orders UPDATE HISTOGRAM ON amount WITH 64 BUCKETS;
+CHECK TABLE orders FOR UPGRADE QUICK;
+CHECKSUM TABLE orders EXTENDED;
+OPTIMIZE NO_WRITE_TO_BINLOG TABLE orders;
+REPAIR LOCAL TABLE orders QUICK EXTENDED;
+FLUSH LOCAL TABLES orders WITH READ LOCK;
+FLUSH BINARY LOGS, PRIVILEGES, OPTIMIZER_COSTS;
+RESET BINARY LOGS AND GTIDS;
+RESET REPLICA ALL;
+RESET PERSIST IF EXISTS max_connections;
+PURGE BINARY LOGS TO 'mysql-bin.000010';
+KILL QUERY 123;
+PREPARE stmt1 FROM 'SELECT * FROM orders WHERE id = ?';
+EXECUTE stmt1 USING @order_id;
+DEALLOCATE PREPARE stmt1;
+CALL app_db.proc_sync(10, @done, @tag);
+DO SLEEP(0), 1 + 1;
+HANDLER orders OPEN AS h;
+HANDLER h READ idx_customer = (42) WHERE status = 'paid' LIMIT 5;
+HANDLER h READ NEXT;
+HANDLER h CLOSE;
+SHUTDOWN;
+RESTART;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (table_maintenance_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (numeric_literal))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier)))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier)))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier)))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier)))
+  (flush_statement
+    (qualified_name
+      (identifier)))
+  (flush_statement)
+  (reset_statement)
+  (reset_statement)
+  (reset_statement
+    (if_exists)
+    (identifier))
+  (purge_statement
+    (string_literal))
+  (kill_statement
+    (numeric_literal))
+  (prepare_statement
+    (identifier)
+    (string_literal))
+  (execute_statement
+    (identifier)
+    (user_variable))
+  (deallocate_statement
+    (identifier))
+  (call_statement
+    (qualified_name
+      (identifier)
+      (identifier))
+    (numeric_literal)
+    (user_variable)
+    (user_variable))
+  (do_statement
+    (function_call
+      (identifier)
+      (numeric_literal))
+    (binary_expression
+      (numeric_literal)
+      (numeric_literal)))
+  (handler_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (handler_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (numeric_literal)
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier))
+        (string_literal)))
+    (limit_clause
+      (numeric_literal)))
+  (handler_statement
+    (qualified_name
+      (identifier)))
+  (handler_statement
+    (qualified_name
+      (identifier)))
+  (shutdown_statement)
+  (restart_statement))
+
+================================================================================
+Digit-leading unquoted table and column names
+:language(mysql)
+================================================================================
+
+CREATE TABLE 123_items (1col INT NOT NULL, 2e_flag BOOLEAN DEFAULT TRUE);
+SELECT 123_items.1col, t.2e_flag FROM 123_items t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (qualified_name
+      (identifier))
+    (column_definition
+      (identifier)
+      (data_type))
+    (column_definition
+      (identifier)
+      (data_type)
+      (default_clause
+        (boolean_literal))))
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier))
+          (identifier))))))
+
+================================================================================
+ALTER DATABASE, SHOW TABLESPACE/PLUGINS/ENGINES, and KILL CONNECTION
+:language(mysql)
+================================================================================
+
+SHOW STORAGE ENGINES;
+SHOW PLUGINS;
+SHOW PRIVILEGES;
+SHOW CHARACTER SET LIKE 'utf8%';
+SHOW COLLATION WHERE Charset = 'utf8mb4';
+KILL CONNECTION 99;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (show_statement)
+  (show_statement)
+  (show_statement)
+  (show_statement
+    (string_literal))
+  (show_statement
+    (where_clause
+      (binary_expression
+        (column_reference
+          (identifier))
+        (string_literal))))
+  (kill_statement
+    (numeric_literal)))
+
+================================================================================
+MySQL 8.4 SET values, XA, replication, plugins, components, CLONE, index cache, GRANT PROXY, and standalone diagnostics
+:language(mysql)
+================================================================================
+
+SET autocommit = ON, binlog_format = ROW, time_zone = SYSTEM, sql_mode := DEFAULT;
+SET NAMES utf8mb4, @a = 1;
+XA START 'xid1';
+XA END 'xid1';
+XA PREPARE 'xid1';
+XA COMMIT 'xid1';
+CHANGE REPLICATION SOURCE TO SOURCE_HOST = 'replica-src', SOURCE_PORT = 3306;
+CHANGE REPLICATION FILTER REPLICATE_DO_DB = (app_db);
+START REPLICA;
+STOP REPLICA;
+INSTALL PLUGIN validate_password SONAME 'validate_password.so';
+UNINSTALL PLUGIN validate_password;
+INSTALL COMPONENT 'file://component_validate_password';
+UNINSTALL COMPONENT 'file://component_validate_password';
+CLONE LOCAL DATA DIRECTORY = '/var/lib/mysql-clone';
+CACHE INDEX orders INDEX (PRIMARY) IN hot_cache;
+LOAD INDEX INTO CACHE orders INDEX (PRIMARY) IGNORE LEAVES;
+IMPORT TABLE FROM 'orders.sdi';
+BINLOG 'base64payload';
+HELP 'SELECT';
+SHOW BINLOG EVENTS IN 'bin.000001' FROM 4 LIMIT 10;
+GRANT PROXY ON ''@'' TO 'root'@'localhost' WITH GRANT OPTION;
+CREATE USER u_sec IDENTIFIED BY 'secret' FAILED_LOGIN_ATTEMPTS 3 PASSWORD_LOCK_TIME UNBOUNDED COMMENT 'service user' ATTRIBUTE '{"team":"core"}';
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Standalone error';
+GET DIAGNOSTICS @err_count = NUMBER;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (set_statement
+    (variable_assignment
+      (column_reference
+        (identifier)))
+    (variable_assignment
+      (column_reference
+        (identifier)))
+    (variable_assignment
+      (column_reference
+        (identifier)))
+    (variable_assignment
+      (column_reference
+        (identifier))))
+  (set_statement
+    (identifier)
+    (variable_assignment
+      (user_variable)
+      (numeric_literal)))
+  (xa_statement
+    (string_literal))
+  (xa_statement
+    (string_literal))
+  (xa_statement
+    (string_literal))
+  (xa_statement
+    (string_literal))
+  (change_replication_source_statement
+    (identifier)
+    (string_literal)
+    (identifier)
+    (numeric_literal))
+  (change_replication_filter_statement
+    (identifier))
+  (start_replica_statement)
+  (stop_replica_statement)
+  (install_statement
+    (identifier)
+    (string_literal))
+  (uninstall_statement
+    (identifier))
+  (install_statement
+    (string_literal))
+  (uninstall_statement
+    (string_literal))
+  (clone_statement
+    (string_literal))
+  (cache_index_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (load_index_statement
+    (qualified_name
+      (identifier)))
+  (import_table_statement
+    (string_literal))
+  (binlog_statement
+    (string_literal))
+  (help_statement
+    (string_literal))
+  (show_statement
+    (string_literal)
+    (numeric_literal)
+    (limit_clause
+      (numeric_literal)))
+  (grant_statement
+    (account_name
+      (string_literal)
+      (string_literal))
+    (account_name
+      (string_literal)
+      (string_literal)))
+  (create_user_statement
+    (user_specification
+      (account_name
+        (identifier))
+      (user_auth_option
+        (string_literal)))
+    (numeric_literal)
+    (string_literal)
+    (string_literal))
+  (signal_statement
+    (string_literal)
+    (signal_information_item
+      (identifier)
+      (string_literal)))
+  (get_diagnostics_statement
+    (user_variable)))
+
+
+================================================================================
+CREATE USER TLS certificate attributes and GET DIAGNOSTICS RETURNED_SQLSTATE
+:language(mysql)
+================================================================================
+
+CREATE USER 'tls_u'@'%' REQUIRE SUBJECT 'CN=a' AND ISSUER 'CN=b' CIPHER 'TLS';
+GET DIAGNOSTICS CONDITION 1 @ret_state = RETURNED_SQLSTATE;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_user_statement
+    (user_specification
+      (account_name
+        (string_literal)
+        (string_literal)))
+    (string_literal)
+    (string_literal)
+    (string_literal))
+  (get_diagnostics_statement
+    (numeric_literal)
+    (user_variable)
+    (identifier)))
+
+
+================================================================================
+SIGNAL and RESIGNAL SQLSTATE values, distinct items, and routine condition names
+:language(mysql)
+================================================================================
+
+SIGNAL SQLSTATE VALUE '42S02' SET MESSAGE_TEXT = 'Missing table', MYSQL_ERRNO = 1146, TABLE_NAME = 'orders';
+RESIGNAL SQLSTATE 'HY000' SET CLASS_ORIGIN = 'ISO 9075', SUBCLASS_ORIGIN = 'MySQL';
+CREATE PROCEDURE p_sig()
+BEGIN
+  DECLARE bad_input CONDITION FOR SQLSTATE '45000';
+  DECLARE EXIT HANDLER FOR SQLSTATE '23000', bad_input RESIGNAL bad_input SET MESSAGE_TEXT = 'Handled';
+  SIGNAL bad_input SET MESSAGE_TEXT = 'Bad input', COLUMN_NAME = 'amount';
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (signal_statement
+    (string_literal)
+    (signal_information_item
+      (identifier)
+      (string_literal))
+    (signal_information_item
+      (identifier)
+      (numeric_literal))
+    (signal_information_item
+      (identifier)
+      (string_literal)))
+  (resignal_statement
+    (string_literal)
+    (signal_information_item
+      (identifier)
+      (string_literal))
+    (signal_information_item
+      (identifier)
+      (string_literal)))
+  (create_procedure_statement
+    (qualified_name
+      (identifier))
+    (compound_statement
+      (declare_statement
+        (identifier)
+        (string_literal))
+      (declare_statement
+        (string_literal)
+        (identifier)
+        (resignal_statement
+          (identifier)
+          (signal_information_item
+            (identifier)
+            (string_literal))))
+      (signal_statement
+        (identifier)
+        (signal_information_item
+          (identifier)
+          (string_literal))
+        (signal_information_item
+          (identifier)
+          (string_literal))))))
+
+================================================================================
+EXPLAIN FORMAT=JSON INTO user variable and FOR SCHEMA / FOR DATABASE clauses
+:language(mysql)
+================================================================================
+
+EXPLAIN FORMAT = JSON INTO @plan SELECT * FROM orders;
+EXPLAIN FORMAT = JSON INTO @plan FOR SCHEMA analytics_db SELECT * FROM orders;
+EXPLAIN FOR DATABASE 'analytics_db' DELETE FROM orders WHERE id = 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (explain_statement
+    (user_variable)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (explain_statement
+    (user_variable)
+    (identifier)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (explain_statement
+    (string_literal)
+    (delete_statement
+      (qualified_name
+        (identifier))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))))))
+
+
+================================================================================
+Stage10 MySQL spaced system variables, histogram options, SET LOCAL TRANSACTION, FLUSH, and quoted EXPLAIN FORMAT
+:language(mysql)
+================================================================================
+
+SELECT @@global /* scope */ . max_connections, @@SESSION . `sql_mode`, @@local.time_zone;
+SET @@SESSION . sql_mode = DEFAULT, @@persist . max_connections = 200, @@persist_only . comp . x = 1;
+ANALYZE TABLE metrics UPDATE HISTOGRAM ON n, m WITH 16 BUCKETS AUTO UPDATE;
+ANALYZE TABLE metrics UPDATE HISTOGRAM ON n MANUAL UPDATE;
+ANALYZE LOCAL TABLE metrics UPDATE HISTOGRAM ON n USING DATA '{"buckets":[]}';
+SET LOCAL TRANSACTION ISOLATION LEVEL READ COMMITTED, READ ONLY;
+FLUSH LOCAL STATUS, PRIVILEGES;
+EXPLAIN FORMAT = 'JSON' INTO @plan SELECT * FROM orders;
+EXPLAIN FORMAT = `JSON` INTO @plan FOR SCHEMA analytics_db SELECT * FROM orders;
+EXPLAIN FORMAT = "tree" SELECT * FROM orders;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (system_variable
+          (comment)))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))))
+  (set_statement
+    (variable_assignment
+      (system_variable))
+    (variable_assignment
+      (system_variable)
+      (numeric_literal))
+    (variable_assignment
+      (system_variable)
+      (numeric_literal)))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (identifier)
+    (numeric_literal))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (string_literal))
+  (set_statement)
+  (flush_statement)
+  (explain_statement
+    (user_variable)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (explain_statement
+    (user_variable)
+    (identifier)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (explain_statement
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))))))

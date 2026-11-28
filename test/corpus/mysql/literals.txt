@@ -1,0 +1,385 @@
+================================================================================
+Numeric literals
+:language(mysql)
+================================================================================
+
+SELECT 0, 42, 3.14, .5, 5., 1e10, 1.5E-3, 2e+4;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal)))))
+
+================================================================================
+Single and double quoted strings with backslash and doubled escapes
+:language(mysql)
+================================================================================
+
+SELECT 'hello', "world", 'it''s', "say ""hi""", 'a\'b\"c\\d\0\n\r\t\b\Z\%\_', "x\"y\'z\\";
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal)))))
+
+================================================================================
+Adjacent string literal concatenation
+:language(mysql)
+================================================================================
+
+SELECT 'first ' 'second' " third", _utf8mb4'a' 'b', N'na' 'tional';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal
+          (charset_introducer)))
+      (result_column
+        (string_literal)))))
+
+================================================================================
+Character set introducers and national strings
+:language(mysql)
+================================================================================
+
+SELECT _utf8mb4'hello', _utf8'world', _latin1 'abc', _binary'raw', N'nat', n'low';
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal
+          (charset_introducer)))
+      (result_column
+        (string_literal
+          (charset_introducer)))
+      (result_column
+        (string_literal
+          (charset_introducer)))
+      (result_column
+        (string_literal
+          (charset_introducer)))
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal)))))
+
+================================================================================
+Hexadecimal and bit-value literals
+:language(mysql)
+================================================================================
+
+SELECT X'', x'00ff', X'4D7953514C', 0x0, 0x1a2B3c, _latin1 X'4142', _utf8mb4 0x41, b'', b'0101', B'11110000', 0b0, 0b101010, _binary b'01', _utf8mb4 0b01;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (hex_literal))
+      (result_column
+        (hex_literal))
+      (result_column
+        (hex_literal))
+      (result_column
+        (hex_literal))
+      (result_column
+        (hex_literal))
+      (result_column
+        (hex_literal
+          (charset_introducer)))
+      (result_column
+        (hex_literal
+          (charset_introducer)))
+      (result_column
+        (bit_literal))
+      (result_column
+        (bit_literal))
+      (result_column
+        (bit_literal))
+      (result_column
+        (bit_literal))
+      (result_column
+        (bit_literal))
+      (result_column
+        (bit_literal
+          (charset_introducer)))
+      (result_column
+        (bit_literal
+          (charset_introducer))))))
+
+================================================================================
+Booleans, NULL, and temporal value keywords
+:language(mysql)
+================================================================================
+
+SELECT NULL, TRUE, FALSE, CURRENT_DATE, CURRENT_DATE(), CURRENT_TIME, CURRENT_TIME(6), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP(3), LOCALTIME, LOCALTIMESTAMP(6), UTC_DATE, UTC_TIME(2), UTC_TIMESTAMP(), CURRENT_USER, CURRENT_USER();
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (null))
+      (result_column
+        (boolean_literal))
+      (result_column
+        (boolean_literal))
+      (result_column
+        (current_time_expression))
+      (result_column
+        (current_time_expression))
+      (result_column
+        (current_time_expression))
+      (result_column
+        (current_time_expression
+          (numeric_literal)))
+      (result_column
+        (current_time_expression))
+      (result_column
+        (current_time_expression
+          (numeric_literal)))
+      (result_column
+        (current_time_expression))
+      (result_column
+        (current_time_expression
+          (numeric_literal)))
+      (result_column
+        (current_time_expression))
+      (result_column
+        (current_time_expression
+          (numeric_literal)))
+      (result_column
+        (current_time_expression))
+      (result_column
+        (current_time_expression))
+      (result_column
+        (current_time_expression)))))
+
+================================================================================
+Backtick-quoted and digit-leading unquoted identifiers
+:language(mysql)
+================================================================================
+
+SELECT `col`, `a``b`, `select`, `a\b`, 123abc, 1e_col, 0xZZ, 0X1F, 0b2, 0B01, $depr, _under, café FROM `my table`;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (column_reference
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (quoted_identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (quoted_identifier)))))))
+
+================================================================================
+User variables, system variables, and placeholders
+:language(mysql)
+================================================================================
+
+SELECT @x, @my.var$1, @'my-var', @"quoted\"var", @`back``var`, @``, @@sql_mode, @@GLOBAL.max_connections, @@SESSION.time_zone, @@LOCAL.autocommit, @@PERSIST.innodb_buffer_pool_size, @@PERSIST_ONLY.admin_port, @@global.`sql_mode`, @@global.keycache1.key_buffer_size, ?;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (user_variable))
+      (result_column
+        (user_variable))
+      (result_column
+        (user_variable))
+      (result_column
+        (user_variable))
+      (result_column
+        (user_variable))
+      (result_column
+        (user_variable))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))
+      (result_column
+        (placeholder)))))
+
+================================================================================
+Line comments, block comments, optimizer hints, and versioned comments
+:language(mysql)
+================================================================================
+
+-- dash comment with space
+--
+# hash comment
+SELECT /*+ BKA(t1) NO_ICP(t1) */ /* normal block */ /*! STRAIGHT_JOIN */ /*!50700 SQL_NO_CACHE */ /*!080400 DISTINCT */ /*!90000 ignored future comment */ /*!*/ /*!50700   */ a -- trailing
+FROM t1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (comment)
+  (comment)
+  (select_statement
+    (select_core
+      (comment)
+      (comment)
+      (comment)
+      (comment)
+      (comment)
+      (result_column
+        (column_reference
+          (identifier)))
+      (comment)
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+
+================================================================================
+Double minus without whitespace is two unary minuses
+:language(mysql)
+================================================================================
+
+SELECT --1, 5--2, - -1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (unary_expression
+          (unary_expression
+            (numeric_literal))))
+      (result_column
+        (binary_expression
+          (numeric_literal)
+          (unary_expression
+            (numeric_literal))))
+      (result_column
+        (unary_expression
+          (unary_expression
+            (numeric_literal)))))))
+
+
+================================================================================
+Nested comments in inactive versioned comments and five-digit guard fallback
+:language(mysql)
+================================================================================
+
+SELECT 1 /*!90000 /* nested */ ,2 */ /*!090000 /* a */ , /* b */ 2 */;
+SELECT /*!090000*2 + */ 3, 18446744073709551616, 99999999999999999999999;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (numeric_literal))))
+  (comment)
+  (comment)
+  (select_statement
+    (select_core
+      (result_column
+        (binary_expression
+          (binary_expression
+            (numeric_literal)
+            (numeric_literal))
+          (numeric_literal)))
+      (result_column
+        (numeric_literal))
+      (result_column
+        (numeric_literal)))))
