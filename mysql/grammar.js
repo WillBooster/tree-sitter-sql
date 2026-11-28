@@ -4814,7 +4814,7 @@ export default grammar({
             optional($.partition_names_clause),
             optional($._charset_clause),
             optional($._load_field_or_line_options),
-            optional(seq(keyword('IGNORE'), $.numeric_literal, choice(keyword('LINES'), keyword('ROWS')))),
+            optional($._load_ignore_lines),
             optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')'))
           ),
           seq(
@@ -4829,9 +4829,21 @@ export default grammar({
             optional($.partition_names_clause),
             optional($._charset_clause),
             optional(seq(keywords('ROWS IDENTIFIED BY'), $.string_literal)),
-            optional(seq(keyword('IGNORE'), $.numeric_literal, choice(keyword('LINES'), keyword('ROWS')))),
+            optional($._load_ignore_lines),
             optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')'))
           )
+        )
+      ),
+
+    _load_ignore_lines: ($) => seq(keyword('IGNORE'), $._mysql_num_literal, choice(keyword('LINES'), keyword('ROWS'))),
+
+    _mysql_num_literal: ($) =>
+      choice(
+        alias($._zero_int_literal, $.numeric_literal),
+        alias($._nonzero_int32_literal, $.numeric_literal),
+        seq(
+          choice($._above_int32_uint64_literal, $._overflow_int_literal, $._decimal_literal, $._float_literal),
+          $._unreachable
         )
       ),
 
@@ -5062,11 +5074,21 @@ export default grammar({
 
     _zero_int_literal: () => token(prec(1, /0+/)),
 
-    _nonzero_uint64_literal: () =>
+    _nonzero_uint64_literal: ($) => choice($._nonzero_int32_literal, $._above_int32_uint64_literal),
+
+    _nonzero_int32_literal: () =>
       token(
         prec(
           1,
-          /0*(?:[1-9][0-9]{0,18}|1(?:[0-7][0-9]{18}|8(?:[0-3][0-9]{17}|4(?:[0-3][0-9]{16}|4(?:[0-5][0-9]{15}|6(?:[0-6][0-9]{14}|7(?:[0-3][0-9]{13}|4(?:[0-3][0-9]{12}|40(?:[0-6][0-9]{10}|7(?:[0-2][0-9]{9}|3(?:[0-6][0-9]{8}|70(?:[0-8][0-9]{6}|9(?:[0-4][0-9]{5}|5(?:[0-4][0-9]{4}|5(?:0[0-9]{3}|1(?:[0-5][0-9]{2}|6(?:0[0-9]|1[0-5])))))))))))))))))/
+          /0*(?:[1-9][0-9]{0,8}|1[0-9]{9}|2(?:0[0-9]{8}|1(?:[0-3][0-9]{7}|4(?:[0-6][0-9]{6}|7(?:[0-3][0-9]{5}|4(?:[0-7][0-9]{4}|8(?:[0-2][0-9]{3}|3(?:[0-5][0-9]{2}|6(?:[0-3][0-9]|4[0-7])))))))))/
+        )
+      ),
+
+    _above_int32_uint64_literal: () =>
+      token(
+        prec(
+          1,
+          /0*(?:2(?:[2-9][0-9]{8}|1(?:[5-9][0-9]{7}|4(?:[89][0-9]{6}|7(?:[5-9][0-9]{5}|4(?:[89][0-9]{4}|8(?:[4-9][0-9]{3}|3(?:[7-9][0-9]{2}|6(?:[5-9][0-9]|4[89]))))))))|[3-9][0-9]{9}|[1-9][0-9]{10,17}|[2-9][0-9]{18}|1(?:[0-7][0-9]{18}|8(?:[0-3][0-9]{17}|4(?:[0-3][0-9]{16}|4(?:[0-5][0-9]{15}|6(?:[0-6][0-9]{14}|7(?:[0-3][0-9]{13}|4(?:[0-3][0-9]{12}|40(?:[0-6][0-9]{10}|7(?:[0-2][0-9]{9}|3(?:[0-6][0-9]{8}|70(?:[0-8][0-9]{6}|9(?:[0-4][0-9]{5}|5(?:[0-4][0-9]{4}|5(?:0[0-9]{3}|1(?:[0-5][0-9]{2}|6(?:0[0-9]|1[0-5])))))))))))))))))/
         )
       ),
 

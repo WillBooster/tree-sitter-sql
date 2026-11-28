@@ -62089,45 +62089,8 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "ALIAS",
-                          "content": {
-                            "type": "PATTERN",
-                            "value": "[Ii][Gg][Nn][Oo][Rr][Ee]"
-                          },
-                          "named": false,
-                          "value": "IGNORE"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "numeric_literal"
-                        },
-                        {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "PATTERN",
-                                "value": "[Ll][Ii][Nn][Ee][Ss]"
-                              },
-                              "named": false,
-                              "value": "LINES"
-                            },
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "PATTERN",
-                                "value": "[Rr][Oo][Ww][Ss]"
-                              },
-                              "named": false,
-                              "value": "ROWS"
-                            }
-                          ]
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "_load_ignore_lines"
                     },
                     {
                       "type": "BLANK"
@@ -62416,45 +62379,8 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "ALIAS",
-                          "content": {
-                            "type": "PATTERN",
-                            "value": "[Ii][Gg][Nn][Oo][Rr][Ee]"
-                          },
-                          "named": false,
-                          "value": "IGNORE"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "numeric_literal"
-                        },
-                        {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "PATTERN",
-                                "value": "[Ll][Ii][Nn][Ee][Ss]"
-                              },
-                              "named": false,
-                              "value": "LINES"
-                            },
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "PATTERN",
-                                "value": "[Rr][Oo][Ww][Ss]"
-                              },
-                              "named": false,
-                              "value": "ROWS"
-                            }
-                          ]
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "_load_ignore_lines"
                     },
                     {
                       "type": "BLANK"
@@ -62526,6 +62452,100 @@
                   ]
                 }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    "_load_ignore_lines": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ii][Gg][Nn][Oo][Rr][Ee]"
+          },
+          "named": false,
+          "value": "IGNORE"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_mysql_num_literal"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Ll][Ii][Nn][Ee][Ss]"
+              },
+              "named": false,
+              "value": "LINES"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "[Rr][Oo][Ww][Ss]"
+              },
+              "named": false,
+              "value": "ROWS"
+            }
+          ]
+        }
+      ]
+    },
+    "_mysql_num_literal": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_zero_int_literal"
+          },
+          "named": true,
+          "value": "numeric_literal"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_nonzero_int32_literal"
+          },
+          "named": true,
+          "value": "numeric_literal"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_above_int32_uint64_literal"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_overflow_int_literal"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_decimal_literal"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_float_literal"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_unreachable"
             }
           ]
         }
@@ -67220,13 +67240,37 @@
       }
     },
     "_nonzero_uint64_literal": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_nonzero_int32_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_above_int32_uint64_literal"
+        }
+      ]
+    },
+    "_nonzero_int32_literal": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "0*(?:[1-9][0-9]{0,18}|1(?:[0-7][0-9]{18}|8(?:[0-3][0-9]{17}|4(?:[0-3][0-9]{16}|4(?:[0-5][0-9]{15}|6(?:[0-6][0-9]{14}|7(?:[0-3][0-9]{13}|4(?:[0-3][0-9]{12}|40(?:[0-6][0-9]{10}|7(?:[0-2][0-9]{9}|3(?:[0-6][0-9]{8}|70(?:[0-8][0-9]{6}|9(?:[0-4][0-9]{5}|5(?:[0-4][0-9]{4}|5(?:0[0-9]{3}|1(?:[0-5][0-9]{2}|6(?:0[0-9]|1[0-5])))))))))))))))))"
+          "value": "0*(?:[1-9][0-9]{0,8}|1[0-9]{9}|2(?:0[0-9]{8}|1(?:[0-3][0-9]{7}|4(?:[0-6][0-9]{6}|7(?:[0-3][0-9]{5}|4(?:[0-7][0-9]{4}|8(?:[0-2][0-9]{3}|3(?:[0-5][0-9]{2}|6(?:[0-3][0-9]|4[0-7])))))))))"
+        }
+      }
+    },
+    "_above_int32_uint64_literal": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "0*(?:2(?:[2-9][0-9]{8}|1(?:[5-9][0-9]{7}|4(?:[89][0-9]{6}|7(?:[5-9][0-9]{5}|4(?:[89][0-9]{4}|8(?:[4-9][0-9]{3}|3(?:[7-9][0-9]{2}|6(?:[5-9][0-9]|4[89]))))))))|[3-9][0-9]{9}|[1-9][0-9]{10,17}|[2-9][0-9]{18}|1(?:[0-7][0-9]{18}|8(?:[0-3][0-9]{17}|4(?:[0-3][0-9]{16}|4(?:[0-5][0-9]{15}|6(?:[0-6][0-9]{14}|7(?:[0-3][0-9]{13}|4(?:[0-3][0-9]{12}|40(?:[0-6][0-9]{10}|7(?:[0-2][0-9]{9}|3(?:[0-6][0-9]{8}|70(?:[0-8][0-9]{6}|9(?:[0-4][0-9]{5}|5(?:[0-4][0-9]{4}|5(?:0[0-9]{3}|1(?:[0-5][0-9]{2}|6(?:0[0-9]|1[0-5])))))))))))))))))"
         }
       }
     },
