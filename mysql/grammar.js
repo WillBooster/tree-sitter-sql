@@ -615,7 +615,7 @@ function buildScopedSelectRules(sp) {
         scopedHid($, sp, '_query_body_no_into'),
         optional(scopedVis($, sp, 'order_by_clause')),
         optional(scopedVis($, sp, 'limit_clause')),
-        optional(scopedHid($, sp, '_locking_clauses'))
+        optional($._locking_clauses)
       ),
     [k('_select_with_into')]: ($) =>
       choice(
@@ -624,7 +624,7 @@ function buildScopedSelectRules(sp) {
           scopedHid($, sp, '_query_body_with_into'),
           optional(scopedVis($, sp, 'order_by_clause')),
           optional(scopedVis($, sp, 'limit_clause')),
-          optional(scopedHid($, sp, '_locking_clauses'))
+          optional($._locking_clauses)
         ),
         scopedHid($, sp, '_select_trailing_into')
       ),
@@ -635,21 +635,17 @@ function buildScopedSelectRules(sp) {
           scopedHid($, sp, '_query_body_no_into'),
           optional(scopedVis($, sp, 'order_by_clause')),
           optional(scopedVis($, sp, 'limit_clause')),
-          choice(
-            seq($.into_clause, optional(scopedHid($, sp, '_locking_clauses'))),
-            seq(scopedHid($, sp, '_locking_clauses'), $.into_clause)
-          )
+          choice(seq($.into_clause, optional($._locking_clauses)), seq($._locking_clauses, $.into_clause))
         ),
         alias(scopedHid($, sp, '_parenthesized_select_trailing_into'), $.parenthesized_query)
       ),
     [k('_parenthesized_select_trailing_into')]: ($) => seq('(', scopedHid($, sp, '_select_trailing_into'), ')'),
-    [k('_locking_clauses')]: ($) => repeat1($.locking_clause),
     [k('_no_limit_select_no_into')]: ($) =>
       seq(
         optional(scopedVis($, sp, 'with_clause')),
         scopedHid($, sp, '_no_limit_query_body'),
         optional(scopedVis($, sp, 'order_by_clause')),
-        optional(scopedHid($, sp, '_locking_clauses'))
+        optional($._locking_clauses)
       ),
     [k('_has_limit_select_no_into')]: ($) =>
       choice(
@@ -658,14 +654,14 @@ function buildScopedSelectRules(sp) {
           scopedHid($, sp, '_no_limit_query_body'),
           optional(scopedVis($, sp, 'order_by_clause')),
           scopedVis($, sp, 'limit_clause'),
-          optional(scopedHid($, sp, '_locking_clauses'))
+          optional($._locking_clauses)
         ),
         seq(
           optional(scopedVis($, sp, 'with_clause')),
           scopedHid($, sp, '_has_limit_query_body'),
           optional(scopedVis($, sp, 'order_by_clause')),
           optional(scopedVis($, sp, 'limit_clause')),
-          optional(scopedHid($, sp, '_locking_clauses'))
+          optional($._locking_clauses)
         )
       ),
     [k('_inner_select_no_into')]: ($) =>
@@ -771,7 +767,7 @@ function buildScopedCompoundQueryRules(sp) {
         scopedHid($, sp, '_query_body_with_into'),
         optional(scopedVis($, sp, 'order_by_clause')),
         optional(scopedVis($, sp, 'limit_clause')),
-        optional(scopedHid($, sp, '_locking_clauses')),
+        optional($._locking_clauses),
         ')'
       ),
     [k('parenthesized_query')]: ($) =>
@@ -781,7 +777,7 @@ function buildScopedCompoundQueryRules(sp) {
         scopedHid($, sp, '_query_body_no_into'),
         optional(scopedVis($, sp, 'order_by_clause')),
         optional(scopedVis($, sp, 'limit_clause')),
-        optional(scopedHid($, sp, '_locking_clauses')),
+        optional($._locking_clauses),
         ')'
       ),
     [k('_inner_query_body_no_into')]: ($) =>
@@ -904,7 +900,7 @@ function buildScopedCompoundQueryRules(sp) {
         scopedHid($, sp, '_inner_query_body_with_into'),
         optional(scopedVis($, sp, 'order_by_clause')),
         optional(scopedVis($, sp, 'limit_clause')),
-        optional(scopedHid($, sp, '_locking_clauses')),
+        optional($._locking_clauses),
         ')'
       ),
     [k('_no_limit_parenthesized_query')]: ($) =>
@@ -913,7 +909,7 @@ function buildScopedCompoundQueryRules(sp) {
         optional(scopedVis($, sp, 'with_clause')),
         scopedHid($, sp, '_no_limit_query_body'),
         optional(scopedVis($, sp, 'order_by_clause')),
-        optional(scopedHid($, sp, '_locking_clauses')),
+        optional($._locking_clauses),
         ')'
       ),
     [k('_has_limit_parenthesized_query')]: ($) =>
@@ -924,7 +920,7 @@ function buildScopedCompoundQueryRules(sp) {
           scopedHid($, sp, '_no_limit_query_body'),
           optional(scopedVis($, sp, 'order_by_clause')),
           scopedVis($, sp, 'limit_clause'),
-          optional(scopedHid($, sp, '_locking_clauses')),
+          optional($._locking_clauses),
           ')'
         ),
         seq(
@@ -933,7 +929,7 @@ function buildScopedCompoundQueryRules(sp) {
           scopedHid($, sp, '_has_limit_query_body'),
           optional(scopedVis($, sp, 'order_by_clause')),
           optional(scopedVis($, sp, 'limit_clause')),
-          optional(scopedHid($, sp, '_locking_clauses')),
+          optional($._locking_clauses),
           ')'
         )
       ),
@@ -1027,7 +1023,7 @@ function buildScopedFromRules(sp) {
         $._table_alias,
         optional($.column_list)
       ),
-    [k('join_table')]: ($) => choice(scopedHid($, sp, '_single_table_parens'), scopedHid($, sp, '_multi_table_parens')),
+    [k('join_table')]: ($) => choice($._single_table_parens, scopedHid($, sp, '_multi_table_parens')),
     [k('_joined_table')]: ($) =>
       choice(
         prec.right(
@@ -1073,8 +1069,6 @@ function buildScopedFromRules(sp) {
           )
         )
       ),
-    [k('_single_table_parens')]: ($) =>
-      seq('(', choice($.table, alias(scopedHid($, sp, '_single_table_parens'), $.join_table)), ')'),
     [k('_multi_table_parens')]: ($) => seq('(', scopedHid($, sp, '_multi_table_references'), ')'),
     [k('_multi_table_references')]: ($) =>
       choice(
@@ -1097,12 +1091,7 @@ function buildScopedDmlRules(sp) {
   return {
     [k('insert_statement')]: ($) =>
       seq(
-        keyword('INSERT'),
-        optional(choice(keyword('LOW_PRIORITY'), keyword('DELAYED'), keyword('HIGH_PRIORITY'))),
-        optional(keyword('IGNORE')),
-        optional(keyword('INTO')),
-        field('table', $.qualified_name),
-        optional($.partition_names_clause),
+        $._insert_head,
         choice(
           seq(
             optional($._insert_column_list),
@@ -1120,11 +1109,7 @@ function buildScopedDmlRules(sp) {
       ),
     [k('replace_statement')]: ($) =>
       seq(
-        keyword('REPLACE'),
-        optional(choice(keyword('LOW_PRIORITY'), keyword('DELAYED'))),
-        optional(keyword('INTO')),
-        field('table', $.qualified_name),
-        optional($.partition_names_clause),
+        $._replace_head,
         choice(
           seq(
             optional($._insert_column_list),
@@ -1143,7 +1128,7 @@ function buildScopedDmlRules(sp) {
           scopedHid($, sp, '_query_body_no_into'),
           optional(scopedVis($, sp, 'order_by_clause')),
           optional(scopedVis($, sp, 'limit_clause')),
-          optional(scopedHid($, sp, '_locking_clauses'))
+          optional($._locking_clauses)
         ),
         seq(
           choice(
@@ -1156,7 +1141,7 @@ function buildScopedDmlRules(sp) {
           ),
           optional(scopedVis($, sp, 'order_by_clause')),
           optional(scopedVis($, sp, 'limit_clause')),
-          optional(scopedHid($, sp, '_locking_clauses'))
+          optional($._locking_clauses)
         )
       ),
     [k('update_statement')]: ($) =>
@@ -1167,7 +1152,7 @@ function buildScopedDmlRules(sp) {
         optional(keyword('IGNORE')),
         choice(
           seq(
-            choice($.table, alias(scopedHid($, sp, '_single_table_parens'), $.join_table)),
+            choice($.table, alias($._single_table_parens, $.join_table)),
             scopedVis($, sp, 'set_clause'),
             optional(scopedVis($, sp, 'where_clause')),
             optional(scopedVis($, sp, 'order_by_clause')),
@@ -1225,22 +1210,10 @@ function buildScopedUtilityRules(sp) {
   return {
     [k('create_table_statement')]: ($) =>
       seq(
-        keyword('CREATE'),
-        optional(keyword('TEMPORARY')),
-        keyword('TABLE'),
-        optional($.if_not_exists),
-        field('name', $.qualified_name),
+        $._create_table_head,
         choice(
-          seq(keyword('LIKE'), field('like', $.qualified_name)),
-          seq('(', keyword('LIKE'), field('like', $.qualified_name), ')'),
-          seq(
-            '(',
-            commaSep1($._create_definition),
-            ')',
-            optional($._table_options),
-            optional($.partition_by_clause_ddl),
-            optional(scopedHid($, sp, '_create_table_query_tail'))
-          ),
+          $._create_table_like_body,
+          seq($._create_table_defs_head, optional(scopedHid($, sp, '_create_table_query_tail'))),
           seq(
             optional($._table_options),
             optional($.partition_by_clause_ddl),
@@ -1290,68 +1263,10 @@ function buildScopedUtilityRules(sp) {
           seq(scopedHid($, sp, '_handler_read_head'), optional(scopedVis($, sp, 'limit_clause')))
         )
       ),
-    [k('load_statement')]: ($) =>
-      seq(
-        keyword('LOAD'),
-        choice(
-          seq(
-            keyword('DATA'),
-            optional(choice(keyword('LOW_PRIORITY'), keyword('CONCURRENT'))),
-            optional(keyword('LOCAL')),
-            keyword('INFILE'),
-            field('file', $.string_literal),
-            optional(choice(keyword('REPLACE'), keyword('IGNORE'))),
-            keywords('INTO TABLE'),
-            field('table', $.qualified_name),
-            optional($.partition_names_clause),
-            optional($._charset_clause),
-            optional($._load_field_or_line_options),
-            optional(seq(keyword('IGNORE'), $.numeric_literal, choice(keyword('LINES'), keyword('ROWS')))),
-            optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')')),
-            optional(scopedVis($, sp, 'set_clause'))
-          ),
-          seq(
-            keyword('XML'),
-            optional(choice(keyword('LOW_PRIORITY'), keyword('CONCURRENT'))),
-            optional(keyword('LOCAL')),
-            keyword('INFILE'),
-            field('file', $.string_literal),
-            optional(choice(keyword('REPLACE'), keyword('IGNORE'))),
-            keywords('INTO TABLE'),
-            field('table', $.qualified_name),
-            optional($.partition_names_clause),
-            optional($._charset_clause),
-            optional(seq(keywords('ROWS IDENTIFIED BY'), $.string_literal)),
-            optional(seq(keyword('IGNORE'), $.numeric_literal, choice(keyword('LINES'), keyword('ROWS')))),
-            optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')')),
-            optional(scopedVis($, sp, 'set_clause'))
-          )
-        )
-      ),
+    [k('load_statement')]: ($) => seq($._load_statement_head, optional(scopedVis($, sp, 'set_clause'))),
     [k('set_statement')]: ($) =>
-      seq(
-        keyword('SET'),
-        choice(
-          seq(
-            optional(choice(keyword('GLOBAL'), keyword('SESSION'))),
-            keyword('TRANSACTION'),
-            commaSep1($._transaction_characteristic)
-          ),
-          commaSep1(scopedHid($, sp, '_set_item'))
-        )
-      ),
-    [k('_set_item')]: ($) =>
-      choice(
-        $._charset_clause,
-        seq(
-          keyword('NAMES'),
-          choice(
-            keyword('DEFAULT'),
-            seq($._charset_name, optional(seq(keyword('COLLATE'), choice($._identifier_or_string, keyword('DEFAULT')))))
-          )
-        ),
-        scopedVis($, sp, 'variable_assignment')
-      ),
+      seq(keyword('SET'), choice($._set_transaction_body, commaSep1(scopedHid($, sp, '_set_item')))),
+    [k('_set_item')]: ($) => choice($._charset_clause, $._set_names_item, scopedVis($, sp, 'variable_assignment')),
     [k('variable_assignment')]: ($) =>
       choice(
         seq(field('variable', $.user_variable), choice('=', ':='), field('value', scopedHid($, sp, '_expression'))),
@@ -1376,60 +1291,8 @@ function buildScopedUtilityRules(sp) {
       ),
     [k('_show_non_limit_body')]: ($) =>
       choice(
-        seq(
-          optional(keyword('EXTENDED')),
-          optional(keyword('FULL')),
-          choice(keyword('COLUMNS'), keyword('FIELDS')),
-          choice(keyword('FROM'), keyword('IN')),
-          $.qualified_name,
-          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-          optional(scopedHid($, sp, '_like_or_where'))
-        ),
-        seq(
-          optional(keyword('EXTENDED')),
-          optional(keyword('FULL')),
-          keyword('TABLES'),
-          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-          optional(scopedHid($, sp, '_like_or_where'))
-        ),
-        seq(choice(keyword('DATABASES'), keyword('SCHEMAS')), optional(scopedHid($, sp, '_like_or_where'))),
-        seq(
-          optional(choice(keyword('GLOBAL'), keyword('SESSION'))),
-          choice(keyword('VARIABLES'), keyword('STATUS')),
-          optional(scopedHid($, sp, '_like_or_where'))
-        ),
-        seq(
-          optional(keyword('EXTENDED')),
-          choice(keyword('INDEX'), keyword('INDEXES'), keyword('KEYS')),
-          choice(keyword('FROM'), keyword('IN')),
-          $.qualified_name,
-          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-          optional(scopedVis($, sp, 'where_clause'))
-        ),
-        seq(
-          keywords('TABLE STATUS'),
-          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-          optional(scopedHid($, sp, '_like_or_where'))
-        ),
-        seq(
-          choice(keyword('PROCEDURE'), keyword('FUNCTION')),
-          keyword('STATUS'),
-          optional(scopedHid($, sp, '_like_or_where'))
-        ),
-        seq(
-          choice(keyword('TRIGGERS'), keyword('EVENTS')),
-          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-          optional(scopedHid($, sp, '_like_or_where'))
-        ),
-        seq(
-          choice(keywords('CHARACTER SET'), keyword('CHARSET'), keyword('COLLATION')),
-          optional(scopedHid($, sp, '_like_or_where'))
-        ),
-        seq(
-          keywords('OPEN TABLES'),
-          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
-          optional(scopedHid($, sp, '_like_or_where'))
-        ),
+        seq($._show_like_or_where_head, optional(scopedHid($, sp, '_like_or_where'))),
+        seq($._show_index_head, optional(scopedVis($, sp, 'where_clause'))),
         $._static_show_body
       ),
     [k('_like_or_where')]: ($) => choice(seq(keyword('LIKE'), $.string_literal), scopedVis($, sp, 'where_clause')),
@@ -2051,28 +1914,43 @@ function buildConstFrameExpressionRules(sp) {
         $.placeholder,
         $.current_time_expression,
         alias(scopedHid($, sp, '_const_parens'), $.parenthesized_expression),
+        alias(scopedHid($, sp, '_const_row_value'), $.row_value),
+        alias(scopedHid($, sp, '_const_row_constructor'), $.row_constructor),
         alias(scopedHid($, sp, '_frame_interval_expression'), $.interval_expression),
         alias(scopedHid($, sp, '_const_func_call'), $.function_call),
         alias(scopedHid($, sp, '_const_cast'), $.cast_expression),
+        alias(scopedHid($, sp, '_const_convert'), $.convert_expression),
         alias(scopedHid($, sp, '_const_case'), $.case_expression),
+        alias(scopedHid($, sp, '_const_odbc'), $.odbc_escape_expression),
         alias(scopedHid($, sp, '_const_unary'), $.unary_expression),
+        alias(scopedHid($, sp, '_const_collate'), $.collate_expression),
         alias(scopedHid($, sp, '_const_bin'), $.binary_expression),
-        alias(scopedHid($, sp, '_const_is'), $.is_expression)
+        alias(scopedHid($, sp, '_const_is'), $.is_expression),
+        alias(scopedHid($, sp, '_const_in'), $.in_expression),
+        alias(scopedHid($, sp, '_const_member_of'), $.member_of_expression),
+        alias(scopedHid($, sp, '_const_between'), $.between_expression),
+        alias(scopedHid($, sp, '_const_like'), $.like_expression)
       ),
     [k('_const_parens')]: ($) => seq('(', expr($), ')'),
-    [k('_const_func_call')]: ($) =>
-      choice(
-        seq(field('name', $._function_name), '(', commaSep(expr($)), ')'),
-        seq(field('name', alias(keyword('EXTRACT'), $.identifier)), '(', $.interval_unit, keyword('FROM'), expr($), ')')
-      ),
+    [k('_const_row_value')]: ($) => prec(-1, seq('(', expr($), ',', commaSep1(expr($)), ')')),
+    [k('_const_row_constructor')]: ($) => seq(keyword('ROW'), '(', commaSep(expr($)), ')'),
+    [k('_const_func_call')]: ($) => choice(...pureScalarFunctionAlternatives($, expr($), expr($))),
     [k('_const_cast')]: ($) => castExpressionRule($, expr($)),
+    [k('_const_convert')]: ($) => convertExpressionRule($, expr($)),
     [k('_const_case')]: ($) => caseExpressionRule(expr($), alias(scopedHid($, sp, '_const_when'), $.when_clause)),
     [k('_const_when')]: ($) => whenClauseRule(expr($)),
+    [k('_const_odbc')]: ($) => seq('{', field('type', $._identifier), field('value', expr($)), '}'),
     [k('_const_unary')]: ($) =>
       choice(
         prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', expr($)))),
         prec.right(PREC.UNARY, seq(field('operator', choice('-', '+', '~')), field('operand', expr($)))),
-        prec.right(PREC.BANG, seq(field('operator', '!'), field('operand', expr($))))
+        prec.right(PREC.BANG, seq(field('operator', '!'), field('operand', expr($)))),
+        prec.right(PREC.BINARY, seq(field('operator', keyword('BINARY')), field('operand', expr($))))
+      ),
+    [k('_const_collate')]: ($) =>
+      prec.left(
+        PREC.COLLATE,
+        seq(field('value', expr($)), keyword('COLLATE'), field('collation', $._identifier_or_string))
       ),
     [k('_const_bin')]: ($) =>
       choice(
@@ -2080,6 +1958,17 @@ function buildConstFrameExpressionRules(sp) {
         leftBinaryOp(PREC.XOR, expr($), keyword('XOR')),
         leftBinaryOp(PREC.AND, expr($), choice(keyword('AND'), '&&')),
         leftBinaryOp(PREC.COMPARE, expr($), choice('=', '<=>', '>=', '>', '<=', '<', '<>', '!=')),
+        prec.left(
+          PREC.PREDICATE,
+          choice(
+            seq(
+              field('left', expr($)),
+              field('operator', seq(optional(keyword('NOT')), choice(keyword('REGEXP'), keyword('RLIKE')))),
+              field('right', expr($))
+            ),
+            seq(field('left', expr($)), field('operator', keywords('SOUNDS LIKE')), field('right', expr($)))
+          )
+        ),
         bitBinaryRule(expr($))
       ),
     [k('_const_is')]: ($) =>
@@ -2090,6 +1979,36 @@ function buildConstFrameExpressionRules(sp) {
           keyword('IS'),
           optional(keyword('NOT')),
           field('right', choice($.null, $.boolean_literal, keyword('UNKNOWN')))
+        )
+      ),
+    [k('_const_in')]: ($) =>
+      prec.left(
+        PREC.PREDICATE,
+        seq(field('value', expr($)), optional(keyword('NOT')), keyword('IN'), '(', commaSep1(expr($)), ')')
+      ),
+    [k('_const_member_of')]: ($) =>
+      prec.left(PREC.PREDICATE, seq(field('value', expr($)), keywords('MEMBER OF'), '(', field('array', expr($)), ')')),
+    [k('_const_between')]: ($) =>
+      prec.right(
+        PREC.PREDICATE,
+        seq(
+          field('value', expr($)),
+          optional(keyword('NOT')),
+          keyword('BETWEEN'),
+          field('low', expr($)),
+          keyword('AND'),
+          field('high', expr($))
+        )
+      ),
+    [k('_const_like')]: ($) =>
+      prec.right(
+        PREC.PREDICATE,
+        seq(
+          field('left', expr($)),
+          optional(keyword('NOT')),
+          keyword('LIKE'),
+          field('right', expr($)),
+          optional(seq(keyword('ESCAPE'), field('escape', expr($))))
         )
       ),
   };
@@ -4649,6 +4568,137 @@ export default grammar({
       ),
 
     _distinct_keyword: () => choice(keyword('DISTINCT'), keyword('DISTINCTROW')),
+
+    _insert_head: ($) =>
+      seq(
+        keyword('INSERT'),
+        optional(choice(keyword('LOW_PRIORITY'), keyword('DELAYED'), keyword('HIGH_PRIORITY'))),
+        optional(keyword('IGNORE')),
+        optional(keyword('INTO')),
+        field('table', $.qualified_name),
+        optional($.partition_names_clause)
+      ),
+
+    _replace_head: ($) =>
+      seq(
+        keyword('REPLACE'),
+        optional(choice(keyword('LOW_PRIORITY'), keyword('DELAYED'))),
+        optional(keyword('INTO')),
+        field('table', $.qualified_name),
+        optional($.partition_names_clause)
+      ),
+
+    _set_transaction_body: ($) =>
+      seq(
+        optional(choice(keyword('GLOBAL'), keyword('SESSION'))),
+        keyword('TRANSACTION'),
+        commaSep1($._transaction_characteristic)
+      ),
+
+    _set_names_item: ($) =>
+      seq(
+        keyword('NAMES'),
+        choice(
+          keyword('DEFAULT'),
+          seq($._charset_name, optional(seq(keyword('COLLATE'), choice($._identifier_or_string, keyword('DEFAULT')))))
+        )
+      ),
+
+    _show_like_or_where_head: ($) =>
+      choice(
+        seq(
+          optional(keyword('EXTENDED')),
+          optional(keyword('FULL')),
+          choice(keyword('COLUMNS'), keyword('FIELDS')),
+          choice(keyword('FROM'), keyword('IN')),
+          $.qualified_name,
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier))
+        ),
+        seq(
+          optional(keyword('EXTENDED')),
+          optional(keyword('FULL')),
+          keyword('TABLES'),
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier))
+        ),
+        choice(keyword('DATABASES'), keyword('SCHEMAS')),
+        seq(optional(choice(keyword('GLOBAL'), keyword('SESSION'))), choice(keyword('VARIABLES'), keyword('STATUS'))),
+        seq(keywords('TABLE STATUS'), optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier))),
+        seq(choice(keyword('PROCEDURE'), keyword('FUNCTION')), keyword('STATUS')),
+        seq(
+          choice(keyword('TRIGGERS'), keyword('EVENTS')),
+          optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier))
+        ),
+        choice(keywords('CHARACTER SET'), keyword('CHARSET'), keyword('COLLATION')),
+        seq(keywords('OPEN TABLES'), optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)))
+      ),
+
+    _show_index_head: ($) =>
+      seq(
+        optional(keyword('EXTENDED')),
+        choice(keyword('INDEX'), keyword('INDEXES'), keyword('KEYS')),
+        choice(keyword('FROM'), keyword('IN')),
+        $.qualified_name,
+        optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier))
+      ),
+
+    _locking_clauses: ($) => repeat1($.locking_clause),
+
+    _single_table_parens: ($) => seq('(', choice($.table, alias($._single_table_parens, $.join_table)), ')'),
+
+    _create_table_head: ($) =>
+      seq(
+        keyword('CREATE'),
+        optional(keyword('TEMPORARY')),
+        keyword('TABLE'),
+        optional($.if_not_exists),
+        field('name', $.qualified_name)
+      ),
+
+    _create_table_like_body: ($) =>
+      choice(
+        seq(keyword('LIKE'), field('like', $.qualified_name)),
+        seq('(', keyword('LIKE'), field('like', $.qualified_name), ')')
+      ),
+
+    _create_table_defs_head: ($) =>
+      seq('(', commaSep1($._create_definition), ')', optional($._table_options), optional($.partition_by_clause_ddl)),
+
+    _load_statement_head: ($) =>
+      seq(
+        keyword('LOAD'),
+        choice(
+          seq(
+            keyword('DATA'),
+            optional(choice(keyword('LOW_PRIORITY'), keyword('CONCURRENT'))),
+            optional(keyword('LOCAL')),
+            keyword('INFILE'),
+            field('file', $.string_literal),
+            optional(choice(keyword('REPLACE'), keyword('IGNORE'))),
+            keywords('INTO TABLE'),
+            field('table', $.qualified_name),
+            optional($.partition_names_clause),
+            optional($._charset_clause),
+            optional($._load_field_or_line_options),
+            optional(seq(keyword('IGNORE'), $.numeric_literal, choice(keyword('LINES'), keyword('ROWS')))),
+            optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')'))
+          ),
+          seq(
+            keyword('XML'),
+            optional(choice(keyword('LOW_PRIORITY'), keyword('CONCURRENT'))),
+            optional(keyword('LOCAL')),
+            keyword('INFILE'),
+            field('file', $.string_literal),
+            optional(choice(keyword('REPLACE'), keyword('IGNORE'))),
+            keywords('INTO TABLE'),
+            field('table', $.qualified_name),
+            optional($.partition_names_clause),
+            optional($._charset_clause),
+            optional(seq(keywords('ROWS IDENTIFIED BY'), $.string_literal)),
+            optional(seq(keyword('IGNORE'), $.numeric_literal, choice(keyword('LINES'), keyword('ROWS')))),
+            optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')'))
+          )
+        )
+      ),
 
     _static_show_body: ($) =>
       choice(

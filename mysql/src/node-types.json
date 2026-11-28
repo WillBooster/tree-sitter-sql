@@ -1815,6 +1815,10 @@
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
             "type": "like_expression",
             "named": true
           },
@@ -1889,6 +1893,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -1937,11 +1945,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
@@ -2007,6 +2031,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -2055,11 +2083,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
@@ -4274,6 +4318,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -4322,11 +4370,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
@@ -11748,6 +11812,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -11796,11 +11864,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
@@ -13614,6 +13698,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -13662,11 +13750,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
@@ -13732,6 +13836,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -13780,11 +13888,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
@@ -13850,6 +13974,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -13898,11 +14026,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
@@ -14783,6 +14927,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -14831,11 +14979,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
@@ -14901,6 +15065,10 @@
             "named": true
           },
           {
+            "type": "between_expression",
+            "named": true
+          },
+          {
             "type": "binary_expression",
             "named": true
           },
@@ -14949,11 +15117,27 @@
             "named": true
           },
           {
+            "type": "in_expression",
+            "named": true
+          },
+          {
             "type": "interval_expression",
             "named": true
           },
           {
+            "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "like_expression",
+            "named": true
+          },
+          {
             "type": "match_expression",
+            "named": true
+          },
+          {
+            "type": "member_of_expression",
             "named": true
           },
           {
