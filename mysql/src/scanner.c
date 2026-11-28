@@ -21,6 +21,7 @@ enum TokenType {
   USER_VARIABLE,
   SYSTEM_VARIABLE,
   QUOTED_IDENTIFIER,
+  CONST_QUOTED_IDENTIFIER,
   DIGIT_IDENTIFIER,
   HOST_NAME,
   STATEMENT_TERMINATOR,
@@ -42,6 +43,10 @@ static const char *const MYSQL_SIGNAL_ITEMS[] = {
   "class_origin",       "subclass_origin", "constraint_catalog", "constraint_schema",
   "constraint_name",    "catalog_name",    "schema_name",        "table_name",
   "column_name",        "cursor_name",     "message_text",       "mysql_errno",
+};
+
+static const char *const MYSQL_NONCONST_FUNCS[] = {
+  "benchmark", "rand", "random_bytes", "sleep", "uuid", "uuid_short",
 };
 
 // MySQL 8.4 character sets recognized as `_charset` introducers even when separated by whitespace from the literal.
@@ -250,8 +255,54 @@ static bool scan_string_token(TSLexer *lexer, int32_t quote, enum TokenType targ
   return scan_delimited(lexer, quote, true, true, target_symbol);
 }
 
-static bool scan_backtick_body(TSLexer *lexer, bool allow_empty, enum TokenType target_symbol) {
-  return scan_delimited(lexer, '`', false, allow_empty, target_symbol);
+static bool is_nonconst_func_name(const char *word) {
+  for (unsigned i = 0; i < sizeof MYSQL_NONCONST_FUNCS / sizeof *MYSQL_NONCONST_FUNCS; i++) {
+    if (strcmp(word, MYSQL_NONCONST_FUNCS[i]) == 0) return true;
+  }
+  return false;
+}
+
+static enum TokenType resolve_backtick_symbol(
+  TSLexer *lexer, enum TokenType target_symbol, bool fallback_ident, const char *lower, unsigned steps
+) {
+  if (target_symbol != CONST_QUOTED_IDENTIFIER) return target_symbol;
+  if (fallback_ident) {
+    while (is_space(lexer->lookahead)) advance(lexer);
+    if (lexer->lookahead != '(') return QUOTED_IDENTIFIER;
+  }
+  return (steps < 24 && is_nonconst_func_name(lower)) ? ILLEGAL_TOKEN : CONST_QUOTED_IDENTIFIER;
+}
+
+static char ascii_lower(int32_t c) { return (c >= 'A' && c <= 'Z') ? (char)(c - 'A' + 'a') : (char)c; }
+
+static bool read_backtick_chars(TSLexer *lexer, char *lower, unsigned cap, unsigned *out_len, bool *has_nul) {
+  unsigned steps = 0;
+  while (!at_eof(lexer)) {
+    int32_t c = lexer->lookahead;
+    if (c == 0) *has_nul = true;
+    advance(lexer);
+    if (c == '`' && lexer->lookahead != '`') {
+      lower[steps < cap ? steps : cap - 1] = 0;
+      *out_len = steps;
+      return true;
+    }
+    if (c == '`') advance(lexer);
+    if (steps + 1 < cap) lower[steps] = ascii_lower(c);
+    steps++;
+  }
+  return false;
+}
+
+static bool scan_backtick_body(TSLexer *lexer, bool allow_empty, enum TokenType target_symbol, bool fallback_ident) {
+  advance(lexer);
+  bool has_nul = false;
+  unsigned steps = 0;
+  char lower[24];
+  if (!read_backtick_chars(lexer, lower, sizeof lower, &steps, &has_nul)) return emit(lexer, ILLEGAL_TOKEN);
+  lexer->mark_end(lexer);
+  enum TokenType sym = resolve_backtick_symbol(lexer, target_symbol, fallback_ident, lower, steps);
+  lexer->result_symbol = (has_nul || (!allow_empty && steps == 0)) ? ILLEGAL_TOKEN : sym;
+  return true;
 }
 
 static enum TokenType quoted_hex_or_bit_symbol(bool is_hex, const bool *valid_symbols, bool *require_nonzero) {
@@ -356,7 +407,7 @@ static bool scan_at_variable(TSLexer *lexer, const bool *valid_symbols) {
   if (lexer->lookahead == '\'' || lexer->lookahead == '"') {
     return scan_string_token(lexer, lexer->lookahead, USER_VARIABLE);
   }
-  if (lexer->lookahead == '`') return scan_backtick_body(lexer, true, USER_VARIABLE);
+  if (lexer->lookahead == '`') return scan_backtick_body(lexer, true, USER_VARIABLE, false);
   if (is_user_var_char(lexer->lookahead)) {
     while (is_user_var_char(lexer->lookahead)) advance(lexer);
     return emit(lexer, USER_VARIABLE);
@@ -594,7 +645,14 @@ static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *va
     case '"':
       return scan_quote_or_sqlstate(lexer, c, valid_symbols);
     case '`':
-      return scan_backtick_body(lexer, false, valid_symbols[QUOTED_IDENTIFIER] ? QUOTED_IDENTIFIER : ILLEGAL_TOKEN);
+      return scan_backtick_body(
+        lexer,
+        false,
+        valid_symbols[CONST_QUOTED_IDENTIFIER] ? CONST_QUOTED_IDENTIFIER
+        : valid_symbols[QUOTED_IDENTIFIER]     ? QUOTED_IDENTIFIER
+                                               : ILLEGAL_TOKEN,
+        valid_symbols[QUOTED_IDENTIFIER]
+      );
     case 'n':
     case 'N':
     case 'x':

@@ -314,6 +314,20 @@ const RESERVED_FUNCTION_NAMES = [
   'VALUES',
 ];
 
+const CONST_RESERVED_FUNCTION_NAMES = [
+  'DATABASE',
+  'IF',
+  'INSERT',
+  'LEFT',
+  'MOD',
+  'REPEAT',
+  'REPLACE',
+  'RIGHT',
+  'SCHEMA',
+];
+
+const NONCONSTANT_FUNCTION_NAMES = ['BENCHMARK', 'RAND', 'RANDOM_BYTES', 'SLEEP', 'SYSDATE', 'UUID', 'UUID_SHORT'];
+
 const ZERO_ARG_WINDOW_NAMES = ['CUME_DIST', 'DENSE_RANK', 'PERCENT_RANK', 'RANK', 'ROW_NUMBER'];
 
 const WINDOW_DISTINCT_AGGREGATE_NAMES = ['MAX', 'MIN', 'ST_COLLECT'];
@@ -1719,7 +1733,7 @@ function buildScopedExpressionRules(sp) {
       ),
     [k('_scalar_function_call')]: ($) =>
       choice(
-        ...pureScalarFunctionAlternatives($, scopedHid($, sp, '_expression'), bitExpr($)),
+        ...pureScalarFunctionAlternatives($, $._function_name, scopedHid($, sp, '_expression'), bitExpr($)),
         seq(
           field('name', alias(keyword('GROUP_CONCAT'), $.identifier)),
           '(',
@@ -1934,7 +1948,8 @@ function buildConstFrameExpressionRules(sp) {
     [k('_const_parens')]: ($) => seq('(', expr($), ')'),
     [k('_const_row_value')]: ($) => prec(-1, seq('(', expr($), ',', commaSep1(expr($)), ')')),
     [k('_const_row_constructor')]: ($) => seq(keyword('ROW'), '(', commaSep(expr($)), ')'),
-    [k('_const_func_call')]: ($) => choice(...pureScalarFunctionAlternatives($, expr($), expr($))),
+    [k('_const_func_call')]: ($) =>
+      choice(...pureScalarFunctionAlternatives($, $._const_function_name, expr($), expr($))),
     [k('_const_cast')]: ($) => castExpressionRule($, expr($)),
     [k('_const_convert')]: ($) => convertExpressionRule($, expr($)),
     [k('_const_case')]: ($) => caseExpressionRule(expr($), alias(scopedHid($, sp, '_const_when'), $.when_clause)),
@@ -2028,13 +2043,14 @@ function bitBinaryRule(bitExpr) {
 
 /**
  * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} funcName
  * @param {RuleOrLiteral} expr
  * @param {RuleOrLiteral} bitExpr
  * @returns {RuleOrLiteral[]}
  */
-function pureScalarFunctionAlternatives($, expr, bitExpr) {
+function pureScalarFunctionAlternatives($, funcName, expr, bitExpr) {
   return [
-    seq(field('name', $._function_name), '(', commaSep(expr), ')'),
+    seq(field('name', funcName), '(', commaSep(expr), ')'),
     seq(field('name', alias(keyword('INTERVAL'), $.identifier)), '(', expr, ',', commaSep1(expr), ')'),
     seq(
       field('name', alias(keyword('CHAR'), $.identifier)),
@@ -2217,6 +2233,7 @@ export default grammar({
     $.user_variable,
     $.system_variable,
     $.quoted_identifier,
+    $._const_quoted_identifier,
     $._digit_identifier,
     $._host_name,
     $._statement_terminator,
@@ -2233,7 +2250,10 @@ export default grammar({
 
   reserved: {
     global: () => RESERVED.map(keywordPattern),
-    function_name: () => [...RESERVED, ...SPECIAL_FUNCTION_NAMES, ...TEMPORAL_LITERAL_KEYWORDS].map(keywordPattern),
+    function_name: () =>
+      [...RESERVED, ...SPECIAL_FUNCTION_NAMES, ...TEMPORAL_LITERAL_KEYWORDS, ...NONCONSTANT_FUNCTION_NAMES].map(
+        keywordPattern
+      ),
     role: () => [...RESERVED, ...RESTRICTED_ROLE_KEYWORDS].map(keywordPattern),
     label: () => [...RESERVED, ...RESTRICTED_LABEL_KEYWORDS].map(keywordPattern),
     lvalue: () => [...RESERVED, ...RESTRICTED_LVALUE_KEYWORDS].map(keywordPattern),
@@ -4775,7 +4795,20 @@ export default grammar({
         alias($._digit_identifier, $.identifier),
         $.quoted_identifier,
         seq(field('schema', $._identifier), '.', field('function', $._dot_identifier)),
-        ...[...RESERVED_FUNCTION_NAMES, ...TEMPORAL_LITERAL_KEYWORDS].map((word) => alias(keyword(word), $.identifier))
+        ...[...RESERVED_FUNCTION_NAMES, ...TEMPORAL_LITERAL_KEYWORDS, ...NONCONSTANT_FUNCTION_NAMES].map((word) =>
+          alias(keyword(word), $.identifier)
+        )
+      ),
+
+    _const_function_name: ($) =>
+      choice(
+        reserved('function_name', $.identifier),
+        alias($._digit_identifier, $.identifier),
+        alias($._const_quoted_identifier, $.quoted_identifier),
+        seq(field('schema', $._identifier), '.', field('function', $._dot_identifier)),
+        ...[...CONST_RESERVED_FUNCTION_NAMES, ...TEMPORAL_LITERAL_KEYWORDS].map((word) =>
+          alias(keyword(word), $.identifier)
+        )
       ),
 
     _datetime_cast_type: ($) => seq(keyword('DATETIME'), optional(seq('(', $._uint_length_literal, ')'))),
@@ -4849,7 +4882,9 @@ export default grammar({
         $.identifier,
         alias($._digit_identifier, $.identifier),
         $.quoted_identifier,
-        ...[...SPECIAL_FUNCTION_NAMES, 'CAST'].map((word) => alias(keyword(word), $.identifier)),
+        ...[...SPECIAL_FUNCTION_NAMES, ...NONCONSTANT_FUNCTION_NAMES, 'CAST'].map((word) =>
+          alias(keyword(word), $.identifier)
+        ),
         ...TEMPORAL_LITERAL_KEYWORDS.map((word) => prec(-1, alias(keyword(word), $.identifier)))
       ),
 
@@ -4858,7 +4893,9 @@ export default grammar({
         reserved('role', $.identifier),
         alias($._digit_identifier, $.identifier),
         $.quoted_identifier,
-        ...[...SPECIAL_FUNCTION_NAMES, 'CAST'].map((word) => alias(keyword(word), $.identifier)),
+        ...[...SPECIAL_FUNCTION_NAMES, ...NONCONSTANT_FUNCTION_NAMES, 'CAST'].map((word) =>
+          alias(keyword(word), $.identifier)
+        ),
         ...TEMPORAL_LITERAL_KEYWORDS.map((word) => prec(-1, alias(keyword(word), $.identifier)))
       ),
 
@@ -4867,7 +4904,9 @@ export default grammar({
         reserved('label', $.identifier),
         alias($._digit_identifier, $.identifier),
         $.quoted_identifier,
-        ...[...SPECIAL_FUNCTION_NAMES, 'CAST'].map((word) => alias(keyword(word), $.identifier)),
+        ...[...SPECIAL_FUNCTION_NAMES, ...NONCONSTANT_FUNCTION_NAMES, 'CAST'].map((word) =>
+          alias(keyword(word), $.identifier)
+        ),
         ...TEMPORAL_LITERAL_KEYWORDS.map((word) => prec(-1, alias(keyword(word), $.identifier)))
       ),
 
@@ -4876,7 +4915,9 @@ export default grammar({
         reserved('lvalue', $.identifier),
         alias($._digit_identifier, $.identifier),
         $.quoted_identifier,
-        ...[...SPECIAL_FUNCTION_NAMES, 'CAST'].map((word) => alias(keyword(word), $.identifier)),
+        ...[...SPECIAL_FUNCTION_NAMES, ...NONCONSTANT_FUNCTION_NAMES, 'CAST'].map((word) =>
+          alias(keyword(word), $.identifier)
+        ),
         ...TEMPORAL_LITERAL_KEYWORDS.map((word) => prec(-1, alias(keyword(word), $.identifier)))
       ),
 
