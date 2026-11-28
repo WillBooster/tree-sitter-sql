@@ -25958,6 +25958,10 @@
         {
           "type": "merge_update_clause",
           "named": true
+        },
+        {
+          "type": "returning_into_clause",
+          "named": true
         }
       ]
     }

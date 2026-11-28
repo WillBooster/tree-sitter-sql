@@ -2557,7 +2557,8 @@ export default grammar({
           seq($.merge_update_clause, optional($.merge_insert_clause)),
           seq($.merge_insert_clause, optional($.merge_update_clause))
         ),
-        optional($.error_logging_clause)
+        optional($.error_logging_clause),
+        optional($.returning_into_clause)
       ),
 
     merge_update_clause: ($) =>

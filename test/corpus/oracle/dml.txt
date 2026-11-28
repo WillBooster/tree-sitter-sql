@@ -514,3 +514,98 @@ END;
           (identifier)
           (function_argument
             (identifier)))))))
+
+
+================================================================================
+Oracle 23ai MERGE with RETURNING INTO in SQL and PL/SQL
+:language(oracle)
+================================================================================
+
+MERGE INTO items t
+USING (SELECT 1 id, 10 new_price FROM dual) s
+ON (t.id = s.id)
+WHEN MATCHED THEN UPDATE SET t.price = s.new_price
+RETURNING OLD price, NEW price INTO :old_price, :new_price;
+
+BEGIN
+  MERGE INTO items t
+  USING src s
+  ON (t.id = s.id)
+  WHEN NOT MATCHED THEN INSERT (id, price) VALUES (s.id, s.new_price)
+  RETURNING price BULK COLLECT INTO l_prices;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (merge_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (subquery_table
+      (select_statement
+        (select_core
+          (select_list
+            (select_item
+              (numeric_literal)
+              (identifier))
+            (select_item
+              (numeric_literal)
+              (identifier)))
+          (from_clause
+            (table_reference
+              (object_name
+                (identifier)))))))
+    (identifier)
+    (binary_expression
+      (member_expression
+        (identifier)
+        (identifier))
+      (member_expression
+        (identifier)
+        (identifier)))
+    (merge_update_clause
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier)
+            (identifier))
+          (member_expression
+            (identifier)
+            (identifier)))))
+    (returning_into_clause
+      (identifier)
+      (identifier)
+      (bind_variable)
+      (bind_variable)))
+  (anonymous_block
+    (merge_statement
+      (object_name
+        (identifier))
+      (identifier)
+      (table_reference
+        (object_name
+          (identifier))
+        (identifier))
+      (binary_expression
+        (member_expression
+          (identifier)
+          (identifier))
+        (member_expression
+          (identifier)
+          (identifier)))
+      (merge_insert_clause
+        (object_name
+          (identifier))
+        (object_name
+          (identifier))
+        (values_row
+          (member_expression
+            (identifier)
+            (identifier))
+          (member_expression
+            (identifier)
+            (identifier))))
+      (returning_into_clause
+        (identifier)
+        (identifier)))))

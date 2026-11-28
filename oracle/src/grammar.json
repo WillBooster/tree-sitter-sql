@@ -11958,6 +11958,18 @@
               "type": "BLANK"
             }
           ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "returning_into_clause"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
