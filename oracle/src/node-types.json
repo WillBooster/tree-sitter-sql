@@ -18616,6 +18616,10 @@
           "named": true
         },
         {
+          "type": "qualified_wildcard",
+          "named": true
+        },
+        {
           "type": "within_group_clause",
           "named": true
         }
@@ -25331,10 +25335,6 @@
           "named": true
         },
         {
-          "type": "model_cell_reference",
-          "named": true
-        },
-        {
           "type": "multiset_expression",
           "named": true
         },
@@ -25356,10 +25356,6 @@
         },
         {
           "type": "order_by_clause",
-          "named": true
-        },
-        {
-          "type": "outer_join_expression",
           "named": true
         },
         {
@@ -47633,6 +47629,10 @@
   },
   {
     "type": "RULES",
+    "named": false
+  },
+  {
+    "type": "RUNNING",
     "named": false
   },
   {

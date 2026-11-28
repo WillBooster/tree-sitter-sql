@@ -797,3 +797,13 @@ JSON array wildcard step on non-dotted identifier is invalid
 SELECT sales[*] FROM t;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+FINAL evaluation modifier in MATCH_RECOGNIZE DEFINE clause is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT * FROM ticker MATCH_RECOGNIZE (ORDER BY tstamp PATTERN (a+) DEFINE a AS FINAL LAST(a.price) > 0);
+
+--------------------------------------------------------------------------------

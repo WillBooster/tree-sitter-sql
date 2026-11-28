@@ -415,9 +415,12 @@ const qualifiedObjectName = ($, firstSegment) =>
     )
   );
 
-/** @param {'' | '_plsql'} prefix */
+/** @param {'' | '_plsql' | '_mr_meas' | '_mr_def'} prefix */
 const buildExpressionFamily = (prefix) => {
   const isPlsql = prefix === '_plsql';
+  const isAliased = prefix !== '';
+  const isRowPattern = prefix === '_mr_meas' || prefix === '_mr_def';
+  const allowFinal = prefix === '_mr_meas';
   const k = (/** @type {string} */ base) => `${prefix}${base}`;
   /**
    * @param {GrammarSymbols<string>} $
@@ -428,13 +431,13 @@ const buildExpressionFamily = (prefix) => {
    * @param {GrammarSymbols<string>} $
    * @param {string} publicName
    */
-  const pub = ($, publicName) => (isPlsql ? alias($[`${prefix}_${publicName}`], $[publicName]) : $[publicName]);
+  const pub = ($, publicName) => (isAliased ? alias($[`${prefix}_${publicName}`], $[publicName]) : $[publicName]);
   /**
    * @param {string} publicName
    * @param {(s: GrammarSymbols<string>) => RuleOrLiteral} fn
    * @returns {[string, (s: GrammarSymbols<string>) => RuleOrLiteral]}
    */
-  const def = (publicName, fn) => [isPlsql ? `${prefix}_${publicName}` : publicName, fn];
+  const def = (publicName, fn) => [isAliased ? `${prefix}_${publicName}` : publicName, fn];
   /** @param {GrammarSymbols<string>} $ */
   const baseIdentifier = ($) => (isPlsql ? $._plsql_identifier : $._identifier);
 
@@ -445,7 +448,7 @@ const buildExpressionFamily = (prefix) => {
         choice(
           ref($, '_scalar_expression'),
           alias(ref($, '_comparison_expression'), $.binary_expression),
-          ...(isPlsql ? [] : [$.quantified_comparison_expression]),
+          ...(isPlsql ? [] : [pub($, 'quantified_comparison_expression')]),
           pub($, 'is_expression'),
           pub($, 'like_expression'),
           pub($, 'between_expression'),
@@ -484,14 +487,7 @@ const buildExpressionFamily = (prefix) => {
           $.subquery,
           pub($, 'member_expression'),
           pub($, 'dblink_expression'),
-          ...(isPlsql
-            ? [$.cursor_attribute, alias($._expr_cc_directive, $.conditional_compilation_directive)]
-            : [
-                $.outer_join_expression,
-                $.model_cell_reference,
-                $.json_array_access,
-                alias($._ordered_aggregate_call, $.function_call),
-              ]),
+          ...primaryModeExtras($, ref, pub, isPlsql, isRowPattern),
           pub($, 'function_call'),
           alias(ref($, '_conversion_function_call'), $.function_call),
           pub($, 'new_expression'),
@@ -506,25 +502,13 @@ const buildExpressionFamily = (prefix) => {
           pub($, 'translate_expression'),
           pub($, 'chr_expression'),
           pub($, 'listagg_expression'),
-          pub($, 'json_function_expression'),
-          pub($, 'json_constructor_expression'),
-          pub($, 'xml_function_expression')
+          ...primaryJsonXmlExtras($, pub, isRowPattern)
         ),
     ],
     [
       k('_expr_identifier'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
-        choice(
-          baseIdentifier($),
-          $._special_expr_id,
-          ...(isPlsql
-            ? []
-            : [
-                alias(keyword('CURSOR'), $.identifier),
-                alias(keyword('XMLAGG'), $.identifier),
-                alias(keyword('COLLECT'), $.identifier),
-              ])
-        ),
+        choice(baseIdentifier($), $._special_expr_id, ...exprIdentifierExtras($, isPlsql, isRowPattern, allowFinal)),
     ],
     def('parenthesized_expression', ($) => seq('(', ref($, '_expression'), ')')),
     def('expression_list', ($) => seq('(', ref($, '_expression_list_body'), ')')),
@@ -553,11 +537,81 @@ const buildExpressionFamily = (prefix) => {
         seq(baseIdentifier($), repeat(seq('.', field('member', $._member_name)))),
     ],
     ...buildCaseAndBuiltinRules(k, ref, pub, def, isPlsql),
+    ...buildOperatorAndPredicateRules(k, ref, pub, def, isPlsql),
+    ...modeTailEntries({ k, ref, pub, def, baseIdentifier }, prefix),
+  ]);
+};
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {($: GrammarSymbols<string>, base: string) => RuleOrLiteral} ref
+ * @param {($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral} pub
+ * @param {boolean} isPlsql
+ * @param {boolean} isRowPattern
+ * @returns {RuleOrLiteral[]}
+ */
+const primaryModeExtras = ($, ref, pub, isPlsql, isRowPattern) => {
+  if (isPlsql) return [$.cursor_attribute, alias($._expr_cc_directive, $.conditional_compilation_directive)];
+  if (isRowPattern) return [pub($, 'json_array_access'), alias(ref($, '_modified_call'), $.function_call)];
+  return [
+    $.outer_join_expression,
+    $.model_cell_reference,
+    $.json_array_access,
+    alias($._ordered_aggregate_call, $.function_call),
+  ];
+};
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral} pub
+ * @param {boolean} isRowPattern
+ * @returns {RuleOrLiteral[]}
+ */
+const primaryJsonXmlExtras = ($, pub, isRowPattern) =>
+  isRowPattern
+    ? [$.json_function_expression, $.json_constructor_expression, $.xml_function_expression]
+    : [pub($, 'json_function_expression'), pub($, 'json_constructor_expression'), pub($, 'xml_function_expression')];
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {boolean} isPlsql
+ * @param {boolean} isRowPattern
+ * @param {boolean} allowFinal
+ * @returns {RuleOrLiteral[]}
+ */
+const exprIdentifierExtras = ($, isPlsql, isRowPattern, allowFinal) => {
+  if (isPlsql) return [];
+  const base = [
+    alias(keyword('CURSOR'), $.identifier),
+    alias(keyword('XMLAGG'), $.identifier),
+    alias(keyword('COLLECT'), $.identifier),
+  ];
+  if (!isRowPattern) return base;
+  return allowFinal
+    ? [...base, alias(keyword('RUNNING'), $.identifier), alias(keyword('FINAL'), $.identifier)]
+    : [...base, alias(keyword('RUNNING'), $.identifier)];
+};
+
+/**
+ * @param {{
+ *   k: (base: string) => string;
+ *   ref: ($: GrammarSymbols<string>, base: string) => RuleOrLiteral;
+ *   pub: ($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral;
+ *   def: (publicName: string, fn: ($: GrammarSymbols<string>) => RuleOrLiteral) => [string, ($: GrammarSymbols<string>) => RuleOrLiteral];
+ *   baseIdentifier: ($: GrammarSymbols<string>) => RuleOrLiteral;
+ * }} ctx
+ * @param {'' | '_plsql' | '_mr_meas' | '_mr_def'} prefix
+ * @returns {[string, ($: GrammarSymbols<string>) => RuleOrLiteral][]}
+ */
+const modeTailEntries = ({ k, ref, pub, def, baseIdentifier }, prefix) => {
+  if (prefix === '_mr_meas' || prefix === '_mr_def') {
+    return Object.entries(rowPatternOnlyExpressionRules(k, ref, pub, def, prefix === '_mr_meas'));
+  }
+  return [
     ...buildJsonExpressionRules(k, ref, pub, def, baseIdentifier),
     ...buildXmlExpressionRules(k, ref, pub, def),
-    ...buildOperatorAndPredicateRules(k, ref, pub, def, isPlsql),
-    ...Object.entries(isPlsql ? plsqlOnlyExpressionRules() : sqlOnlyExpressionRules()),
-  ]);
+    ...Object.entries(prefix === '_plsql' ? plsqlOnlyExpressionRules() : sqlOnlyExpressionRules()),
+  ];
 };
 
 /**
@@ -1323,6 +1377,7 @@ function sqlOnlyExpressionRules() {
     _sql_func_args: ($) =>
       choice(
         alias('*', $.all_columns),
+        $.qualified_wildcard,
         seq(
           optional(choice(keyword('DISTINCT'), keyword('UNIQUE'), keyword('ALL'))),
           commaSep1($.function_argument),
@@ -1362,6 +1417,144 @@ function sqlOnlyExpressionRules() {
       ),
     _quantified_in_list: ($) => choice(alias($._subquery_statement, $.select_statement), commaSep1($._expression)),
   };
+}
+
+/**
+ * @param {(base: string) => string} k
+ * @param {($: GrammarSymbols<string>, base: string) => RuleOrLiteral} ref
+ * @param {($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral} pub
+ * @param {(publicName: string, fn: ($: GrammarSymbols<string>) => RuleOrLiteral) => [string, ($: GrammarSymbols<string>) => RuleOrLiteral]} def
+ * @param {boolean} allowFinal
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function rowPatternOnlyExpressionRules(k, ref, pub, def, allowFinal) {
+  const evalMod = () => (allowFinal ? choice(keyword('RUNNING'), keyword('FINAL')) : keyword('RUNNING'));
+  return Object.fromEntries([
+    [
+      k('_callable_expression'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        choice($._identifier, pub($, 'member_expression'), pub($, 'dblink_expression'), pub($, 'function_call')),
+    ],
+    [
+      k('_qualified_wildcard'),
+      /** @param {GrammarSymbols<string>} $ */ ($) => seq(field('object', ref($, '_primary_expression')), '.', '*'),
+    ],
+    def('json_array_access', ($) =>
+      prec.left(
+        PREC.POSTFIX,
+        seq(
+          field('object', choice(pub($, 'member_expression'), pub($, 'json_array_access'))),
+          '[',
+          choice(alias('*', $.all_columns), $._json_any_step_list),
+          ']'
+        )
+      )
+    ),
+    [
+      k('_new_args'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        commaSep1(alias(ref($, '_function_argument'), $.function_argument)),
+    ],
+    def('function_call', ($) =>
+      seq(field('name', ref($, '_callable_expression')), '(', optional(ref($, '_func_args')), ')')
+    ),
+    [
+      k('_func_args'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        choice(
+          alias('*', $.all_columns),
+          alias(ref($, '_qualified_wildcard'), $.qualified_wildcard),
+          seq(
+            optional(choice(keyword('DISTINCT'), keyword('UNIQUE'), keyword('ALL'))),
+            commaSep1(alias(ref($, '_function_argument'), $.function_argument)),
+            optional($._sql_function_in_parens_tail)
+          )
+        ),
+    ],
+    [
+      k('_function_argument'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        choice(
+          seq(field('parameter', $._plsql_name), '=>', field('value', ref($, '_expression'))),
+          ref($, '_expression')
+        ),
+    ],
+    [
+      k('_conversion_function_call'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        seq(field('name', alias($._conversion_function_name, $.identifier)), '(', ref($, '_conv_args'), ')'),
+    ],
+    [
+      k('_conv_args'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        seq(
+          alias(ref($, '_conversion_first_argument'), $.function_argument),
+          optional(seq(',', commaSep1(alias(ref($, '_function_argument'), $.function_argument))))
+        ),
+    ],
+    [
+      k('_conversion_first_argument'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        seq(
+          choice(
+            seq(field('parameter', $._plsql_name), '=>', field('value', ref($, '_expression'))),
+            ref($, '_expression')
+          ),
+          optional(seq(keyword('DEFAULT'), field('default', ref($, '_expression')), keywords('ON CONVERSION ERROR')))
+        ),
+    ],
+    [
+      k('_modified_call'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        seq(
+          evalMod(),
+          choice(
+            seq(
+              field('name', choice(alias(keyword('FIRST'), $.identifier), alias(keyword('LAST'), $.identifier))),
+              '(',
+              alias(ref($, '_expression'), $.function_argument),
+              optional(seq(',', alias(ref($, '_expression'), $.function_argument))),
+              ')'
+            ),
+            seq(
+              field('name', alias(keyword('COUNT'), $.identifier)),
+              '(',
+              choice(
+                alias('*', $.all_columns),
+                alias(ref($, '_qualified_wildcard'), $.qualified_wildcard),
+                seq(optional(keyword('ALL')), alias(ref($, '_expression'), $.function_argument))
+              ),
+              ')'
+            ),
+            seq(
+              field('name', choice(...['AVG', 'MAX', 'MIN', 'SUM'].map((word) => alias(keyword(word), $.identifier)))),
+              '(',
+              optional(keyword('ALL')),
+              alias(ref($, '_expression'), $.function_argument),
+              ')'
+            )
+          )
+        ),
+    ],
+    def('quantified_comparison_expression', ($) =>
+      prec.left(
+        PREC.COMPARISON,
+        seq(
+          field('left', ref($, '_scalar_expression')),
+          field('operator', COMPARISON_OPERATOR()),
+          field('quantifier', $._any_some_all),
+          '(',
+          ref($, '_quantified_in_list'),
+          ')'
+        )
+      )
+    ),
+    [
+      k('_quantified_in_list'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        choice(alias($._subquery_statement, $.select_statement), commaSep1(ref($, '_expression'))),
+    ],
+  ]);
 }
 
 /** @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
@@ -1448,6 +1641,7 @@ export default grammar({
     [$._error_logging_tail],
     [$._object_privilege, $._system_privilege_or_role],
     [$.numeric_literal, $._json_step_index],
+    [$._special_expr_id, $._mr_meas_new_expression],
   ],
 
   rules: {
@@ -2091,14 +2285,14 @@ export default grammar({
         ')',
         optional(seq(keyword('SUBSET'), commaSep1(seq($._name, '=', '(', commaSep1($._name), ')')))),
         keyword('DEFINE'),
-        commaSep1(seq($._name, keyword('AS'), $._expression))
+        commaSep1(seq($._name, keyword('AS'), $._mr_def_expression))
       ),
 
     _match_recognize_option: ($) =>
       choice(
         $.partition_by_clause,
         $.order_by_clause,
-        seq(keyword('MEASURES'), commaSep1(seq($._expression, optional(keyword('AS')), $._name))),
+        seq(keyword('MEASURES'), commaSep1(seq($._mr_meas_expression, optional(keyword('AS')), $._name))),
         keywords('ONE ROW PER MATCH'),
         prec.right(
           seq(
@@ -6845,6 +7039,8 @@ export default grammar({
 
     ...buildExpressionFamily(''),
     ...buildExpressionFamily('_plsql'),
+    ...buildExpressionFamily('_mr_meas'),
+    ...buildExpressionFamily('_mr_def'),
 
     _dangling_cmp_op: () => field('operator', COMPARISON_OPERATOR()),
 
