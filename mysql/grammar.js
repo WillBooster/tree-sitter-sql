@@ -597,6 +597,7 @@ function buildScopedRules(sp) {
     ...buildScopedUtilityRules(sp),
     ...buildScopedClauseRules(sp),
     ...buildScopedExpressionRules(sp),
+    ...buildConstFrameExpressionRules(sp),
   };
 }
 
@@ -1406,36 +1407,6 @@ function buildScopedUtilityRules(sp) {
           optional(scopedVis($, sp, 'where_clause'))
         ),
         seq(
-          keyword('CREATE'),
-          choice(
-            seq(keyword('USER'), $.account_name),
-            seq(choice(keyword('DATABASE'), keyword('SCHEMA')), optional($.if_not_exists), $.qualified_name),
-            seq(
-              choice(
-                keyword('TABLE'),
-                keyword('VIEW'),
-                keyword('PROCEDURE'),
-                keyword('FUNCTION'),
-                keyword('TRIGGER'),
-                keyword('EVENT')
-              ),
-              $.qualified_name
-            )
-          )
-        ),
-        seq(
-          keyword('GRANTS'),
-          optional(
-            seq(
-              keyword('FOR'),
-              $.account_name,
-              optional(seq(keyword('USING'), commaSep1(alias($._role_name, $.account_name))))
-            )
-          )
-        ),
-        seq(optional(keyword('FULL')), keyword('PROCESSLIST')),
-        seq(keyword('COUNT'), '(', '*', ')', choice(keyword('WARNINGS'), keyword('ERRORS'))),
-        seq(
           keywords('TABLE STATUS'),
           optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
           optional(scopedHid($, sp, '_like_or_where'))
@@ -1445,7 +1416,6 @@ function buildScopedUtilityRules(sp) {
           keyword('STATUS'),
           optional(scopedHid($, sp, '_like_or_where'))
         ),
-        seq(choice(keyword('PROCEDURE'), keyword('FUNCTION')), keyword('CODE'), $.qualified_name),
         seq(
           choice(keyword('TRIGGERS'), keyword('EVENTS')),
           optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
@@ -1455,24 +1425,12 @@ function buildScopedUtilityRules(sp) {
           choice(keywords('CHARACTER SET'), keyword('CHARSET'), keyword('COLLATION')),
           optional(scopedHid($, sp, '_like_or_where'))
         ),
-        seq(optional(keyword('STORAGE')), keyword('ENGINES')),
-        seq(
-          keyword('ENGINE'),
-          choice($._identifier, keyword('ALL')),
-          choice(keyword('STATUS'), keyword('MUTEX'), keyword('LOGS'))
-        ),
-        keyword('PRIVILEGES'),
-        keyword('PLUGINS'),
-        keyword('PROFILES'),
         seq(
           keywords('OPEN TABLES'),
           optional(seq(choice(keyword('FROM'), keyword('IN')), $._identifier)),
           optional(scopedHid($, sp, '_like_or_where'))
         ),
-        keywords('BINARY LOGS'),
-        keywords('BINARY LOG STATUS'),
-        seq(keyword('REPLICA'), keyword('STATUS'), optional(seq(keywords('FOR CHANNEL'), $.string_literal))),
-        keyword('REPLICAS')
+        $._static_show_body
       ),
     [k('_like_or_where')]: ($) => choice(seq(keyword('LIKE'), $.string_literal), scopedVis($, sp, 'where_clause')),
     [k('purge_statement')]: ($) =>
@@ -1622,7 +1580,7 @@ function buildScopedClauseRules(sp) {
       choice(
         $.numeric_literal,
         $.placeholder,
-        scopedVis($, sp, 'interval_expression'),
+        alias(scopedHid($, sp, '_frame_interval_expression'), $.interval_expression),
         seq($._overflow_int_literal, $._unreachable)
       ),
     [k('_range_frame_preceding')]: ($) => seq(scopedHid($, sp, '_range_frame_offset'), keyword('PRECEDING')),
@@ -1830,15 +1788,7 @@ function buildScopedExpressionRules(sp) {
         scopedHid($, sp, '_non_subquery_simple_expr'),
         alias(scopedHid($, sp, '_bit_binary_expression'), $.binary_expression)
       ),
-    [k('_bit_binary_expression')]: ($) =>
-      choice(
-        leftBinaryOp(PREC.BIT_OR, bitExpr($), '|'),
-        leftBinaryOp(PREC.BIT_AND, bitExpr($), '&'),
-        leftBinaryOp(PREC.BIT_SHIFT, bitExpr($), choice('<<', '>>')),
-        leftBinaryOp(PREC.ADD, bitExpr($), choice('+', '-')),
-        leftBinaryOp(PREC.MUL, bitExpr($), choice('*', '/', keyword('DIV'), '%', keyword('MOD'))),
-        leftBinaryOp(PREC.BIT_XOR, bitExpr($), '^')
-      ),
+    [k('_bit_binary_expression')]: ($) => bitBinaryRule(bitExpr($)),
     [k('_non_subquery_parens')]: ($) => seq('(', scopedHid($, sp, '_non_subquery_expression'), ')'),
     [k('_non_subquery_simple_expr')]: ($) =>
       choice(
@@ -1906,96 +1856,7 @@ function buildScopedExpressionRules(sp) {
       ),
     [k('_scalar_function_call')]: ($) =>
       choice(
-        seq(field('name', $._function_name), '(', commaSep(scopedHid($, sp, '_expression')), ')'),
-        seq(
-          field('name', alias(keyword('INTERVAL'), $.identifier)),
-          '(',
-          scopedHid($, sp, '_expression'),
-          ',',
-          commaSep1(scopedHid($, sp, '_expression')),
-          ')'
-        ),
-        seq(
-          field('name', alias(keyword('CHAR'), $.identifier)),
-          '(',
-          commaSep1(scopedHid($, sp, '_expression')),
-          optional(seq(keyword('USING'), $._charset_name)),
-          ')'
-        ),
-        seq(
-          field('name', alias(keyword('JSON_VALUE'), $.identifier)),
-          '(',
-          scopedHid($, sp, '_expression'),
-          ',',
-          $.string_literal,
-          optional(seq(keyword('RETURNING'), $.cast_type)),
-          optional($._json_on_empty),
-          optional($._json_on_error),
-          ')'
-        ),
-        seq(
-          field('name', alias(keyword('TRIM'), $.identifier)),
-          '(',
-          choice(
-            seq(
-              choice(keyword('BOTH'), keyword('LEADING'), keyword('TRAILING')),
-              optional(scopedHid($, sp, '_expression')),
-              keyword('FROM'),
-              scopedHid($, sp, '_expression')
-            ),
-            seq(scopedHid($, sp, '_expression'), optional(seq(keyword('FROM'), scopedHid($, sp, '_expression'))))
-          ),
-          ')'
-        ),
-        seq(
-          field(
-            'name',
-            choice(
-              alias(keyword('SUBSTRING'), $.identifier),
-              alias(keyword('SUBSTR'), $.identifier),
-              alias(keyword('MID'), $.identifier)
-            )
-          ),
-          '(',
-          scopedHid($, sp, '_expression'),
-          choice(
-            seq(',', scopedHid($, sp, '_expression'), optional(seq(',', scopedHid($, sp, '_expression')))),
-            seq(
-              keyword('FROM'),
-              scopedHid($, sp, '_expression'),
-              optional(seq(keyword('FOR'), scopedHid($, sp, '_expression')))
-            )
-          ),
-          ')'
-        ),
-        seq(
-          field('name', alias(keyword('EXTRACT'), $.identifier)),
-          '(',
-          $.interval_unit,
-          keyword('FROM'),
-          scopedHid($, sp, '_expression'),
-          ')'
-        ),
-        seq(
-          field('name', alias(keyword('POSITION'), $.identifier)),
-          '(',
-          bitExpr($),
-          keyword('IN'),
-          scopedHid($, sp, '_expression'),
-          ')'
-        ),
-        seq(
-          field('name', alias(keyword('WEIGHT_STRING'), $.identifier)),
-          '(',
-          scopedHid($, sp, '_expression'),
-          optional(
-            choice(
-              seq(keyword('AS'), choice(keyword('CHAR'), keyword('BINARY')), '(', $._ws_num_codepoints, ')'),
-              seq(',', $.numeric_literal, ',', $.numeric_literal, ',', $.numeric_literal)
-            )
-          ),
-          ')'
-        ),
+        ...pureScalarFunctionAlternatives($, scopedHid($, sp, '_expression'), bitExpr($)),
         seq(
           field('name', alias(keyword('GROUP_CONCAT'), $.identifier)),
           '(',
@@ -2146,31 +2007,8 @@ function buildScopedExpressionRules(sp) {
         keyword('OVER'),
         choice(seq('(', optional(scopedVis($, sp, 'window_definition')), ')'), field('window', $._identifier))
       ),
-    [k('cast_expression')]: ($) =>
-      seq(
-        keyword('CAST'),
-        '(',
-        field('value', scopedHid($, sp, '_expression')),
-        choice(
-          seq(keyword('AS'), field('type', $.cast_type), optional(keyword('ARRAY'))),
-          seq(
-            keywords('AT TIME ZONE'),
-            optional(keyword('INTERVAL')),
-            field('timezone', $.string_literal),
-            keyword('AS'),
-            field('type', alias($._datetime_cast_type, $.cast_type))
-          )
-        ),
-        ')'
-      ),
-    [k('convert_expression')]: ($) =>
-      seq(
-        keyword('CONVERT'),
-        '(',
-        field('value', scopedHid($, sp, '_expression')),
-        choice(seq(',', field('type', $.cast_type)), seq(keyword('USING'), field('charset', $._charset_name))),
-        ')'
-      ),
+    [k('cast_expression')]: ($) => castExpressionRule($, scopedHid($, sp, '_expression')),
+    [k('convert_expression')]: ($) => convertExpressionRule($, scopedHid($, sp, '_expression')),
     [k('match_expression')]: ($) =>
       seq(
         keyword('MATCH'),
@@ -2189,22 +2027,208 @@ function buildScopedExpressionRules(sp) {
       ),
     [k('odbc_escape_expression')]: ($) =>
       seq('{', field('type', $._identifier), field('value', scopedHid($, sp, '_non_subquery_expression')), '}'),
-    [k('case_expression')]: ($) =>
-      seq(
-        keyword('CASE'),
-        optional(field('operand', scopedHid($, sp, '_expression'))),
-        repeat1(scopedVis($, sp, 'when_clause')),
-        optional(seq(keyword('ELSE'), field('else', scopedHid($, sp, '_expression')))),
-        keyword('END')
+    [k('case_expression')]: ($) => caseExpressionRule(scopedHid($, sp, '_expression'), scopedVis($, sp, 'when_clause')),
+    [k('when_clause')]: ($) => whenClauseRule(scopedHid($, sp, '_expression')),
+  };
+}
+
+/**
+ * @param {boolean} sp
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildConstFrameExpressionRules(sp) {
+  const k = (/** @type {string} */ n) => scopedKey(sp, n);
+  const expr = (/** @type {GrammarSymbols<string>} */ $) => scopedHid($, sp, '_const_expr');
+  return {
+    [k('_frame_interval_expression')]: ($) =>
+      seq(keyword('INTERVAL'), field('value', prec(PREC.INTERVAL, expr($))), field('unit', $.interval_unit)),
+    [k('_const_expr')]: ($) =>
+      choice(
+        $._literal,
+        ...(sp ? [alias($._stable_ident_ref, $.column_reference)] : []),
+        $.user_variable,
+        $.system_variable,
+        $.placeholder,
+        $.current_time_expression,
+        alias(scopedHid($, sp, '_const_parens'), $.parenthesized_expression),
+        alias(scopedHid($, sp, '_frame_interval_expression'), $.interval_expression),
+        alias(scopedHid($, sp, '_const_func_call'), $.function_call),
+        alias(scopedHid($, sp, '_const_cast'), $.cast_expression),
+        alias(scopedHid($, sp, '_const_case'), $.case_expression),
+        alias(scopedHid($, sp, '_const_unary'), $.unary_expression),
+        alias(scopedHid($, sp, '_const_bin'), $.binary_expression),
+        alias(scopedHid($, sp, '_const_is'), $.is_expression)
       ),
-    [k('when_clause')]: ($) =>
-      seq(
-        keyword('WHEN'),
-        field('condition', scopedHid($, sp, '_expression')),
-        keyword('THEN'),
-        field('result', scopedHid($, sp, '_expression'))
+    [k('_const_parens')]: ($) => seq('(', expr($), ')'),
+    [k('_const_func_call')]: ($) =>
+      choice(
+        seq(field('name', $._function_name), '(', commaSep(expr($)), ')'),
+        seq(field('name', alias(keyword('EXTRACT'), $.identifier)), '(', $.interval_unit, keyword('FROM'), expr($), ')')
+      ),
+    [k('_const_cast')]: ($) => castExpressionRule($, expr($)),
+    [k('_const_case')]: ($) => caseExpressionRule(expr($), alias(scopedHid($, sp, '_const_when'), $.when_clause)),
+    [k('_const_when')]: ($) => whenClauseRule(expr($)),
+    [k('_const_unary')]: ($) =>
+      choice(
+        prec.right(PREC.NOT, seq(field('operator', keyword('NOT')), field('operand', expr($)))),
+        prec.right(PREC.UNARY, seq(field('operator', choice('-', '+', '~')), field('operand', expr($)))),
+        prec.right(PREC.BANG, seq(field('operator', '!'), field('operand', expr($))))
+      ),
+    [k('_const_bin')]: ($) =>
+      choice(
+        leftBinaryOp(PREC.OR, expr($), choice(keyword('OR'), '||')),
+        leftBinaryOp(PREC.XOR, expr($), keyword('XOR')),
+        leftBinaryOp(PREC.AND, expr($), choice(keyword('AND'), '&&')),
+        leftBinaryOp(PREC.COMPARE, expr($), choice('=', '<=>', '>=', '>', '<=', '<', '<>', '!=')),
+        bitBinaryRule(expr($))
+      ),
+    [k('_const_is')]: ($) =>
+      prec.left(
+        PREC.IS_BOOL,
+        seq(
+          field('left', expr($)),
+          keyword('IS'),
+          optional(keyword('NOT')),
+          field('right', choice($.null, $.boolean_literal, keyword('UNKNOWN')))
+        )
       ),
   };
+}
+
+/** @param {RuleOrLiteral} bitExpr */
+function bitBinaryRule(bitExpr) {
+  return choice(
+    leftBinaryOp(PREC.BIT_OR, bitExpr, '|'),
+    leftBinaryOp(PREC.BIT_AND, bitExpr, '&'),
+    leftBinaryOp(PREC.BIT_SHIFT, bitExpr, choice('<<', '>>')),
+    leftBinaryOp(PREC.ADD, bitExpr, choice('+', '-')),
+    leftBinaryOp(PREC.MUL, bitExpr, choice('*', '/', keyword('DIV'), '%', keyword('MOD'))),
+    leftBinaryOp(PREC.BIT_XOR, bitExpr, '^')
+  );
+}
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} expr
+ * @param {RuleOrLiteral} bitExpr
+ * @returns {RuleOrLiteral[]}
+ */
+function pureScalarFunctionAlternatives($, expr, bitExpr) {
+  return [
+    seq(field('name', $._function_name), '(', commaSep(expr), ')'),
+    seq(field('name', alias(keyword('INTERVAL'), $.identifier)), '(', expr, ',', commaSep1(expr), ')'),
+    seq(
+      field('name', alias(keyword('CHAR'), $.identifier)),
+      '(',
+      commaSep1(expr),
+      optional(seq(keyword('USING'), $._charset_name)),
+      ')'
+    ),
+    seq(
+      field('name', alias(keyword('JSON_VALUE'), $.identifier)),
+      '(',
+      expr,
+      ',',
+      $.string_literal,
+      optional(seq(keyword('RETURNING'), $.cast_type)),
+      optional($._json_on_empty),
+      optional($._json_on_error),
+      ')'
+    ),
+    seq(
+      field('name', alias(keyword('TRIM'), $.identifier)),
+      '(',
+      choice(
+        seq(choice(keyword('BOTH'), keyword('LEADING'), keyword('TRAILING')), optional(expr), keyword('FROM'), expr),
+        seq(expr, optional(seq(keyword('FROM'), expr)))
+      ),
+      ')'
+    ),
+    seq(
+      field(
+        'name',
+        choice(
+          alias(keyword('SUBSTRING'), $.identifier),
+          alias(keyword('SUBSTR'), $.identifier),
+          alias(keyword('MID'), $.identifier)
+        )
+      ),
+      '(',
+      expr,
+      choice(seq(',', expr, optional(seq(',', expr))), seq(keyword('FROM'), expr, optional(seq(keyword('FOR'), expr)))),
+      ')'
+    ),
+    seq(field('name', alias(keyword('EXTRACT'), $.identifier)), '(', $.interval_unit, keyword('FROM'), expr, ')'),
+    seq(field('name', alias(keyword('POSITION'), $.identifier)), '(', bitExpr, keyword('IN'), expr, ')'),
+    seq(
+      field('name', alias(keyword('WEIGHT_STRING'), $.identifier)),
+      '(',
+      expr,
+      optional(
+        choice(
+          seq(keyword('AS'), choice(keyword('CHAR'), keyword('BINARY')), '(', $._ws_num_codepoints, ')'),
+          seq(',', $.numeric_literal, ',', $.numeric_literal, ',', $.numeric_literal)
+        )
+      ),
+      ')'
+    ),
+  ];
+}
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} expr
+ */
+function castExpressionRule($, expr) {
+  return seq(
+    keyword('CAST'),
+    '(',
+    field('value', expr),
+    choice(
+      seq(keyword('AS'), field('type', $.cast_type), optional(keyword('ARRAY'))),
+      seq(
+        keywords('AT TIME ZONE'),
+        optional(keyword('INTERVAL')),
+        field('timezone', $.string_literal),
+        keyword('AS'),
+        field('type', alias($._datetime_cast_type, $.cast_type))
+      )
+    ),
+    ')'
+  );
+}
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} expr
+ */
+function convertExpressionRule($, expr) {
+  return seq(
+    keyword('CONVERT'),
+    '(',
+    field('value', expr),
+    choice(seq(',', field('type', $.cast_type)), seq(keyword('USING'), field('charset', $._charset_name))),
+    ')'
+  );
+}
+
+/**
+ * @param {RuleOrLiteral} expr
+ * @param {RuleOrLiteral} whenRule
+ */
+function caseExpressionRule(expr, whenRule) {
+  return seq(
+    keyword('CASE'),
+    optional(field('operand', expr)),
+    repeat1(whenRule),
+    optional(seq(keyword('ELSE'), field('else', expr))),
+    keyword('END')
+  );
+}
+
+/** @param {RuleOrLiteral} expr */
+function whenClauseRule(expr) {
+  return seq(keyword('WHEN'), field('condition', expr), keyword('THEN'), field('result', expr));
 }
 
 /**
@@ -4625,6 +4649,54 @@ export default grammar({
       ),
 
     _distinct_keyword: () => choice(keyword('DISTINCT'), keyword('DISTINCTROW')),
+
+    _static_show_body: ($) =>
+      choice(
+        seq(
+          keyword('CREATE'),
+          choice(
+            seq(keyword('USER'), $.account_name),
+            seq(choice(keyword('DATABASE'), keyword('SCHEMA')), optional($.if_not_exists), $.qualified_name),
+            seq(
+              choice(
+                keyword('TABLE'),
+                keyword('VIEW'),
+                keyword('PROCEDURE'),
+                keyword('FUNCTION'),
+                keyword('TRIGGER'),
+                keyword('EVENT')
+              ),
+              $.qualified_name
+            )
+          )
+        ),
+        seq(
+          keyword('GRANTS'),
+          optional(
+            seq(
+              keyword('FOR'),
+              $.account_name,
+              optional(seq(keyword('USING'), commaSep1(alias($._role_name, $.account_name))))
+            )
+          )
+        ),
+        seq(optional(keyword('FULL')), keyword('PROCESSLIST')),
+        seq(keyword('COUNT'), '(', '*', ')', choice(keyword('WARNINGS'), keyword('ERRORS'))),
+        seq(choice(keyword('PROCEDURE'), keyword('FUNCTION')), keyword('CODE'), $.qualified_name),
+        seq(optional(keyword('STORAGE')), keyword('ENGINES')),
+        seq(
+          keyword('ENGINE'),
+          choice($._identifier, keyword('ALL')),
+          choice(keyword('STATUS'), keyword('MUTEX'), keyword('LOGS'))
+        ),
+        keyword('PRIVILEGES'),
+        keyword('PLUGINS'),
+        keyword('PROFILES'),
+        keywords('BINARY LOGS'),
+        keywords('BINARY LOG STATUS'),
+        seq(keyword('REPLICA'), keyword('STATUS'), optional(seq(keywords('FOR CHANNEL'), $.string_literal))),
+        keyword('REPLICAS')
+      ),
 
     _frame_unbounded_preceding: () => keywords('UNBOUNDED PRECEDING'),
 

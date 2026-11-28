@@ -1061,6 +1061,17 @@ SELECT 1 WHERE 1 IN (+(SELECT 1 LIMIT 5));
 
 --------------------------------------------------------------------------------
 
+================================================================================
+Row-dependent or subquery operand in MySQL RANGE INTERVAL frame bound is invalid
+:error
+:language(mysql)
+================================================================================
+
+SELECT SUM(a) OVER (ORDER BY d RANGE INTERVAL a DAY PRECEDING) FROM t;
+
+--------------------------------------------------------------------------------
+
+
 
 
 
