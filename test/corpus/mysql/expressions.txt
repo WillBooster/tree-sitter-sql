@@ -1028,6 +1028,7 @@ SELECT COUNT(DISTINCTROW x), SUM(DISTINCTROW x), GROUP_CONCAT(DISTINCTROW x) FRO
           (qualified_name
             (identifier)))))))
 
+
 ================================================================================
 CONVERT USING with BINARY and quoted charset name
 :language(mysql)
@@ -1086,3 +1087,58 @@ SELECT GROUP_CONCAT(x SEPARATOR X'2C'), GROUP_CONCAT(x SEPARATOR 0b101100), WEIG
         (table
           (qualified_name
             (identifier)))))))
+
+================================================================================
+Constant TIMESTAMPDIFF, TIMESTAMPADD, and GET_FORMAT in RANGE INTERVAL frame bounds
+:language(mysql)
+================================================================================
+
+SELECT SUM(a) OVER (
+  ORDER BY d
+  RANGE BETWEEN INTERVAL TIMESTAMPDIFF(DAY, '2020-01-01', TIMESTAMPADD(SQL_TSI_DAY, 1, '2020-01-02')) DAY PRECEDING
+            AND INTERVAL CHAR_LENGTH(GET_FORMAT(DATETIME, 'ISO')) DAY FOLLOWING
+) FROM t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (function_call
+          (identifier)
+          (column_reference
+            (identifier))
+          (over_clause
+            (window_definition
+              (order_by_clause
+                (ordering_term
+                  (column_reference
+                    (identifier))))
+              (frame_clause
+                (frame_bound
+                  (interval_expression
+                    (function_call
+                      (identifier)
+                      (interval_unit)
+                      (string_literal)
+                      (function_call
+                        (identifier)
+                        (interval_unit)
+                        (numeric_literal)
+                        (string_literal)))
+                    (interval_unit)))
+                (frame_bound
+                  (interval_expression
+                    (function_call
+                      (identifier)
+                      (function_call
+                        (identifier)
+                        (identifier)
+                        (string_literal)))
+                    (interval_unit))))))))
+      (from_clause
+        (table
+          (qualified_name
+            (identifier)))))))
+

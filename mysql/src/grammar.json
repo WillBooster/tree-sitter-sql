@@ -9927,6 +9927,129 @@
               "type": "FIELD",
               "name": "name",
               "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+                      },
+                      "named": false,
+                      "value": "TIMESTAMPADD"
+                    },
+                    "named": true,
+                    "value": "identifier"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
+                      },
+                      "named": false,
+                      "value": "TIMESTAMPDIFF"
+                    },
+                    "named": true,
+                    "value": "identifier"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_timestamp_unit"
+              },
+              "named": true,
+              "value": "interval_unit"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+                  },
+                  "named": false,
+                  "value": "GET_FORMAT"
+                },
+                "named": true,
+                "value": "identifier"
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_date_time_type"
+              },
+              "named": true,
+              "value": "identifier"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
                 "type": "ALIAS",
                 "content": {
                   "type": "ALIAS",
@@ -13026,6 +13149,129 @@
               },
               "named": false,
               "value": "FROM"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_const_expr"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+                      },
+                      "named": false,
+                      "value": "TIMESTAMPADD"
+                    },
+                    "named": true,
+                    "value": "identifier"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
+                      },
+                      "named": false,
+                      "value": "TIMESTAMPDIFF"
+                    },
+                    "named": true,
+                    "value": "identifier"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_timestamp_unit"
+              },
+              "named": true,
+              "value": "interval_unit"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_const_expr"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_const_expr"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+                  },
+                  "named": false,
+                  "value": "GET_FORMAT"
+                },
+                "named": true,
+                "value": "identifier"
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_date_time_type"
+              },
+              "named": true,
+              "value": "identifier"
+            },
+            {
+              "type": "STRING",
+              "value": ","
             },
             {
               "type": "SYMBOL",
@@ -24753,6 +24999,129 @@
               "type": "FIELD",
               "name": "name",
               "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+                      },
+                      "named": false,
+                      "value": "TIMESTAMPADD"
+                    },
+                    "named": true,
+                    "value": "identifier"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
+                      },
+                      "named": false,
+                      "value": "TIMESTAMPDIFF"
+                    },
+                    "named": true,
+                    "value": "identifier"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_timestamp_unit"
+              },
+              "named": true,
+              "value": "interval_unit"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_sp_expression"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_sp_expression"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+                  },
+                  "named": false,
+                  "value": "GET_FORMAT"
+                },
+                "named": true,
+                "value": "identifier"
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_date_time_type"
+              },
+              "named": true,
+              "value": "identifier"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_sp_expression"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
                 "type": "ALIAS",
                 "content": {
                   "type": "ALIAS",
@@ -27919,6 +28288,129 @@
               },
               "named": false,
               "value": "FROM"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_sp_const_expr"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+                      },
+                      "named": false,
+                      "value": "TIMESTAMPADD"
+                    },
+                    "named": true,
+                    "value": "identifier"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
+                      },
+                      "named": false,
+                      "value": "TIMESTAMPDIFF"
+                    },
+                    "named": true,
+                    "value": "identifier"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_timestamp_unit"
+              },
+              "named": true,
+              "value": "interval_unit"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_sp_const_expr"
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_sp_const_expr"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+                  },
+                  "named": false,
+                  "value": "GET_FORMAT"
+                },
+                "named": true,
+                "value": "identifier"
+              }
+            },
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_date_time_type"
+              },
+              "named": true,
+              "value": "identifier"
+            },
+            {
+              "type": "STRING",
+              "value": ","
             },
             {
               "type": "SYMBOL",
@@ -59164,6 +59656,19 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "_timestamp_unit"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_reserved_interval_unit"
+        }
+      ]
+    },
+    "_timestamp_unit": {
+      "type": "CHOICE",
+      "members": [
+        {
           "type": "ALIAS",
           "content": {
             "type": "PATTERN",
@@ -59245,8 +59750,126 @@
           "value": "YEAR"
         },
         {
-          "type": "SYMBOL",
-          "name": "_reserved_interval_unit"
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Mm][Ii][Cc][Rr][Oo][Ss][Ee][Cc][Oo][Nn][Dd]"
+          },
+          "named": false,
+          "value": "SQL_TSI_MICROSECOND"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Ss][Ee][Cc][Oo][Nn][Dd]"
+          },
+          "named": false,
+          "value": "SQL_TSI_SECOND"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Mm][Ii][Nn][Uu][Tt][Ee]"
+          },
+          "named": false,
+          "value": "SQL_TSI_MINUTE"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Hh][Oo][Uu][Rr]"
+          },
+          "named": false,
+          "value": "SQL_TSI_HOUR"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Dd][Aa][Yy]"
+          },
+          "named": false,
+          "value": "SQL_TSI_DAY"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Ww][Ee][Ee][Kk]"
+          },
+          "named": false,
+          "value": "SQL_TSI_WEEK"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Mm][Oo][Nn][Tt][Hh]"
+          },
+          "named": false,
+          "value": "SQL_TSI_MONTH"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Qq][Uu][Aa][Rr][Tt][Ee][Rr]"
+          },
+          "named": false,
+          "value": "SQL_TSI_QUARTER"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Ss][Qq][Ll]_[Tt][Ss][Ii]_[Yy][Ee][Aa][Rr]"
+          },
+          "named": false,
+          "value": "SQL_TSI_YEAR"
+        }
+      ]
+    },
+    "_date_time_type": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Dd][Aa][Tt][Ee]"
+          },
+          "named": false,
+          "value": "DATE"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Tt][Ii][Mm][Ee]"
+          },
+          "named": false,
+          "value": "TIME"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp]"
+          },
+          "named": false,
+          "value": "TIMESTAMP"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[Dd][Aa][Tt][Ee][Tt][Ii][Mm][Ee]"
+          },
+          "named": false,
+          "value": "DATETIME"
         }
       ]
     },
@@ -63867,6 +64490,20 @@
             "type": "ALIAS",
             "content": {
               "type": "PATTERN",
+              "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+            },
+            "named": false,
+            "value": "GET_FORMAT"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
               "value": "[Gg][Rr][Oo][Uu][Pp]_[Cc][Oo][Nn][Cc][Aa][Tt]"
             },
             "named": false,
@@ -63955,6 +64592,34 @@
             },
             "named": false,
             "value": "SUBSTRING"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+            },
+            "named": false,
+            "value": "TIMESTAMPADD"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
+            },
+            "named": false,
+            "value": "TIMESTAMPDIFF"
           },
           "named": true,
           "value": "identifier"
@@ -64437,6 +65102,20 @@
             "type": "ALIAS",
             "content": {
               "type": "PATTERN",
+              "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+            },
+            "named": false,
+            "value": "GET_FORMAT"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
               "value": "[Gg][Rr][Oo][Uu][Pp]_[Cc][Oo][Nn][Cc][Aa][Tt]"
             },
             "named": false,
@@ -64525,6 +65204,34 @@
             },
             "named": false,
             "value": "SUBSTRING"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+            },
+            "named": false,
+            "value": "TIMESTAMPADD"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
+            },
+            "named": false,
+            "value": "TIMESTAMPDIFF"
           },
           "named": true,
           "value": "identifier"
@@ -65007,6 +65714,20 @@
             "type": "ALIAS",
             "content": {
               "type": "PATTERN",
+              "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+            },
+            "named": false,
+            "value": "GET_FORMAT"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
               "value": "[Gg][Rr][Oo][Uu][Pp]_[Cc][Oo][Nn][Cc][Aa][Tt]"
             },
             "named": false,
@@ -65095,6 +65816,34 @@
             },
             "named": false,
             "value": "SUBSTRING"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+            },
+            "named": false,
+            "value": "TIMESTAMPADD"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
+            },
+            "named": false,
+            "value": "TIMESTAMPDIFF"
           },
           "named": true,
           "value": "identifier"
@@ -65577,6 +66326,20 @@
             "type": "ALIAS",
             "content": {
               "type": "PATTERN",
+              "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+            },
+            "named": false,
+            "value": "GET_FORMAT"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
               "value": "[Gg][Rr][Oo][Uu][Pp]_[Cc][Oo][Nn][Cc][Aa][Tt]"
             },
             "named": false,
@@ -65665,6 +66428,34 @@
             },
             "named": false,
             "value": "SUBSTRING"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+            },
+            "named": false,
+            "value": "TIMESTAMPADD"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
+            },
+            "named": false,
+            "value": "TIMESTAMPDIFF"
           },
           "named": true,
           "value": "identifier"
@@ -68747,6 +69538,10 @@
       },
       {
         "type": "PATTERN",
+        "value": "[Gg][Ee][Tt]_[Ff][Oo][Rr][Mm][Aa][Tt]"
+      },
+      {
+        "type": "PATTERN",
         "value": "[Gg][Rr][Oo][Uu][Pp]_[Cc][Oo][Nn][Cc][Aa][Tt]"
       },
       {
@@ -68772,6 +69567,14 @@
       {
         "type": "PATTERN",
         "value": "[Ss][Uu][Bb][Ss][Tt][Rr][Ii][Nn][Gg]"
+      },
+      {
+        "type": "PATTERN",
+        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Aa][Dd][Dd]"
+      },
+      {
+        "type": "PATTERN",
+        "value": "[Tt][Ii][Mm][Ee][Ss][Tt][Aa][Mm][Pp][Dd][Ii][Ff][Ff]"
       },
       {
         "type": "PATTERN",

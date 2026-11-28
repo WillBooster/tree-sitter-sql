@@ -11005,6 +11005,11 @@
     }
   },
   {
+    "type": "identifier",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "if_exists",
     "named": true,
     "fields": {}
@@ -23156,6 +23161,42 @@
     "named": false
   },
   {
+    "type": "SQL_TSI_DAY",
+    "named": false
+  },
+  {
+    "type": "SQL_TSI_HOUR",
+    "named": false
+  },
+  {
+    "type": "SQL_TSI_MICROSECOND",
+    "named": false
+  },
+  {
+    "type": "SQL_TSI_MINUTE",
+    "named": false
+  },
+  {
+    "type": "SQL_TSI_MONTH",
+    "named": false
+  },
+  {
+    "type": "SQL_TSI_QUARTER",
+    "named": false
+  },
+  {
+    "type": "SQL_TSI_SECOND",
+    "named": false
+  },
+  {
+    "type": "SQL_TSI_WEEK",
+    "named": false
+  },
+  {
+    "type": "SQL_TSI_YEAR",
+    "named": false
+  },
+  {
     "type": "SRID",
     "named": false
   },
@@ -23603,10 +23644,6 @@
     "type": "comment",
     "named": true,
     "extra": true
-  },
-  {
-    "type": "identifier",
-    "named": true
   },
   {
     "type": "placeholder",

@@ -353,6 +353,7 @@ const SPECIAL_FUNCTION_NAMES = [
   ...ALL_ONLY_AGGREGATE_NAMES,
   'COUNT',
   'EXTRACT',
+  'GET_FORMAT',
   'GROUP_CONCAT',
   'JSON_OBJECTAGG',
   'JSON_VALUE',
@@ -360,6 +361,8 @@ const SPECIAL_FUNCTION_NAMES = [
   'POSITION',
   'SUBSTR',
   'SUBSTRING',
+  'TIMESTAMPADD',
+  'TIMESTAMPDIFF',
   'TRIM',
   'WEIGHT_STRING',
 ];
@@ -2048,6 +2051,27 @@ function pureScalarFunctionAlternatives($, funcName, expr, bitExpr) {
       ')'
     ),
     seq(field('name', alias(keyword('EXTRACT'), $.identifier)), '(', $.interval_unit, keyword('FROM'), expr, ')'),
+    seq(
+      field(
+        'name',
+        choice(alias(keyword('TIMESTAMPADD'), $.identifier), alias(keyword('TIMESTAMPDIFF'), $.identifier))
+      ),
+      '(',
+      alias($._timestamp_unit, $.interval_unit),
+      ',',
+      expr,
+      ',',
+      expr,
+      ')'
+    ),
+    seq(
+      field('name', alias(keyword('GET_FORMAT'), $.identifier)),
+      '(',
+      alias($._date_time_type, $.identifier),
+      ',',
+      expr,
+      ')'
+    ),
     seq(field('name', alias(keyword('POSITION'), $.identifier)), '(', bitExpr, keyword('IN'), expr, ')'),
     seq(
       field('name', alias(keyword('WEIGHT_STRING'), $.identifier)),
@@ -4595,7 +4619,15 @@ export default grammar({
         )
       ),
 
-    interval_unit: ($) => choice(...NON_RESERVED_INTERVAL_UNITS.map(keyword), $._reserved_interval_unit),
+    interval_unit: ($) => choice($._timestamp_unit, $._reserved_interval_unit),
+
+    _timestamp_unit: () =>
+      choice(
+        ...NON_RESERVED_INTERVAL_UNITS.map(keyword),
+        ...NON_RESERVED_INTERVAL_UNITS.map((unit) => keyword(`SQL_TSI_${unit}`))
+      ),
+
+    _date_time_type: () => choice(keyword('DATE'), keyword('TIME'), keyword('TIMESTAMP'), keyword('DATETIME')),
 
     _reserved_interval_unit: () => choice(...RESERVED_INTERVAL_UNITS.map(keyword)),
 
