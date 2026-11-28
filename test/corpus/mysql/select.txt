@@ -91,7 +91,7 @@ Joins, partitions, index hints, and LATERAL derived tables
 ================================================================================
 
 SELECT *
-FROM t1 PARTITION (p0, p1) AS a USE INDEX FOR JOIN (idx_a) FORCE KEY FOR ORDER BY (idx_b)
+FROM t1 PARTITION (p0, p1) AS a USE INDEX FOR JOIN (idx_a) IGNORE KEY FOR ORDER BY (idx_b)
 INNER JOIN t2 b ON a.id = b.id
 LEFT OUTER JOIN t3 c USING (id)
 RIGHT JOIN t4 ON c.id = t4.id

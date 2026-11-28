@@ -2376,20 +2376,37 @@ export default grammar({
         field('name', $.qualified_name),
         optional($.partition_names_clause),
         optional($._table_alias),
-        repeat($.index_hint)
+        repeat(alias($._ignore_index_hint, $.index_hint)),
+        optional(
+          choice(
+            seq(
+              alias($._use_index_hint, $.index_hint),
+              repeat(choice(alias($._ignore_index_hint, $.index_hint), alias($._use_index_hint, $.index_hint)))
+            ),
+            seq(
+              alias($._force_index_hint, $.index_hint),
+              repeat(choice(alias($._ignore_index_hint, $.index_hint), alias($._force_index_hint, $.index_hint)))
+            )
+          )
+        )
       ),
 
     partition_names_clause: ($) => seq(keyword('PARTITION'), '(', commaSep1($._identifier), ')'),
 
-    index_hint: ($) =>
+    _index_hint_head: () =>
       seq(
-        choice(keyword('USE'), keyword('IGNORE'), keyword('FORCE')),
         choice(keyword('INDEX'), keyword('KEY')),
-        optional(seq(keyword('FOR'), choice(keyword('JOIN'), keywords('ORDER BY'), keywords('GROUP BY')))),
-        '(',
-        commaSep(choice($._identifier, keyword('PRIMARY'))),
-        ')'
+        optional(seq(keyword('FOR'), choice(keyword('JOIN'), keywords('ORDER BY'), keywords('GROUP BY'))))
       ),
+
+    _use_index_hint: ($) =>
+      seq(keyword('USE'), $._index_hint_head, '(', commaSep(choice($._identifier, keyword('PRIMARY'))), ')'),
+
+    _ignore_index_hint: ($) =>
+      seq(keyword('IGNORE'), $._index_hint_head, '(', commaSep1(choice($._identifier, keyword('PRIMARY'))), ')'),
+
+    _force_index_hint: ($) =>
+      seq(keyword('FORCE'), $._index_hint_head, '(', commaSep1(choice($._identifier, keyword('PRIMARY'))), ')'),
 
     _json_table_tail: ($) =>
       seq(field('path', $.string_literal), keyword('COLUMNS'), '(', commaSep1($.json_table_column), ')'),
