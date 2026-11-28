@@ -1315,3 +1315,91 @@ SELECT * FROM JSON_TABLE(po.data, '$' COLUMNS (NESTED order_details.items[*] COL
                   (identifier)
                   (type_name
                     (numeric_literal)))))))))))
+
+
+================================================================================
+MATCH_RECOGNIZE runtime-constant offsets, running scalar calls, and JSON/XML arguments
+:language(oracle)
+================================================================================
+
+SELECT *
+FROM ticker
+MATCH_RECOGNIZE (
+  ORDER BY tstamp
+  MEASURES
+    FINAL LAST(a.price, :off + 1) AS off_price,
+    JSON_ARRAY(RUNNING LAST(a.price)) AS j_arr,
+    XMLELEMENT(NAME price, RUNNING LAST(a.price)) AS x_elem
+  ALL ROWS PER MATCH
+  PATTERN (a+)
+  DEFINE
+    a AS running(a.price, 100) > 0 AND JSON_VALUE(RUNNING LAST(a.payload), '$.price' RETURNING NUMBER) > 0
+);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (all_columns))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))
+        (match_recognize_clause
+          (order_by_clause
+            (ordering_term
+              (identifier)))
+          (function_call
+            (identifier)
+            (function_argument
+              (member_expression
+                (identifier)
+                (identifier)))
+            (function_argument
+              (binary_expression
+                (bind_variable)
+                (numeric_literal))))
+          (identifier)
+          (json_function_expression
+            (function_call
+              (identifier)
+              (function_argument
+                (member_expression
+                  (identifier)
+                  (identifier)))))
+          (identifier)
+          (xml_function_expression
+            (identifier)
+            (function_call
+              (identifier)
+              (function_argument
+                (member_expression
+                  (identifier)
+                  (identifier)))))
+          (identifier)
+          (identifier)
+          (identifier)
+          (binary_expression
+            (binary_expression
+              (function_call
+                (identifier)
+                (function_argument
+                  (member_expression
+                    (identifier)
+                    (identifier)))
+                (function_argument
+                  (numeric_literal)))
+              (numeric_literal))
+            (binary_expression
+              (json_function_expression
+                (function_call
+                  (identifier)
+                  (function_argument
+                    (member_expression
+                      (identifier)
+                      (identifier))))
+                (string_literal)
+                (type_name))
+              (numeric_literal))))))))

@@ -345,6 +345,8 @@ const TABLE_HEAD_CONTEXT_KEYWORDS = [
 
 const COLUMN_HEAD_CONTEXT_KEYWORDS = ['DOMAIN', 'PERIOD', 'REF', 'SCOPE', 'SUPPLEMENTAL'];
 
+const MR_OPERATOR_KEYWORDS = ['AVG', 'COUNT', 'FIRST', 'LAST', 'MAX', 'MIN', 'NEXT', 'PREV', 'SUM'];
+
 const IDENTIFIER_START = String.raw`A-Za-z\u0080-\uFEFE\uFF00-\u{10FFFF}`;
 const IDENTIFIER_PART = String.raw`A-Za-z0-9_$#\u0080-\u{10FFFF}`;
 
@@ -416,12 +418,11 @@ const qualifiedObjectName = ($, firstSegment) =>
     )
   );
 
-/** @param {'' | '_plsql' | '_mr_meas' | '_mr_def'} prefix */
+/** @param {'' | '_plsql' | '_mr'} prefix */
 const buildExpressionFamily = (prefix) => {
   const isPlsql = prefix === '_plsql';
   const isAliased = prefix !== '';
-  const isRowPattern = prefix === '_mr_meas' || prefix === '_mr_def';
-  const allowFinal = prefix === '_mr_meas';
+  const isRowPattern = prefix === '_mr';
   const k = (/** @type {string} */ base) => `${prefix}${base}`;
   /**
    * @param {GrammarSymbols<string>} $
@@ -496,7 +497,7 @@ const buildExpressionFamily = (prefix) => {
           pub($, 'parenthesized_expression'),
           $.subquery,
           pub($, 'dblink_expression'),
-          ...primaryModeExtras($, ref, pub, isPlsql, isRowPattern),
+          ...primaryModeExtras($, ref, pub, prefix),
           pub($, 'function_call'),
           alias(ref($, '_conversion_function_call'), $.function_call),
           pub($, 'new_expression'),
@@ -510,14 +511,14 @@ const buildExpressionFamily = (prefix) => {
           pub($, 'trim_expression'),
           pub($, 'translate_expression'),
           pub($, 'chr_expression'),
-          pub($, 'listagg_expression'),
-          ...primaryJsonXmlExtras($, pub, isRowPattern)
+          ...(isRowPattern ? [] : [pub($, 'listagg_expression')]),
+          ...primaryJsonXmlExtras($, pub)
         ),
     ],
     [
       k('_expr_identifier'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
-        choice(baseIdentifier($), $._special_expr_id, ...exprIdentifierExtras($, isPlsql, isRowPattern, allowFinal)),
+        choice(baseIdentifier($), $._special_expr_id, ...exprIdentifierExtras($, isPlsql, isRowPattern)),
     ],
     def('parenthesized_expression', ($) => seq('(', ref($, '_expression'), ')')),
     def('expression_list', ($) => seq('(', ref($, '_expression_list_body'), ')')),
@@ -615,35 +616,34 @@ function buildMemberExpressionRules(k, ref, pub, def, isPlsql, isRowPattern) {
  * @param {GrammarSymbols<string>} $
  * @param {($: GrammarSymbols<string>, base: string) => RuleOrLiteral} ref
  * @param {($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral} pub
- * @param {boolean} isPlsql
- * @param {boolean} isRowPattern
+ * @param {'' | '_plsql' | '_mr'} prefix
  * @returns {RuleOrLiteral[]}
  */
-const primaryModeExtras = ($, ref, pub, isPlsql, isRowPattern) => {
-  if (isPlsql) return [$.cursor_attribute, alias($._expr_cc_directive, $.conditional_compilation_directive)];
-  if (isRowPattern) return [alias(ref($, '_modified_call'), $.function_call)];
+const primaryModeExtras = ($, ref, pub, prefix) => {
+  if (prefix === '_plsql')
+    return [$.cursor_attribute, alias($._expr_cc_directive, $.conditional_compilation_directive)];
+  if (prefix === '_mr') return [alias(ref($, '_pattern_op_call'), $.function_call)];
   return [$.outer_join_expression, $.model_cell_reference, alias($._ordered_aggregate_call, $.function_call)];
 };
 
 /**
  * @param {GrammarSymbols<string>} $
  * @param {($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral} pub
- * @param {boolean} isRowPattern
  * @returns {RuleOrLiteral[]}
  */
-const primaryJsonXmlExtras = ($, pub, isRowPattern) =>
-  isRowPattern
-    ? [$.json_function_expression, $.json_constructor_expression, $.xml_function_expression]
-    : [pub($, 'json_function_expression'), pub($, 'json_constructor_expression'), pub($, 'xml_function_expression')];
+const primaryJsonXmlExtras = ($, pub) => [
+  pub($, 'json_function_expression'),
+  pub($, 'json_constructor_expression'),
+  pub($, 'xml_function_expression'),
+];
 
 /**
  * @param {GrammarSymbols<string>} $
  * @param {boolean} isPlsql
  * @param {boolean} isRowPattern
- * @param {boolean} allowFinal
  * @returns {RuleOrLiteral[]}
  */
-const exprIdentifierExtras = ($, isPlsql, isRowPattern, allowFinal) => {
+const exprIdentifierExtras = ($, isPlsql, isRowPattern) => {
   if (isPlsql) return [];
   const base = [
     alias(keyword('CURSOR'), $.identifier),
@@ -651,9 +651,7 @@ const exprIdentifierExtras = ($, isPlsql, isRowPattern, allowFinal) => {
     alias(keyword('COLLECT'), $.identifier),
   ];
   if (!isRowPattern) return base;
-  return allowFinal
-    ? [...base, alias(keyword('RUNNING'), $.identifier), alias(keyword('FINAL'), $.identifier)]
-    : [...base, alias(keyword('RUNNING'), $.identifier)];
+  return [...base, ...['RUNNING', 'FINAL', ...MR_OPERATOR_KEYWORDS].map((word) => alias(keyword(word), $.identifier))];
 };
 
 /**
@@ -664,18 +662,18 @@ const exprIdentifierExtras = ($, isPlsql, isRowPattern, allowFinal) => {
  *   def: (publicName: string, fn: ($: GrammarSymbols<string>) => RuleOrLiteral) => [string, ($: GrammarSymbols<string>) => RuleOrLiteral];
  *   baseIdentifier: ($: GrammarSymbols<string>) => RuleOrLiteral;
  * }} ctx
- * @param {'' | '_plsql' | '_mr_meas' | '_mr_def'} prefix
+ * @param {'' | '_plsql' | '_mr'} prefix
  * @returns {[string, ($: GrammarSymbols<string>) => RuleOrLiteral][]}
  */
 const modeTailEntries = ({ k, ref, pub, def, baseIdentifier }, prefix) => {
-  if (prefix === '_mr_meas' || prefix === '_mr_def') {
-    return Object.entries(rowPatternOnlyExpressionRules(k, ref, pub, def, prefix === '_mr_meas'));
-  }
-  return [
+  const shared = [
     ...buildJsonExpressionRules(k, ref, pub, def, baseIdentifier),
     ...buildXmlExpressionRules(k, ref, pub, def),
-    ...Object.entries(prefix === '_plsql' ? plsqlOnlyExpressionRules() : sqlOnlyExpressionRules()),
   ];
+  if (prefix === '_mr') {
+    return [...shared, ...Object.entries(rowPatternOnlyExpressionRules(k, ref, pub, def))];
+  }
+  return [...shared, ...Object.entries(prefix === '_plsql' ? plsqlOnlyExpressionRules() : sqlOnlyExpressionRules())];
 };
 
 /**
@@ -1015,6 +1013,7 @@ function buildCaseAndBuiltinRules(k, ref, pub, def, isPlsql) {
  */
 function buildJsonExpressionRules(k, ref, pub, def, baseIdentifier) {
   const isPlsql = k('') === '_plsql';
+  const isSqlRoot = k('') === '';
   return [
     def('json_function_expression', ($) =>
       choice(
@@ -1023,12 +1022,12 @@ function buildJsonExpressionRules(k, ref, pub, def, baseIdentifier) {
         seq(keyword('JSON_TRANSFORM'), '(', ref($, '_json_transform_body'), ')'),
         seq(keyword('JSON_OBJECT'), '(', optional(ref($, '_json_object_body')), ')'),
         seq(keyword('JSON_ARRAY'), '(', optional(ref($, '_json_array_body')), ')'),
-        ...(isPlsql
-          ? []
-          : [
+        ...(isSqlRoot
+          ? [
               seq(keyword('JSON_OBJECTAGG'), '(', $._json_objectagg_body, ')', optional($.over_clause)),
               seq(keyword('JSON_ARRAYAGG'), '(', $._json_arrayagg_body, ')', optional($.over_clause)),
-            ])
+            ]
+          : [])
       )
     ),
     [
@@ -1509,37 +1508,18 @@ function sqlOnlyExpressionRules() {
 
 /**
  * @param {(base: string) => string} k
+ * @param {(base: string) => string} k
  * @param {($: GrammarSymbols<string>, base: string) => RuleOrLiteral} ref
  * @param {($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral} pub
  * @param {(publicName: string, fn: ($: GrammarSymbols<string>) => RuleOrLiteral) => [string, ($: GrammarSymbols<string>) => RuleOrLiteral]} def
- * @param {boolean} allowFinal
  * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
  */
-function rowPatternOnlyExpressionRules(k, ref, pub, def, allowFinal) {
-  const evalMod = () => (allowFinal ? choice(keyword('RUNNING'), keyword('FINAL')) : keyword('RUNNING'));
+function rowPatternOnlyExpressionRules(k, ref, pub, def) {
   return Object.fromEntries([
     [
       k('_callable_expression'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
-        choice($._identifier, pub($, 'member_expression'), pub($, 'dblink_expression'), pub($, 'function_call')),
-    ],
-    [
-      k('_qualified_wildcard'),
-      /** @param {GrammarSymbols<string>} $ */ ($) =>
-        seq(
-          field(
-            'object',
-            choice(
-              ref($, '_expr_identifier'),
-              alias(ref($, '_id_member'), $.member_expression),
-              alias(ref($, '_field_member'), $.member_expression),
-              alias(ref($, '_other_member'), $.member_expression),
-              ref($, '_non_id_primary')
-            )
-          ),
-          '.',
-          '*'
-        ),
+        choice($._mr_scalar_func_id, pub($, 'member_expression'), pub($, 'dblink_expression'), pub($, 'function_call')),
     ],
     def('json_array_access', ($) =>
       prec.left(
@@ -1563,15 +1543,7 @@ function rowPatternOnlyExpressionRules(k, ref, pub, def, allowFinal) {
     [
       k('_func_args'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
-        choice(
-          alias('*', $.all_columns),
-          alias(ref($, '_qualified_wildcard'), $.qualified_wildcard),
-          seq(
-            optional(choice(keyword('DISTINCT'), keyword('UNIQUE'), keyword('ALL'))),
-            commaSep1(alias(ref($, '_function_argument'), $.function_argument)),
-            optional($._sql_function_in_parens_tail)
-          )
-        ),
+        commaSep1(alias(ref($, '_function_argument'), $.function_argument)),
     ],
     [
       k('_function_argument'),
@@ -1605,39 +1577,7 @@ function rowPatternOnlyExpressionRules(k, ref, pub, def, allowFinal) {
           optional(seq(keyword('DEFAULT'), field('default', ref($, '_expression')), keywords('ON CONVERSION ERROR')))
         ),
     ],
-    [
-      k('_modified_call'),
-      /** @param {GrammarSymbols<string>} $ */ ($) =>
-        seq(
-          evalMod(),
-          choice(
-            seq(
-              field('name', choice(alias(keyword('FIRST'), $.identifier), alias(keyword('LAST'), $.identifier))),
-              '(',
-              alias(ref($, '_expression'), $.function_argument),
-              optional(seq(',', alias(ref($, '_expression'), $.function_argument))),
-              ')'
-            ),
-            seq(
-              field('name', alias(keyword('COUNT'), $.identifier)),
-              '(',
-              choice(
-                alias('*', $.all_columns),
-                alias(ref($, '_qualified_wildcard'), $.qualified_wildcard),
-                seq(optional(keyword('ALL')), alias(ref($, '_expression'), $.function_argument))
-              ),
-              ')'
-            ),
-            seq(
-              field('name', choice(...['AVG', 'MAX', 'MIN', 'SUM'].map((word) => alias(keyword(word), $.identifier)))),
-              '(',
-              optional(keyword('ALL')),
-              alias(ref($, '_expression'), $.function_argument),
-              ')'
-            )
-          )
-        ),
-    ],
+    ...buildRowPatternOpRules(k, ref),
     def('quantified_comparison_expression', ($) =>
       prec.left(
         PREC.COMPARISON,
@@ -1657,6 +1597,130 @@ function rowPatternOnlyExpressionRules(k, ref, pub, def, allowFinal) {
         choice(alias($._subquery_statement, $.select_statement), commaSep1(ref($, '_expression'))),
     ],
   ]);
+}
+
+/**
+ * @param {(base: string) => string} k
+ * @param {($: GrammarSymbols<string>, base: string) => RuleOrLiteral} ref
+ * @returns {[string, ($: GrammarSymbols<string>) => RuleOrLiteral][]}
+ */
+function buildRowPatternOpRules(k, ref) {
+  return [
+    [
+      k('_pattern_op_call'),
+      ($) => choice(ref($, '_first_last_call'), ref($, '_prev_next_call'), ref($, '_count_call'), ref($, '_agg_call')),
+    ],
+    [
+      k('_first_last_call'),
+      ($) =>
+        seq(
+          firstLastHead($, $._mr_enter_inner, $._mr_check_final_enter_inner),
+          alias(ref($, '_expression'), $.function_argument),
+          optional(seq(',', alias($._mr_offset_expr, $.function_argument))),
+          ')',
+          $._mr_exit
+        ),
+    ],
+    [
+      k('_prev_first_last_call'),
+      ($) =>
+        seq(
+          firstLastHead($, $._mr_enter_prev_inner, $._mr_check_prev_final_enter_inner),
+          alias(ref($, '_expression'), $.function_argument),
+          optional(seq(',', alias($._mr_offset_expr, $.function_argument))),
+          ')',
+          $._mr_exit
+        ),
+    ],
+    [k('_prev_fl_arg'), ($) => alias(ref($, '_prev_first_last_call'), $.function_call)],
+    [
+      k('_prev_next_call'),
+      ($) =>
+        seq(
+          field('name', choice(alias(keyword('PREV'), $.identifier), alias(keyword('NEXT'), $.identifier))),
+          '(',
+          $._mr_enter_prev,
+          choice(alias(ref($, '_prev_fl_arg'), $.function_argument), alias(ref($, '_expression'), $.function_argument)),
+          optional(seq(',', alias($._mr_offset_expr, $.function_argument))),
+          ')',
+          $._mr_exit
+        ),
+    ],
+    [
+      k('_count_call'),
+      ($) =>
+        seq(
+          choice(
+            seq(
+              optional(keyword('RUNNING')),
+              field('name', alias(keyword('COUNT'), $.identifier)),
+              '(',
+              $._mr_enter_inner
+            ),
+            seq(
+              keyword('FINAL'),
+              field('name', alias(keyword('COUNT'), $.identifier)),
+              '(',
+              $._mr_check_final_enter_inner
+            )
+          ),
+          choice(
+            alias('*', $.all_columns),
+            alias($._mr_pattern_var_wildcard, $.qualified_wildcard),
+            seq(optional(keyword('ALL')), alias(ref($, '_expression'), $.function_argument))
+          ),
+          ')',
+          $._mr_exit
+        ),
+    ],
+    [
+      k('_agg_call'),
+      ($) =>
+        seq(
+          choice(
+            seq(
+              optional(keyword('RUNNING')),
+              field('name', choice(...['AVG', 'MAX', 'MIN', 'SUM'].map((word) => alias(keyword(word), $.identifier)))),
+              '(',
+              $._mr_enter_inner
+            ),
+            seq(
+              keyword('FINAL'),
+              field('name', choice(...['AVG', 'MAX', 'MIN', 'SUM'].map((word) => alias(keyword(word), $.identifier)))),
+              '(',
+              $._mr_check_final_enter_inner
+            )
+          ),
+          optional(keyword('ALL')),
+          alias(ref($, '_expression'), $.function_argument),
+          ')',
+          $._mr_exit
+        ),
+    ],
+  ];
+}
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} enterRunning
+ * @param {RuleOrLiteral} enterFinal
+ * @returns {RuleOrLiteral}
+ */
+function firstLastHead($, enterRunning, enterFinal) {
+  return choice(
+    seq(
+      optional(keyword('RUNNING')),
+      field('name', choice(alias(keyword('FIRST'), $.identifier), alias(keyword('LAST'), $.identifier))),
+      '(',
+      enterRunning
+    ),
+    seq(
+      keyword('FINAL'),
+      field('name', choice(alias(keyword('FIRST'), $.identifier), alias(keyword('LAST'), $.identifier))),
+      '(',
+      enterFinal
+    )
+  );
 }
 
 /** @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>} */
@@ -1702,6 +1766,15 @@ export default grammar({
     $._commit_fk_col,
     $._rel_table_close_resolved,
     $._rel_table_close_unresolved,
+    $._mr_open,
+    $._mr_enter_meas,
+    $._mr_enter_def,
+    $._mr_enter_inner,
+    $._mr_check_final_enter_inner,
+    $._mr_enter_prev,
+    $._mr_enter_prev_inner,
+    $._mr_check_prev_final_enter_inner,
+    $._mr_exit,
   ],
 
   word: ($) => $.identifier,
@@ -1710,6 +1783,7 @@ export default grammar({
     global: () => SQL_RESERVED.map(keywordPattern),
     table_alias: () => TABLE_ALIAS_EXCLUDED.map(keywordPattern),
     plsql: () => PLSQL_RESERVED.map(keywordPattern),
+    mr_func: () => [...SQL_RESERVED, ...MR_OPERATOR_KEYWORDS].map(keywordPattern),
     member: () => [],
   },
 
@@ -1721,7 +1795,9 @@ export default grammar({
     [$._callable_expression, $.outer_join_expression],
     [$._ret_callable, $._ret_outer_join],
     [$._special_expr_id, $.new_expression],
+    [$._special_expr_id, $._mr_new_expression],
     [$._expr_identifier, $._json_object_wildcard, $._json_wildcard_rel_member],
+    [$._mr_expr_identifier, $._json_object_wildcard, $._json_wildcard_rel_member],
     [$._name, $._new_type_name],
     [$.table_reference],
     [$._dml_target],
@@ -1738,14 +1814,15 @@ export default grammar({
     [$.json_function_expression],
     [$._json_transform_op],
     [$._plsql_json_transform_op],
+    [$._mr_json_transform_op],
     [$.json_object_entry],
     [$._plsql_json_object_entry],
+    [$._mr_json_object_entry],
     [$.insert_into_clause],
     [$.error_logging_clause],
     [$._error_logging_tail],
     [$._object_privilege, $._system_privilege_or_role],
     [$.numeric_literal, $._json_step_index],
-    [$._special_expr_id, $._mr_meas_new_expression],
   ],
 
   rules: {
@@ -2431,7 +2508,8 @@ export default grammar({
         ')'
       ),
 
-    match_recognize_clause: ($) => seq(keyword('MATCH_RECOGNIZE'), '(', $._match_recognize_body, ')'),
+    match_recognize_clause: ($) =>
+      seq(keyword('MATCH_RECOGNIZE'), '(', $._mr_open, $._match_recognize_body, ')', $._mr_exit),
 
     _match_recognize_body: ($) =>
       seq(
@@ -2442,14 +2520,15 @@ export default grammar({
         ')',
         optional(seq(keyword('SUBSET'), commaSep1(seq($._name, '=', '(', commaSep1($._name), ')')))),
         keyword('DEFINE'),
-        commaSep1(seq($._name, keyword('AS'), $._mr_def_expression))
+        $._mr_enter_def,
+        commaSep1(seq($._name, keyword('AS'), $._mr_expression))
       ),
 
     _match_recognize_option: ($) =>
       choice(
         $.partition_by_clause,
         $.order_by_clause,
-        seq(keyword('MEASURES'), commaSep1(seq($._mr_meas_expression, optional(keyword('AS')), $._name))),
+        seq(keyword('MEASURES'), $._mr_enter_meas, commaSep1(seq($._mr_expression, optional(keyword('AS')), $._name))),
         keywords('ONE ROW PER MATCH'),
         prec.right(
           seq(
@@ -7650,8 +7729,113 @@ export default grammar({
 
     ...buildExpressionFamily(''),
     ...buildExpressionFamily('_plsql'),
-    ...buildExpressionFamily('_mr_meas'),
-    ...buildExpressionFamily('_mr_def'),
+    ...buildExpressionFamily('_mr'),
+
+    _mr_scalar_func_id: ($) =>
+      choice(
+        reserved('mr_func', $.identifier),
+        $.quoted_identifier,
+        alias(keyword('RUNNING'), $.identifier),
+        alias(keyword('FINAL'), $.identifier)
+      ),
+
+    _mr_pattern_var_wildcard: ($) => seq(field('object', $._mr_expr_identifier), '.', '*'),
+
+    _mr_offset_expr: ($) =>
+      choice(
+        $._literal,
+        $.bind_variable,
+        $.pseudocolumn,
+        $.inquiry_directive,
+        alias($._mr_offset_parens, $.parenthesized_expression),
+        alias($._mr_offset_unary, $.unary_expression),
+        alias($._mr_offset_binary, $.binary_expression),
+        alias($._mr_offset_call, $.function_call),
+        alias($._mr_offset_conv_call, $.function_call),
+        alias($._mr_offset_cast, $.cast_expression),
+        alias($._mr_offset_case, $.case_expression)
+      ),
+
+    _mr_offset_parens: ($) => seq('(', $._mr_offset_expr, ')'),
+
+    _mr_offset_unary: ($) =>
+      prec.right(PREC.UNARY, seq(field('operator', choice('+', '-')), field('operand', $._mr_offset_expr))),
+
+    _mr_offset_binary: ($) => binaryExpression($._mr_offset_expr, sqlArithmeticOperators()),
+
+    _mr_offset_callable: ($) => choice($._mr_scalar_func_id, alias($._mr_offset_callable_member, $.member_expression)),
+
+    _mr_offset_callable_member: ($) =>
+      prec.left(
+        PREC.POSTFIX,
+        seq(
+          field('object', choice($._mr_expr_identifier, alias($._mr_offset_callable_member, $.member_expression))),
+          '.',
+          field('member', $._member_name)
+        )
+      ),
+
+    _mr_offset_call: ($) =>
+      seq(
+        field('name', $._mr_offset_callable),
+        '(',
+        optional(commaSep1(alias($._mr_offset_arg, $.function_argument))),
+        ')'
+      ),
+
+    _mr_offset_arg: ($) =>
+      choice(seq(field('parameter', $._plsql_name), '=>', field('value', $._mr_offset_expr)), $._mr_offset_expr),
+
+    _mr_offset_conv_call: ($) =>
+      seq(
+        field('name', alias($._conversion_function_name, $.identifier)),
+        '(',
+        alias($._mr_offset_arg, $.function_argument),
+        optional(seq(',', commaSep1(alias($._mr_offset_arg, $.function_argument)))),
+        ')'
+      ),
+
+    _mr_offset_cast: ($) =>
+      seq(keyword('CAST'), '(', field('value', $._mr_offset_expr), keyword('AS'), field('type', $.type_name), ')'),
+
+    _mr_offset_case: ($) =>
+      seq(
+        keyword('CASE'),
+        choice(
+          seq(
+            field('operand', $._mr_offset_expr),
+            repeat1(
+              alias(
+                seq(keyword('WHEN'), commaSep1($._mr_offset_expr), keyword('THEN'), field('result', $._mr_offset_expr)),
+                $.when_clause
+              )
+            )
+          ),
+          repeat1(
+            alias(
+              seq(
+                keyword('WHEN'),
+                field('condition', $._mr_offset_cmp),
+                keyword('THEN'),
+                field('result', $._mr_offset_expr)
+              ),
+              $.when_clause
+            )
+          )
+        ),
+        optional(seq(keyword('ELSE'), field('else', $._mr_offset_expr))),
+        keyword('END')
+      ),
+
+    _mr_offset_cmp: ($) =>
+      prec.left(
+        PREC.COMPARISON,
+        seq(
+          field('left', $._mr_offset_expr),
+          field('operator', COMPARISON_OPERATOR()),
+          field('right', $._mr_offset_expr)
+        )
+      ),
 
     _dangling_cmp_op: () => field('operator', COMPARISON_OPERATOR()),
 

@@ -927,3 +927,34 @@ Oracle JSON dot-notation array step on parenthesized expression is invalid
 SELECT (t.document).arr[*] FROM customers t;
 
 --------------------------------------------------------------------------------
+
+
+================================================================================
+Illegal nested row-pattern aggregate inside Oracle MATCH_RECOGNIZE MEASURES
+:error
+:language(oracle)
+================================================================================
+
+SELECT * FROM ticker MATCH_RECOGNIZE (ORDER BY tstamp MEASURES FINAL SUM(RUNNING MIN(a.price)) AS bad PATTERN (a+) DEFINE a AS a.price > 0);
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Illegal non-pattern-variable wildcard inside Oracle MATCH_RECOGNIZE COUNT
+:error
+:language(oracle)
+================================================================================
+
+SELECT * FROM ticker MATCH_RECOGNIZE (ORDER BY tstamp MEASURES FINAL COUNT(ABS(a.price).*) AS bad PATTERN (a+) DEFINE a AS a.price > 0);
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Illegal column expression offset in Oracle MATCH_RECOGNIZE LAST navigation
+:error
+:language(oracle)
+================================================================================
+
+SELECT * FROM ticker MATCH_RECOGNIZE (ORDER BY tstamp MEASURES FINAL LAST(a.price, a.price) AS bad PATTERN (a+) DEFINE a AS a.price > 0);
+
+--------------------------------------------------------------------------------

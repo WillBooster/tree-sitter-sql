@@ -23,6 +23,24 @@ enum TokenType {
   COMMIT_FK_COL,
   REL_TABLE_CLOSE_RESOLVED,
   REL_TABLE_CLOSE_UNRESOLVED,
+  MR_OPEN,
+  MR_ENTER_MEAS,
+  MR_ENTER_DEF,
+  MR_ENTER_INNER,
+  MR_CHECK_FINAL_ENTER_INNER,
+  MR_ENTER_PREV,
+  MR_ENTER_PREV_INNER,
+  MR_CHECK_PREV_FINAL_ENTER_INNER,
+  MR_EXIT,
+};
+
+enum MrMode {
+  MR_NONE = 0,
+  MR_MEAS = 1,
+  MR_DEF = 2,
+  MR_INNER = 3,
+  MR_PREV_MEAS = 4,
+  MR_PREV_DEF = 5,
 };
 
 typedef struct {
@@ -51,6 +69,8 @@ typedef struct {
   uint32_t key_cap;
   uint32_t root;
   uint32_t unresolved;
+  uint8_t mr_depth;
+  uint8_t mr_modes[255];
 } Scanner;
 
 static bool is_digit(int32_t c) { return c >= '0' && c <= '9'; }
@@ -473,6 +493,73 @@ static bool emit_zero_width(TSLexer *lexer, enum TokenType symbol) {
   return true;
 }
 
+static void mr_push(Scanner *s, uint8_t mode) {
+  if (s->mr_depth == sizeof(s->mr_modes)) {
+    memmove(s->mr_modes, s->mr_modes + 1, sizeof(s->mr_modes) - 1);
+    s->mr_depth--;
+  }
+  s->mr_modes[s->mr_depth++] = mode;
+}
+
+static uint8_t mr_top(const Scanner *s) { return s->mr_depth > 0 ? s->mr_modes[s->mr_depth - 1] : MR_NONE; }
+
+static void mr_set_top(Scanner *s, uint8_t mode) {
+  if (s->mr_depth > 0) {
+    s->mr_modes[s->mr_depth - 1] = mode;
+  } else {
+    mr_push(s, mode);
+  }
+}
+
+static bool scan_mr_clause_step(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+  if (valid_symbols[MR_OPEN]) {
+    mr_push(s, MR_NONE);
+    return emit_zero_width(lexer, MR_OPEN);
+  }
+  if (valid_symbols[MR_ENTER_MEAS]) {
+    mr_set_top(s, MR_MEAS);
+    return emit_zero_width(lexer, MR_ENTER_MEAS);
+  }
+  if (valid_symbols[MR_ENTER_DEF]) {
+    mr_set_top(s, MR_DEF);
+    return emit_zero_width(lexer, MR_ENTER_DEF);
+  }
+  if (valid_symbols[MR_EXIT] && s->mr_depth > 0) {
+    s->mr_depth--;
+    return emit_zero_width(lexer, MR_EXIT);
+  }
+  return false;
+}
+
+typedef struct {
+  enum TokenType sym;
+  uint8_t from;
+  uint8_t to;
+} MrTransition;
+
+static bool scan_mr_step(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+  if (valid_symbols[ERROR_SENTINEL] || s == NULL) return false;
+  if (scan_mr_clause_step(s, lexer, valid_symbols)) return true;
+  static const MrTransition transitions[] = {
+      {MR_ENTER_INNER, MR_MEAS, MR_INNER},
+      {MR_ENTER_INNER, MR_DEF, MR_INNER},
+      {MR_CHECK_FINAL_ENTER_INNER, MR_MEAS, MR_INNER},
+      {MR_ENTER_PREV, MR_MEAS, MR_PREV_MEAS},
+      {MR_ENTER_PREV, MR_DEF, MR_PREV_DEF},
+      {MR_ENTER_PREV_INNER, MR_PREV_MEAS, MR_INNER},
+      {MR_ENTER_PREV_INNER, MR_PREV_DEF, MR_INNER},
+      {MR_CHECK_PREV_FINAL_ENTER_INNER, MR_PREV_MEAS, MR_INNER},
+  };
+  uint8_t top = mr_top(s);
+  for (size_t i = 0; i < sizeof(transitions) / sizeof(transitions[0]); i++) {
+    if (valid_symbols[transitions[i].sym] && top == transitions[i].from) {
+      mr_push(s, transitions[i].to);
+      return emit_zero_width(lexer, transitions[i].sym);
+    }
+  }
+  return false;
+}
+
 static bool scan_rel_table_step(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   if (valid_symbols[ERROR_SENTINEL] || s == NULL) return false;
   int32_t c = lexer->lookahead;
@@ -620,21 +707,28 @@ void tree_sitter_oracle_external_scanner_destroy(void *payload) {
 
 unsigned tree_sitter_oracle_external_scanner_serialize(void *payload, char *buffer) {
   const Scanner *s = (const Scanner *)payload;
-  if (!s || (s->root == 0 && s->unresolved == 0)) return 0;
+  if (!s || (s->root == 0 && s->unresolved == 0 && s->mr_depth == 0)) return 0;
   memcpy(buffer, &s->root, sizeof(uint32_t));
   memcpy(buffer + sizeof(uint32_t), &s->unresolved, sizeof(uint32_t));
-  return 2 * sizeof(uint32_t);
+  buffer[2 * sizeof(uint32_t)] = s->mr_depth;
+  if (s->mr_depth > 0) memcpy(buffer + 2 * sizeof(uint32_t) + 1, s->mr_modes, s->mr_depth);
+  return 2 * sizeof(uint32_t) + 1 + s->mr_depth;
 }
 
 void tree_sitter_oracle_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
   Scanner *s = (Scanner *)payload;
   if (!s) return;
-  if (length == 2 * sizeof(uint32_t)) {
+  s->root = 0;
+  s->unresolved = 0;
+  s->mr_depth = 0;
+  if (length >= 2 * sizeof(uint32_t) + 1) {
     memcpy(&s->root, buffer, sizeof(uint32_t));
     memcpy(&s->unresolved, buffer + sizeof(uint32_t), sizeof(uint32_t));
-  } else {
-    s->root = 0;
-    s->unresolved = 0;
+    uint8_t depth = (uint8_t)buffer[2 * sizeof(uint32_t)];
+    if (length == 2 * sizeof(uint32_t) + 1 + depth) {
+      s->mr_depth = depth;
+      if (depth > 0) memcpy(s->mr_modes, buffer + 2 * sizeof(uint32_t) + 1, depth);
+    }
   }
 }
 
@@ -663,6 +757,7 @@ bool tree_sitter_oracle_external_scanner_scan(void *payload, TSLexer *lexer, con
   skip_spaces(lexer);
   bool result = false;
   if (scan_nul_or_comment(lexer, valid_symbols, &result)) return result;
+  if (scan_mr_step((Scanner *)payload, lexer, valid_symbols)) return true;
   if (scan_rel_table_step((Scanner *)payload, lexer, valid_symbols)) return true;
   int32_t c = lexer->lookahead;
   if (c == '\'') return scan_standard_string(lexer, valid_symbols);
