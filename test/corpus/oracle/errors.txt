@@ -907,3 +907,23 @@ Zero-argument function call in Oracle RETURNING BULK COLLECT INTO is invalid
 BEGIN DELETE FROM items RETURNING price BULK COLLECT INTO my_function(); END;
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Oracle JSON dot-notation array step without JSON field key or on computed expression is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT t.document[*] FROM customers t;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Oracle JSON dot-notation array step on parenthesized expression is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT (t.document).arr[*] FROM customers t;
+
+--------------------------------------------------------------------------------

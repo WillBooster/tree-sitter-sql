@@ -481,12 +481,20 @@ const buildExpressionFamily = (prefix) => {
       /** @param {GrammarSymbols<string>} $ */ ($) =>
         choice(
           ref($, '_expr_identifier'),
+          pub($, 'member_expression'),
+          ...(isPlsql ? [] : [pub($, 'json_array_access')]),
+          ref($, '_non_id_primary')
+        ),
+    ],
+    [
+      k('_non_id_primary'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        choice(
           $.bind_variable,
           $.pseudocolumn,
           $.inquiry_directive,
           pub($, 'parenthesized_expression'),
           $.subquery,
-          pub($, 'member_expression'),
           pub($, 'dblink_expression'),
           ...primaryModeExtras($, ref, pub, isPlsql, isRowPattern),
           pub($, 'function_call'),
@@ -517,9 +525,7 @@ const buildExpressionFamily = (prefix) => {
       k('_expression_list_body'),
       /** @param {GrammarSymbols<string>} $ */ ($) => seq(ref($, '_expression'), ',', commaSep1(ref($, '_expression'))),
     ],
-    def('member_expression', ($) =>
-      prec.left(PREC.POSTFIX, seq(field('object', ref($, '_primary_expression')), '.', field('member', $._member_name)))
-    ),
+    ...buildMemberExpressionRules(k, ref, pub, def, isPlsql, isRowPattern),
     def('dblink_expression', ($) =>
       prec.left(PREC.POSTFIX, seq(field('object', ref($, '_primary_expression')), '@', field('dblink', $.dblink_name)))
     ),
@@ -544,6 +550,68 @@ const buildExpressionFamily = (prefix) => {
 };
 
 /**
+ * @param {(base: string) => string} k
+ * @param {($: GrammarSymbols<string>, base: string) => RuleOrLiteral} ref
+ * @param {($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral} pub
+ * @param {(publicName: string, fn: ($: GrammarSymbols<string>) => RuleOrLiteral) => [string, ($: GrammarSymbols<string>) => RuleOrLiteral]} def
+ * @param {boolean} isPlsql
+ * @param {boolean} isRowPattern
+ * @returns {[string, ($: GrammarSymbols<string>) => RuleOrLiteral][]}
+ */
+function buildMemberExpressionRules(k, ref, pub, def, isPlsql, isRowPattern) {
+  if (isPlsql) {
+    return [
+      def('member_expression', ($) =>
+        prec.left(
+          PREC.POSTFIX,
+          seq(field('object', ref($, '_primary_expression')), '.', field('member', $._member_name))
+        )
+      ),
+    ];
+  }
+  return [
+    def('member_expression', ($) => choice(ref($, '_id_member'), ref($, '_field_member'), ref($, '_other_member'))),
+    [
+      k('_id_member'),
+      ($) =>
+        prec.left(PREC.POSTFIX, seq(field('object', ref($, '_expr_identifier')), '.', field('member', $._member_name))),
+    ],
+    [
+      k('_field_member'),
+      ($) =>
+        prec.left(
+          PREC.POSTFIX,
+          seq(
+            field(
+              'object',
+              choice(
+                alias(ref($, '_id_member'), $.member_expression),
+                alias(ref($, '_field_member'), $.member_expression),
+                pub($, 'json_array_access'),
+                ...(isRowPattern ? [] : [alias($._dotted_whole_subscript, $.json_array_access)])
+              )
+            ),
+            '.',
+            field('member', $._member_name)
+          )
+        ),
+    ],
+    [
+      k('_other_member'),
+      ($) =>
+        prec.left(
+          PREC.POSTFIX,
+          seq(
+            field('object', choice(ref($, '_non_id_primary'), alias(ref($, '_other_member'), $.member_expression))),
+            '.',
+            field('member', $._member_name)
+          )
+        ),
+    ],
+  ];
+}
+
+/**
  * @param {GrammarSymbols<string>} $
  * @param {($: GrammarSymbols<string>, base: string) => RuleOrLiteral} ref
  * @param {($: GrammarSymbols<string>, publicName: string) => RuleOrLiteral} pub
@@ -553,13 +621,8 @@ const buildExpressionFamily = (prefix) => {
  */
 const primaryModeExtras = ($, ref, pub, isPlsql, isRowPattern) => {
   if (isPlsql) return [$.cursor_attribute, alias($._expr_cc_directive, $.conditional_compilation_directive)];
-  if (isRowPattern) return [pub($, 'json_array_access'), alias(ref($, '_modified_call'), $.function_call)];
-  return [
-    $.outer_join_expression,
-    $.model_cell_reference,
-    $.json_array_access,
-    alias($._ordered_aggregate_call, $.function_call),
-  ];
+  if (isRowPattern) return [alias(ref($, '_modified_call'), $.function_call)];
+  return [$.outer_join_expression, $.model_cell_reference, alias($._ordered_aggregate_call, $.function_call)];
 };
 
 /**
@@ -1462,13 +1525,27 @@ function rowPatternOnlyExpressionRules(k, ref, pub, def, allowFinal) {
     ],
     [
       k('_qualified_wildcard'),
-      /** @param {GrammarSymbols<string>} $ */ ($) => seq(field('object', ref($, '_primary_expression')), '.', '*'),
+      /** @param {GrammarSymbols<string>} $ */ ($) =>
+        seq(
+          field(
+            'object',
+            choice(
+              ref($, '_expr_identifier'),
+              alias(ref($, '_id_member'), $.member_expression),
+              alias(ref($, '_field_member'), $.member_expression),
+              alias(ref($, '_other_member'), $.member_expression),
+              ref($, '_non_id_primary')
+            )
+          ),
+          '.',
+          '*'
+        ),
     ],
     def('json_array_access', ($) =>
       prec.left(
         PREC.POSTFIX,
         seq(
-          field('object', choice(pub($, 'member_expression'), pub($, 'json_array_access'))),
+          field('object', choice(alias(ref($, '_field_member'), $.member_expression), pub($, 'json_array_access'))),
           '[',
           choice(alias('*', $.all_columns), $._json_any_step_list),
           ']'
@@ -1640,7 +1717,7 @@ export default grammar({
 
   conflicts: ($) => [
     [$.select_item],
-    [$._primary_expression, $.interval_expression],
+    [$._non_id_primary, $.interval_expression],
     [$._callable_expression, $.outer_join_expression],
     [$._ret_callable, $._ret_outer_join],
     [$._special_expr_id, $.new_expression],
@@ -1920,7 +1997,21 @@ export default grammar({
 
     select_list: ($) => commaSep1(choice(alias('*', $.all_columns), $.qualified_wildcard, $.select_item)),
 
-    qualified_wildcard: ($) => seq(field('object', $._primary_expression), '.', '*'),
+    qualified_wildcard: ($) =>
+      seq(
+        field(
+          'object',
+          choice(
+            $._expr_identifier,
+            alias($._id_member, $.member_expression),
+            alias($._field_member, $.member_expression),
+            alias($._other_member, $.member_expression),
+            $._non_id_primary
+          )
+        ),
+        '.',
+        '*'
+      ),
 
     select_item: ($) => seq(field('value', $._expression), optional($._column_alias)),
 
@@ -2553,7 +2644,17 @@ export default grammar({
       prec.left(
         PREC.POSTFIX,
         seq(
-          field('measure', choice($._identifier, $.member_expression, $.dblink_expression, $.function_call)),
+          field(
+            'measure',
+            choice(
+              $._identifier,
+              alias($._id_member, $.member_expression),
+              alias($._field_member, $.member_expression),
+              alias($._other_member, $.member_expression),
+              $.dblink_expression,
+              $.function_call
+            )
+          ),
           '[',
           $._model_subscript_list,
           ']'
@@ -2565,7 +2666,7 @@ export default grammar({
         PREC.POSTFIX,
         choice(
           seq(
-            field('object', $.member_expression),
+            field('object', alias($._field_member, $.member_expression)),
             '[',
             choice(alias('*', $.all_columns), $._json_range_step_list),
             ']'
@@ -2580,7 +2681,10 @@ export default grammar({
       ),
 
     _dotted_whole_subscript: ($) =>
-      prec.left(PREC.POSTFIX, seq(field('object', $.member_expression), '[', $._json_index_prefix, ']')),
+      prec.left(
+        PREC.POSTFIX,
+        seq(field('object', alias($._field_member, $.member_expression)), '[', $._json_index_prefix, ']')
+      ),
 
     _json_index_prefix: ($) => choice($._json_step_index, seq($._json_index_prefix, ',', $._json_step_index)),
 
@@ -2968,16 +3072,21 @@ export default grammar({
     _ret_primary: ($) =>
       choice(
         $._expr_identifier,
+        alias($._ret_member, $.member_expression),
+        alias($._ret_json_array_access, $.json_array_access),
+        $._ret_non_id_primary
+      ),
+
+    _ret_non_id_primary: ($) =>
+      choice(
         $._ret_old_new_column,
         $.bind_variable,
         $.pseudocolumn,
         $.inquiry_directive,
         alias($._ret_parens, $.parenthesized_expression),
         $.subquery,
-        alias($._ret_member, $.member_expression),
         alias($._ret_dblink, $.dblink_expression),
         alias($._ret_outer_join, $.outer_join_expression),
-        alias($._ret_json_array_access, $.json_array_access),
         alias($._ordered_aggregate_call, $.function_call),
         alias($._ret_function_call, $.function_call),
         alias($._ret_conv_call, $.function_call),
@@ -3004,8 +3113,37 @@ export default grammar({
 
     _ret_interval: ($) => seq(field('value', alias($._ret_parens, $.parenthesized_expression)), $._interval_qualifier),
 
-    _ret_member: ($) =>
-      prec.left(PREC.POSTFIX, seq(field('object', $._ret_primary), '.', field('member', $._member_name))),
+    _ret_member: ($) => choice($._ret_id_member, $._ret_field_member, $._ret_other_member),
+
+    _ret_id_member: ($) =>
+      prec.left(PREC.POSTFIX, seq(field('object', $._expr_identifier), '.', field('member', $._member_name))),
+
+    _ret_field_member: ($) =>
+      prec.left(
+        PREC.POSTFIX,
+        seq(
+          field(
+            'object',
+            choice(
+              alias($._ret_id_member, $.member_expression),
+              alias($._ret_field_member, $.member_expression),
+              alias($._ret_json_array_access, $.json_array_access)
+            )
+          ),
+          '.',
+          field('member', $._member_name)
+        )
+      ),
+
+    _ret_other_member: ($) =>
+      prec.left(
+        PREC.POSTFIX,
+        seq(
+          field('object', choice($._ret_non_id_primary, alias($._ret_other_member, $.member_expression))),
+          '.',
+          field('member', $._member_name)
+        )
+      ),
 
     _ret_dblink: ($) =>
       prec.left(PREC.POSTFIX, seq(field('object', $._ret_primary), '@', field('dblink', $.dblink_name))),
@@ -3019,7 +3157,10 @@ export default grammar({
         seq(
           field(
             'object',
-            choice(alias($._ret_member, $.member_expression), alias($._ret_json_array_access, $.json_array_access))
+            choice(
+              alias($._ret_field_member, $.member_expression),
+              alias($._ret_json_array_access, $.json_array_access)
+            )
           ),
           '[',
           choice(alias('*', $.all_columns), $._json_any_step_list),
@@ -3035,7 +3176,21 @@ export default grammar({
         alias($._ret_function_call, $.function_call)
       ),
 
-    _ret_qualified_wildcard: ($) => seq(field('object', $._ret_primary), '.', '*'),
+    _ret_qualified_wildcard: ($) =>
+      seq(
+        field(
+          'object',
+          choice(
+            $._expr_identifier,
+            alias($._ret_id_member, $.member_expression),
+            alias($._ret_field_member, $.member_expression),
+            alias($._ret_other_member, $.member_expression),
+            $._ret_non_id_primary
+          )
+        ),
+        '.',
+        '*'
+      ),
 
     _ret_function_call: ($) =>
       seq(field('name', $._ret_callable), '(', optional($._ret_func_args), ')', optional($._analytic_tail)),

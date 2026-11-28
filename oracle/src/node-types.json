@@ -34068,10 +34068,6 @@
             "named": true
           },
           {
-            "type": "json_array_access",
-            "named": true
-          },
-          {
             "type": "json_constructor_expression",
             "named": true
           },
