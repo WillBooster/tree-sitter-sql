@@ -650,13 +650,13 @@ function buildScopedSelectRules(sp) {
         optional(scopedVis($, sp, 'order_by_clause')),
         optional(scopedHid($, sp, '_locking_clauses'))
       ),
-    [k('_inner_select_no_into')]: ($) =>
+    [k('_has_limit_select_no_into')]: ($) =>
       choice(
         seq(
           optional(scopedVis($, sp, 'with_clause')),
           scopedHid($, sp, '_no_limit_query_body'),
           optional(scopedVis($, sp, 'order_by_clause')),
-          optional(scopedVis($, sp, 'limit_clause')),
+          scopedVis($, sp, 'limit_clause'),
           optional(scopedHid($, sp, '_locking_clauses'))
         ),
         seq(
@@ -667,6 +667,8 @@ function buildScopedSelectRules(sp) {
           optional(scopedHid($, sp, '_locking_clauses'))
         )
       ),
+    [k('_inner_select_no_into')]: ($) =>
+      choice(scopedHid($, sp, '_no_limit_select_no_into'), scopedHid($, sp, '_has_limit_select_no_into')),
     [k('_subquery_select')]: ($) => scopedHid($, sp, '_inner_select_no_into'),
     [k('with_clause')]: ($) =>
       seq(keyword('WITH'), optional(keyword('RECURSIVE')), commaSep1(scopedVis($, sp, 'common_table_expression'))),
@@ -1661,11 +1663,44 @@ function buildScopedExpressionRules(sp) {
     [k('_expression')]: ($) =>
       choice(scopedHid($, sp, '_non_subquery_expression'), scopedHid($, sp, '_wrapped_subquery_expression')),
     [k('_wrapped_subquery_expression')]: ($) =>
+      choice(scopedHid($, sp, '_no_limit_wrapped_subquery'), scopedHid($, sp, '_has_limit_wrapped_subquery')),
+    [k('_no_limit_wrapped_subquery')]: ($) =>
+      choice(scopedHid($, sp, '_no_limit_subquery_or_parens'), scopedHid($, sp, '_no_limit_plus_or_odbc_subquery')),
+    [k('_no_limit_subquery_or_parens')]: ($) =>
       choice(
         scopedVis($, sp, 'subquery'),
-        alias(scopedHid($, sp, '_wrapped_subquery_parens'), $.parenthesized_expression)
+        alias(scopedHid($, sp, '_no_limit_subquery_parens'), $.parenthesized_expression)
       ),
-    [k('_wrapped_subquery_parens')]: ($) => seq('(', scopedHid($, sp, '_wrapped_subquery_expression'), ')'),
+    [k('_no_limit_subquery_parens')]: ($) => seq('(', scopedHid($, sp, '_no_limit_subquery_or_parens'), ')'),
+    [k('_no_limit_plus_or_odbc_subquery')]: ($) =>
+      choice(
+        alias(scopedHid($, sp, '_no_limit_unary_plus_subquery'), $.unary_expression),
+        alias(scopedHid($, sp, '_no_limit_odbc_subquery'), $.odbc_escape_expression),
+        alias(scopedHid($, sp, '_no_limit_plus_or_odbc_parens'), $.parenthesized_expression)
+      ),
+    [k('_no_limit_unary_plus_subquery')]: ($) =>
+      prec.right(
+        PREC.UNARY,
+        seq(field('operator', '+'), field('operand', scopedHid($, sp, '_no_limit_wrapped_subquery')))
+      ),
+    [k('_no_limit_odbc_subquery')]: ($) =>
+      seq('{', field('type', $._identifier), field('value', scopedHid($, sp, '_no_limit_wrapped_subquery')), '}'),
+    [k('_no_limit_plus_or_odbc_parens')]: ($) => seq('(', scopedHid($, sp, '_no_limit_plus_or_odbc_subquery'), ')'),
+    [k('_has_limit_wrapped_subquery')]: ($) =>
+      choice(
+        alias(scopedHid($, sp, '_has_limit_subquery'), $.subquery),
+        alias(scopedHid($, sp, '_has_limit_subquery_parens'), $.parenthesized_expression),
+        alias(scopedHid($, sp, '_has_limit_unary_plus_subquery'), $.unary_expression),
+        alias(scopedHid($, sp, '_has_limit_odbc_subquery'), $.odbc_escape_expression)
+      ),
+    [k('_has_limit_subquery_parens')]: ($) => seq('(', scopedHid($, sp, '_has_limit_wrapped_subquery'), ')'),
+    [k('_has_limit_unary_plus_subquery')]: ($) =>
+      prec.right(
+        PREC.UNARY,
+        seq(field('operator', '+'), field('operand', scopedHid($, sp, '_has_limit_wrapped_subquery')))
+      ),
+    [k('_has_limit_odbc_subquery')]: ($) =>
+      seq('{', field('type', $._identifier), field('value', scopedHid($, sp, '_has_limit_wrapped_subquery')), '}'),
     [k('_non_subquery_expression')]: ($) =>
       choice(
         scopedHid($, sp, '_non_subquery_bool_pri'),
@@ -1778,6 +1813,7 @@ function buildScopedExpressionRules(sp) {
           '(',
           choice(
             alias(scopedHid($, sp, '_no_limit_select_no_into'), $.select_statement),
+            scopedHid($, sp, '_no_limit_plus_or_odbc_subquery'),
             scopedHid($, sp, '_non_subquery_expression'),
             seq(scopedHid($, sp, '_expression'), ',', commaSep1(scopedHid($, sp, '_expression')))
           ),
@@ -1835,7 +1871,11 @@ function buildScopedExpressionRules(sp) {
       ),
     [k('unary_expression')]: ($) =>
       choice(
-        prec.right(PREC.UNARY, seq(field('operator', choice('-', '+', '~')), field('operand', simpleExpr($)))),
+        prec.right(PREC.UNARY, seq(field('operator', choice('-', '~')), field('operand', simpleExpr($)))),
+        prec.right(
+          PREC.UNARY,
+          seq(field('operator', '+'), field('operand', scopedHid($, sp, '_non_subquery_simple_expr')))
+        ),
         prec.right(PREC.BANG, seq(field('operator', '!'), field('operand', simpleExpr($)))),
         prec.right(PREC.BINARY, seq(field('operator', keyword('BINARY')), field('operand', simpleExpr($))))
       ),
@@ -1852,7 +1892,9 @@ function buildScopedExpressionRules(sp) {
       ),
     [k('row_value')]: ($) =>
       prec(-1, seq('(', scopedHid($, sp, '_expression'), ',', commaSep1(scopedHid($, sp, '_expression')), ')')),
-    [k('subquery')]: ($) => seq('(', alias(scopedHid($, sp, '_subquery_select'), $.select_statement), ')'),
+    [k('subquery')]: ($) => seq('(', alias(scopedHid($, sp, '_no_limit_select_no_into'), $.select_statement), ')'),
+    [k('_has_limit_subquery')]: ($) =>
+      seq('(', alias(scopedHid($, sp, '_has_limit_select_no_into'), $.select_statement), ')'),
     [k('exists_expression')]: ($) =>
       seq(keyword('EXISTS'), '(', alias(scopedHid($, sp, '_subquery_select'), $.select_statement), ')'),
     [k('function_call')]: ($) =>
@@ -2146,7 +2188,7 @@ function buildScopedExpressionRules(sp) {
         ')'
       ),
     [k('odbc_escape_expression')]: ($) =>
-      seq('{', field('type', $._identifier), field('value', scopedHid($, sp, '_expression')), '}'),
+      seq('{', field('type', $._identifier), field('value', scopedHid($, sp, '_non_subquery_expression')), '}'),
     [k('case_expression')]: ($) =>
       seq(
         keyword('CASE'),
@@ -2266,10 +2308,10 @@ export default grammar({
     [$.partition_by_clause_ddl],
     [$.group_by_clause],
     [$.check_constraint_body],
-    [$._inner_select_no_into, $._no_limit_parenthesized_query],
-    [$._sp_inner_select_no_into, $._sp_no_limit_parenthesized_query],
-    [$._inner_select_no_into, $._has_limit_parenthesized_query],
-    [$._sp_inner_select_no_into, $._sp_has_limit_parenthesized_query],
+    [$._no_limit_select_no_into, $._no_limit_parenthesized_query],
+    [$._sp_no_limit_select_no_into, $._sp_no_limit_parenthesized_query],
+    [$._has_limit_select_no_into, $._has_limit_parenthesized_query],
+    [$._sp_has_limit_select_no_into, $._sp_has_limit_parenthesized_query],
   ],
 
   rules: {

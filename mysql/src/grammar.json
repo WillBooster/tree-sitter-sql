@@ -935,7 +935,7 @@
         }
       ]
     },
-    "_inner_select_no_into": {
+    "_has_limit_select_no_into": {
       "type": "CHOICE",
       "members": [
         {
@@ -970,16 +970,8 @@
               ]
             },
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "limit_clause"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "limit_clause"
             },
             {
               "type": "CHOICE",
@@ -1051,6 +1043,19 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    "_inner_select_no_into": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_no_limit_select_no_into"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_has_limit_select_no_into"
         }
       ]
     },
@@ -10011,20 +10016,46 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_no_limit_wrapped_subquery"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_has_limit_wrapped_subquery"
+        }
+      ]
+    },
+    "_no_limit_wrapped_subquery": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_no_limit_subquery_or_parens"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_no_limit_plus_or_odbc_subquery"
+        }
+      ]
+    },
+    "_no_limit_subquery_or_parens": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
           "name": "subquery"
         },
         {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_wrapped_subquery_parens"
+            "name": "_no_limit_subquery_parens"
           },
           "named": true,
           "value": "parenthesized_expression"
         }
       ]
     },
-    "_wrapped_subquery_parens": {
+    "_no_limit_subquery_parens": {
       "type": "SEQ",
       "members": [
         {
@@ -10033,11 +10064,226 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_wrapped_subquery_expression"
+          "name": "_no_limit_subquery_or_parens"
         },
         {
           "type": "STRING",
           "value": ")"
+        }
+      ]
+    },
+    "_no_limit_plus_or_odbc_subquery": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_no_limit_unary_plus_subquery"
+          },
+          "named": true,
+          "value": "unary_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_no_limit_odbc_subquery"
+          },
+          "named": true,
+          "value": "odbc_escape_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_no_limit_plus_or_odbc_parens"
+          },
+          "named": true,
+          "value": "parenthesized_expression"
+        }
+      ]
+    },
+    "_no_limit_unary_plus_subquery": {
+      "type": "PREC_RIGHT",
+      "value": 15,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "operator",
+            "content": {
+              "type": "STRING",
+              "value": "+"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "operand",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_no_limit_wrapped_subquery"
+            }
+          }
+        ]
+      }
+    },
+    "_no_limit_odbc_subquery": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_no_limit_wrapped_subquery"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
+    },
+    "_no_limit_plus_or_odbc_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_no_limit_plus_or_odbc_subquery"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "_has_limit_wrapped_subquery": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_has_limit_subquery"
+          },
+          "named": true,
+          "value": "subquery"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_has_limit_subquery_parens"
+          },
+          "named": true,
+          "value": "parenthesized_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_has_limit_unary_plus_subquery"
+          },
+          "named": true,
+          "value": "unary_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_has_limit_odbc_subquery"
+          },
+          "named": true,
+          "value": "odbc_escape_expression"
+        }
+      ]
+    },
+    "_has_limit_subquery_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_has_limit_wrapped_subquery"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "_has_limit_unary_plus_subquery": {
+      "type": "PREC_RIGHT",
+      "value": 15,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "operator",
+            "content": {
+              "type": "STRING",
+              "value": "+"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "operand",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_has_limit_wrapped_subquery"
+            }
+          }
+        ]
+      }
+    },
+    "_has_limit_odbc_subquery": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_has_limit_wrapped_subquery"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "}"
         }
       ]
     },
@@ -11066,6 +11312,10 @@
               },
               {
                 "type": "SYMBOL",
+                "name": "_no_limit_plus_or_odbc_subquery"
+              },
+              {
+                "type": "SYMBOL",
                 "name": "_non_subquery_expression"
               },
               {
@@ -11733,10 +11983,6 @@
                     },
                     {
                       "type": "STRING",
-                      "value": "+"
-                    },
-                    {
-                      "type": "STRING",
                       "value": "~"
                     }
                   ]
@@ -11757,6 +12003,31 @@
                       "name": "_wrapped_subquery_expression"
                     }
                   ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
+          "value": 15,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "operator",
+                "content": {
+                  "type": "STRING",
+                  "value": "+"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "operand",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_non_subquery_simple_expr"
                 }
               }
             ]
@@ -11975,7 +12246,29 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_subquery_select"
+            "name": "_no_limit_select_no_into"
+          },
+          "named": true,
+          "value": "select_statement"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "_has_limit_subquery": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_has_limit_select_no_into"
           },
           "named": true,
           "value": "select_statement"
@@ -14714,7 +15007,7 @@
           "name": "value",
           "content": {
             "type": "SYMBOL",
-            "name": "_expression"
+            "name": "_non_subquery_expression"
           }
         },
         {
@@ -15196,7 +15489,7 @@
         }
       ]
     },
-    "_sp_inner_select_no_into": {
+    "_sp_has_limit_select_no_into": {
       "type": "CHOICE",
       "members": [
         {
@@ -15241,21 +15534,13 @@
               ]
             },
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "_sp_limit_clause"
-                  },
-                  "named": true,
-                  "value": "limit_clause"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_sp_limit_clause"
+              },
+              "named": true,
+              "value": "limit_clause"
             },
             {
               "type": "CHOICE",
@@ -15342,6 +15627,19 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    "_sp_inner_select_no_into": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_sp_no_limit_select_no_into"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_sp_has_limit_select_no_into"
         }
       ]
     },
@@ -24906,6 +25204,32 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "_sp_no_limit_wrapped_subquery"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_sp_has_limit_wrapped_subquery"
+        }
+      ]
+    },
+    "_sp_no_limit_wrapped_subquery": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_sp_no_limit_subquery_or_parens"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_sp_no_limit_plus_or_odbc_subquery"
+        }
+      ]
+    },
+    "_sp_no_limit_subquery_or_parens": {
+      "type": "CHOICE",
+      "members": [
+        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
@@ -24918,14 +25242,14 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_sp_wrapped_subquery_parens"
+            "name": "_sp_no_limit_subquery_parens"
           },
           "named": true,
           "value": "parenthesized_expression"
         }
       ]
     },
-    "_sp_wrapped_subquery_parens": {
+    "_sp_no_limit_subquery_parens": {
       "type": "SEQ",
       "members": [
         {
@@ -24934,11 +25258,226 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_sp_wrapped_subquery_expression"
+          "name": "_sp_no_limit_subquery_or_parens"
         },
         {
           "type": "STRING",
           "value": ")"
+        }
+      ]
+    },
+    "_sp_no_limit_plus_or_odbc_subquery": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_no_limit_unary_plus_subquery"
+          },
+          "named": true,
+          "value": "unary_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_no_limit_odbc_subquery"
+          },
+          "named": true,
+          "value": "odbc_escape_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_no_limit_plus_or_odbc_parens"
+          },
+          "named": true,
+          "value": "parenthesized_expression"
+        }
+      ]
+    },
+    "_sp_no_limit_unary_plus_subquery": {
+      "type": "PREC_RIGHT",
+      "value": 15,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "operator",
+            "content": {
+              "type": "STRING",
+              "value": "+"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "operand",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_sp_no_limit_wrapped_subquery"
+            }
+          }
+        ]
+      }
+    },
+    "_sp_no_limit_odbc_subquery": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_no_limit_wrapped_subquery"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
+    },
+    "_sp_no_limit_plus_or_odbc_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_sp_no_limit_plus_or_odbc_subquery"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "_sp_has_limit_wrapped_subquery": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_has_limit_subquery"
+          },
+          "named": true,
+          "value": "subquery"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_has_limit_subquery_parens"
+          },
+          "named": true,
+          "value": "parenthesized_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_has_limit_unary_plus_subquery"
+          },
+          "named": true,
+          "value": "unary_expression"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_has_limit_odbc_subquery"
+          },
+          "named": true,
+          "value": "odbc_escape_expression"
+        }
+      ]
+    },
+    "_sp_has_limit_subquery_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_sp_has_limit_wrapped_subquery"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "_sp_has_limit_unary_plus_subquery": {
+      "type": "PREC_RIGHT",
+      "value": 15,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "operator",
+            "content": {
+              "type": "STRING",
+              "value": "+"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "operand",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_sp_has_limit_wrapped_subquery"
+            }
+          }
+        ]
+      }
+    },
+    "_sp_has_limit_odbc_subquery": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_has_limit_wrapped_subquery"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "}"
         }
       ]
     },
@@ -26002,6 +26541,10 @@
               },
               {
                 "type": "SYMBOL",
+                "name": "_sp_no_limit_plus_or_odbc_subquery"
+              },
+              {
+                "type": "SYMBOL",
                 "name": "_sp_non_subquery_expression"
               },
               {
@@ -26734,10 +27277,6 @@
                     },
                     {
                       "type": "STRING",
-                      "value": "+"
-                    },
-                    {
-                      "type": "STRING",
                       "value": "~"
                     }
                   ]
@@ -26758,6 +27297,31 @@
                       "name": "_sp_wrapped_subquery_expression"
                     }
                   ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
+          "value": 15,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "operator",
+                "content": {
+                  "type": "STRING",
+                  "value": "+"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "operand",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_sp_non_subquery_simple_expr"
                 }
               }
             ]
@@ -26976,7 +27540,29 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_sp_subquery_select"
+            "name": "_sp_no_limit_select_no_into"
+          },
+          "named": true,
+          "value": "select_statement"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "_sp_has_limit_subquery": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_sp_has_limit_select_no_into"
           },
           "named": true,
           "value": "select_statement"
@@ -29773,7 +30359,7 @@
           "name": "value",
           "content": {
             "type": "SYMBOL",
-            "name": "_sp_expression"
+            "name": "_sp_non_subquery_expression"
           }
         },
         {
@@ -62864,19 +63450,19 @@
       "check_constraint_body"
     ],
     [
-      "_inner_select_no_into",
+      "_no_limit_select_no_into",
       "_no_limit_parenthesized_query"
     ],
     [
-      "_sp_inner_select_no_into",
+      "_sp_no_limit_select_no_into",
       "_sp_no_limit_parenthesized_query"
     ],
     [
-      "_inner_select_no_into",
+      "_has_limit_select_no_into",
       "_has_limit_parenthesized_query"
     ],
     [
-      "_sp_inner_select_no_into",
+      "_sp_has_limit_select_no_into",
       "_sp_has_limit_parenthesized_query"
     ]
   ],
