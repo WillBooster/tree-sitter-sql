@@ -765,4 +765,25 @@ SELECT SQL%ROWCOUNT FROM dual;
 
 --------------------------------------------------------------------------------
 
+================================================================================
+Invalid FOLLOWING single bound in Oracle analytic window frame
+:error
+:language(oracle)
+================================================================================
+
+SELECT SUM(x) OVER (ORDER BY x ROWS UNBOUNDED FOLLOWING) FROM t;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Invalid reversed BETWEEN bounds in Oracle analytic window frame
+:error
+:language(oracle)
+================================================================================
+
+SELECT SUM(x) OVER (ORDER BY x ROWS BETWEEN CURRENT ROW AND 2 PRECEDING) FROM t;
+
+--------------------------------------------------------------------------------
+
+
 

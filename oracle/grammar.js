@@ -7042,7 +7042,29 @@ export default grammar({
     _window_frame_unit: () => choice(keyword('ROWS'), keyword('RANGE'), keyword('GROUPS')),
 
     _window_frame_extent: ($) =>
-      choice($.frame_bound, seq(keyword('BETWEEN'), $.frame_bound, keyword('AND'), $.frame_bound)),
+      choice(
+        $.frame_bound,
+        seq(
+          keyword('BETWEEN'),
+          choice(
+            seq(
+              alias($._preceding_frame_bound, $.frame_bound),
+              keyword('AND'),
+              alias($._end_after_preceding_bound, $.frame_bound)
+            ),
+            seq(
+              alias($._current_row_frame_bound, $.frame_bound),
+              keyword('AND'),
+              alias($._end_after_current_row_bound, $.frame_bound)
+            ),
+            seq(
+              alias($._expr_following_frame_bound, $.frame_bound),
+              keyword('AND'),
+              alias($._end_after_following_bound, $.frame_bound)
+            )
+          )
+        )
+      ),
 
     _window_exclude_clause: () =>
       seq(
@@ -7050,13 +7072,26 @@ export default grammar({
         choice(keywords('CURRENT ROW'), keyword('GROUP'), keyword('TIES'), keywords('NO OTHERS'))
       ),
 
-    frame_bound: ($) =>
+    frame_bound: ($) => choice($._preceding_frame_bound, $._current_row_frame_bound),
+
+    _preceding_frame_bound: ($) => choice(keywords('UNBOUNDED PRECEDING'), seq($._expression, keyword('PRECEDING'))),
+
+    _current_row_frame_bound: () => keywords('CURRENT ROW'),
+
+    _expr_following_frame_bound: ($) => seq($._expression, keyword('FOLLOWING')),
+
+    _end_after_preceding_bound: ($) =>
       choice(
-        keywords('UNBOUNDED PRECEDING'),
-        keywords('UNBOUNDED FOLLOWING'),
-        keywords('CURRENT ROW'),
-        seq($._expression, choice(keyword('PRECEDING'), keyword('FOLLOWING')))
+        seq($._expression, keyword('PRECEDING')),
+        $._current_row_frame_bound,
+        $._expr_following_frame_bound,
+        keywords('UNBOUNDED FOLLOWING')
       ),
+
+    _end_after_current_row_bound: ($) =>
+      choice($._current_row_frame_bound, $._expr_following_frame_bound, keywords('UNBOUNDED FOLLOWING')),
+
+    _end_after_following_bound: ($) => choice($._expr_following_frame_bound, keywords('UNBOUNDED FOLLOWING')),
 
     cursor_expression: ($) => seq(keyword('CURSOR'), '(', alias($._subquery_statement, $.select_statement), ')'),
 
