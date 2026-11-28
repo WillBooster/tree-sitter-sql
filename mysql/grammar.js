@@ -3657,44 +3657,60 @@ export default grammar({
         optional(seq(field('label', $._label_identifier), ':')),
         keyword('BEGIN'),
         $._sp_scope_push,
-        repeat(
-          choice(
-            seq($.declare_statement, ';'),
-            seq(alias($._declare_var_statement, $.declare_statement), ';', $._sp_commit_vars)
-          )
-        ),
+        optional($._sp_decl_phase1),
         repeat(seq($._routine_statement, ';')),
         keyword('END'),
         $._sp_scope_pop,
         optional(field('end_label', $._label_identifier))
       ),
 
-    declare_statement: ($) =>
+    _sp_decl_phase1: ($) =>
+      choice(
+        seq($._sp_var_or_cond_decl, optional($._sp_decl_phase1)),
+        seq($._sp_cursor_decl, optional($._sp_decl_phase2)),
+        seq($._sp_handler_decl, optional($._sp_decl_phase3))
+      ),
+
+    _sp_decl_phase2: ($) =>
+      choice(seq($._sp_cursor_decl, optional($._sp_decl_phase2)), seq($._sp_handler_decl, optional($._sp_decl_phase3))),
+
+    _sp_decl_phase3: ($) => repeat1($._sp_handler_decl),
+
+    _sp_var_or_cond_decl: ($) =>
+      choice(
+        seq(alias($._declare_var_statement, $.declare_statement), ';', $._sp_commit_vars),
+        seq(alias($._declare_condition_statement, $.declare_statement), ';')
+      ),
+
+    _sp_cursor_decl: ($) => seq(alias($._declare_cursor_statement, $.declare_statement), ';'),
+
+    _sp_handler_decl: ($) => seq(alias($._declare_handler_statement, $.declare_statement), ';'),
+
+    _declare_handler_statement: ($) =>
       seq(
         keyword('DECLARE'),
-        choice(
-          seq(
-            choice(keyword('CONTINUE'), keyword('EXIT')),
-            keywords('HANDLER FOR'),
-            commaSep1($._handler_condition_value),
-            $._routine_statement
-          ),
-          seq(
-            $._sp_capture_first_ident,
-            choice(
-              seq(
-                field('condition', $._identifier),
-                keywords('CONDITION FOR'),
-                choice($._sqlstate_clause, $._sp_condition_number)
-              ),
-              seq(
-                field('cursor', $._identifier),
-                keywords('CURSOR FOR'),
-                alias($._sp_select_no_into, $.select_statement)
-              )
-            )
-          )
-        )
+        choice(keyword('CONTINUE'), keyword('EXIT')),
+        keywords('HANDLER FOR'),
+        commaSep1($._handler_condition_value),
+        $._routine_statement
+      ),
+
+    _declare_condition_statement: ($) =>
+      seq(
+        keyword('DECLARE'),
+        $._sp_capture_first_ident,
+        field('condition', $._identifier),
+        keywords('CONDITION FOR'),
+        choice($._sqlstate_clause, $._sp_condition_number)
+      ),
+
+    _declare_cursor_statement: ($) =>
+      seq(
+        keyword('DECLARE'),
+        $._sp_capture_first_ident,
+        field('cursor', $._identifier),
+        keywords('CURSOR FOR'),
+        alias($._sp_select_no_into, $.select_statement)
       ),
 
     _declare_var_statement: ($) =>

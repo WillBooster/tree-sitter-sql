@@ -1161,3 +1161,13 @@ LOAD DATA INFILE 'a.csv' INTO TABLE t IGNORE 1.5 LINES;
 
 --------------------------------------------------------------------------------
 
+================================================================================
+Variable or cursor declaration out of order in stored-program BEGIN block
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() BEGIN DECLARE c CURSOR FOR SELECT 1; DECLARE v INT; END;
+
+--------------------------------------------------------------------------------
+
