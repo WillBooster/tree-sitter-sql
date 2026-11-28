@@ -31108,8 +31108,13 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "string_literal"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_text_string_literal"
+                  },
+                  "named": true,
+                  "value": "string_literal"
                 },
                 {
                   "type": "ALIAS",
@@ -62508,7 +62513,54 @@
         }
       }
     },
+    "_any_charset_introducer": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "charset_introducer"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_binary_charset_introducer"
+          },
+          "named": true,
+          "value": "charset_introducer"
+        }
+      ]
+    },
     "string_literal": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_any_charset_introducer"
+              },
+              {
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_string_segment"
+                }
+              }
+            ]
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_plain_string_literal"
+          }
+        ]
+      }
+    },
+    "_text_string_literal": {
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
@@ -62631,7 +62683,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "charset_introducer"
+              "name": "_any_charset_introducer"
             },
             {
               "type": "BLANK"
@@ -62705,7 +62757,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "charset_introducer"
+              "name": "_any_charset_introducer"
             },
             {
               "type": "BLANK"
@@ -62857,6 +62909,10 @@
     {
       "type": "SYMBOL",
       "name": "charset_introducer"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_binary_charset_introducer"
     },
     {
       "type": "SYMBOL",

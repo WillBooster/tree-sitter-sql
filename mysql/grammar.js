@@ -2225,6 +2225,7 @@ export default grammar({
     $._string_segment,
     $._national_string_segment,
     $.charset_introducer,
+    $._binary_charset_introducer,
     $._quoted_hex_literal,
     $._nonzero_quoted_hex_literal,
     $._quoted_bit_literal,
@@ -2410,7 +2411,7 @@ export default grammar({
         seq(
           keyword('DEFAULT'),
           choice(
-            $.string_literal,
+            alias($._text_string_literal, $.string_literal),
             alias($._introduced_hex_literal, $.hex_literal),
             alias($._introduced_bit_literal, $.bit_literal)
           )
@@ -4758,7 +4759,13 @@ export default grammar({
 
     _float_literal: () => token(prec(1, /([0-9]+\.[0-9]*|\.[0-9]+|[0-9]+)[eE][+-]?[0-9]+/)),
 
+    _any_charset_introducer: ($) =>
+      choice($.charset_introducer, alias($._binary_charset_introducer, $.charset_introducer)),
+
     string_literal: ($) =>
+      prec.right(choice(seq($._any_charset_introducer, repeat1($._string_segment)), $._plain_string_literal)),
+
+    _text_string_literal: ($) =>
       prec.right(choice(seq($.charset_introducer, repeat1($._string_segment)), $._plain_string_literal)),
 
     _plain_string_literal: ($) =>
@@ -4773,7 +4780,7 @@ export default grammar({
         )
       ),
 
-    hex_literal: ($) => seq(optional($.charset_introducer), $._bare_hex_literal),
+    hex_literal: ($) => seq(optional($._any_charset_introducer), $._bare_hex_literal),
 
     _introduced_hex_literal: ($) => seq($.charset_introducer, $._bare_hex_literal),
 
@@ -4782,7 +4789,7 @@ export default grammar({
     _nonzero_bare_hex_literal: ($) =>
       choice($._nonzero_quoted_hex_literal, token(prec(1, /0x0*[1-9a-fA-F][0-9a-fA-F]*/))),
 
-    bit_literal: ($) => seq(optional($.charset_introducer), $._bare_bit_literal),
+    bit_literal: ($) => seq(optional($._any_charset_introducer), $._bare_bit_literal),
 
     _introduced_bit_literal: ($) => seq($.charset_introducer, $._bare_bit_literal),
 

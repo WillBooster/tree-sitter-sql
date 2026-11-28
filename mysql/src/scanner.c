@@ -14,6 +14,7 @@ enum TokenType {
   STRING_SEGMENT,
   NATIONAL_STRING_SEGMENT,
   CHARSET_INTRODUCER,
+  BINARY_CHARSET_INTRODUCER,
   QUOTED_HEX_LITERAL,
   NONZERO_QUOTED_HEX_LITERAL,
   QUOTED_BIT_LITERAL,
@@ -295,14 +296,15 @@ static unsigned read_charset_word(TSLexer *lexer, char *charset, unsigned capaci
   return length;
 }
 
-static bool scan_charset_introducer(TSLexer *lexer, bool introducer_valid) {
+static bool scan_charset_introducer(TSLexer *lexer, const bool *valid_symbols) {
   advance(lexer);
   char charset[32];
   unsigned length = read_charset_word(lexer, charset, sizeof charset);
   if (length == 0 || length >= sizeof charset || is_identifier_char(lexer->lookahead) || !is_mysql_charset(charset)) {
     return false;
   }
-  return emit(lexer, introducer_valid ? CHARSET_INTRODUCER : ILLEGAL_TOKEN);
+  enum TokenType sym = strcmp(charset, "binary") == 0 ? BINARY_CHARSET_INTRODUCER : CHARSET_INTRODUCER;
+  return emit(lexer, valid_symbols[sym] ? sym : ILLEGAL_TOKEN);
 }
 
 static bool scan_backtick_sysvar_segment(TSLexer *lexer) {
@@ -604,7 +606,7 @@ static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *va
       return scan_at_variable(lexer, valid_symbols);
     case '_':
       return !valid_symbols[DOT_CONTEXT] && !valid_symbols[UNREACHABLE] &&
-             scan_charset_introducer(lexer, valid_symbols[CHARSET_INTRODUCER]);
+             scan_charset_introducer(lexer, valid_symbols);
     default:
       if (is_ascii_alpha(c) && !valid_symbols[UNREACHABLE] &&
           (valid_symbols[SIGNAL_FIRST_ITEM_NAME] || valid_symbols[SIGNAL_NEXT_ITEM_NAME])) {
