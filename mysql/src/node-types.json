@@ -541,10 +541,6 @@
           "named": true
         },
         {
-          "type": "begin_statement",
-          "named": true
-        },
-        {
           "type": "binlog_statement",
           "named": true
         },
@@ -3302,10 +3298,6 @@
           "named": true
         },
         {
-          "type": "begin_statement",
-          "named": true
-        },
-        {
           "type": "between_expression",
           "named": true
         },
@@ -4776,10 +4768,6 @@
           "named": true
         },
         {
-          "type": "begin_statement",
-          "named": true
-        },
-        {
           "type": "binlog_statement",
           "named": true
         },
@@ -5484,10 +5472,6 @@
           "named": true
         },
         {
-          "type": "begin_statement",
-          "named": true
-        },
-        {
           "type": "binlog_statement",
           "named": true
         },
@@ -5985,10 +5969,6 @@
         },
         {
           "type": "alter_view_statement",
-          "named": true
-        },
-        {
-          "type": "begin_statement",
           "named": true
         },
         {
@@ -6565,10 +6545,6 @@
         },
         {
           "type": "alter_view_statement",
-          "named": true
-        },
-        {
-          "type": "begin_statement",
           "named": true
         },
         {
@@ -7298,10 +7274,6 @@
         },
         {
           "type": "alter_view_statement",
-          "named": true
-        },
-        {
-          "type": "begin_statement",
           "named": true
         },
         {
@@ -8094,10 +8066,6 @@
         },
         {
           "type": "alter_view_statement",
-          "named": true
-        },
-        {
-          "type": "begin_statement",
           "named": true
         },
         {
@@ -11246,10 +11214,6 @@
           "named": true
         },
         {
-          "type": "begin_statement",
-          "named": true
-        },
-        {
           "type": "between_expression",
           "named": true
         },
@@ -14374,10 +14338,6 @@
           "named": true
         },
         {
-          "type": "begin_statement",
-          "named": true
-        },
-        {
           "type": "binlog_statement",
           "named": true
         },
@@ -17128,10 +17088,6 @@
         },
         {
           "type": "alter_view_statement",
-          "named": true
-        },
-        {
-          "type": "begin_statement",
           "named": true
         },
         {
@@ -20439,10 +20395,6 @@
         },
         {
           "type": "alter_view_statement",
-          "named": true
-        },
-        {
-          "type": "begin_statement",
           "named": true
         },
         {

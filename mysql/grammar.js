@@ -547,7 +547,6 @@ const commonStatements = ($, sp = false) => [
   $.alter_instance_statement,
   scopedVis($, sp, 'set_statement'),
   $.start_transaction_statement,
-  $.begin_statement,
   $.commit_statement,
   $.rollback_statement,
   $.savepoint_statement,
@@ -1063,24 +1062,14 @@ function buildScopedFromRules(sp) {
           2,
           seq(
             scopedHid($, sp, '_table_reference'),
-            choice(keyword('LEFT'), keyword('RIGHT')),
-            optional(keyword('OUTER')),
-            keyword('JOIN'),
+            $._outer_join_operator,
             scopedHid($, sp, '_table_reference'),
             scopedVis($, sp, 'join_constraint')
           )
         ),
         prec.left(
           2,
-          seq(
-            scopedHid($, sp, '_table_reference'),
-            keyword('NATURAL'),
-            optional(
-              choice(keyword('INNER'), seq(choice(keyword('LEFT'), keyword('RIGHT')), optional(keyword('OUTER'))))
-            ),
-            keyword('JOIN'),
-            scopedHid($, sp, '_table_factor')
-          )
+          seq(scopedHid($, sp, '_table_reference'), $._natural_join_operator, scopedHid($, sp, '_table_factor'))
         )
       ),
     [k('_multi_table_parens')]: ($) => seq('(', scopedHid($, sp, '_multi_table_references'), ')'),
@@ -1182,16 +1171,13 @@ function buildScopedDmlRules(sp) {
     [k('delete_statement')]: ($) =>
       seq(
         optional(scopedVis($, sp, 'with_clause')),
-        keyword('DELETE'),
-        repeat(choice(keyword('LOW_PRIORITY'), keyword('QUICK'), keyword('IGNORE'))),
+        $._delete_head,
         choice(
           seq(
             keyword('FROM'),
             choice(
               seq(
-                field('table', $.qualified_name),
-                optional($._table_alias),
-                optional($.partition_names_clause),
+                $._single_delete_target,
                 optional(scopedVis($, sp, 'where_clause')),
                 optional(scopedVis($, sp, 'order_by_clause')),
                 optional(alias(scopedHid($, sp, '_simple_limit_clause'), $.limit_clause))
@@ -1284,14 +1270,7 @@ function buildScopedUtilityRules(sp) {
     [k('variable_assignment')]: ($) =>
       choice(
         seq(field('variable', $.user_variable), choice('=', ':='), field('value', scopedHid($, sp, '_expression'))),
-        seq(
-          optional(
-            choice(keyword('GLOBAL'), keyword('SESSION'), keyword('LOCAL'), keyword('PERSIST'), keyword('PERSIST_ONLY'))
-          ),
-          field('variable', choice($.system_variable, alias($._lvalue_column_reference, $.column_reference))),
-          choice('=', ':='),
-          field('value', scopedHid($, sp, '_set_value'))
-        )
+        seq($._sysvar_assignment_lhs, field('value', scopedHid($, sp, '_set_value')))
       ),
     [k('_set_value')]: ($) =>
       choice(
@@ -1364,34 +1343,9 @@ function buildScopedClauseRules(sp) {
         '(',
         field('source', scopedHid($, sp, '_expression')),
         ',',
-        field('path', $.string_literal),
-        keyword('COLUMNS'),
-        '(',
-        commaSep1(scopedVis($, sp, 'json_table_column')),
-        ')',
+        $._json_table_tail,
         ')',
         $._table_alias
-      ),
-    [k('json_table_column')]: ($) =>
-      choice(
-        seq(field('name', $._identifier), keywords('FOR ORDINALITY')),
-        seq(
-          field('name', $._identifier),
-          $.data_type,
-          optional(keyword('EXISTS')),
-          keyword('PATH'),
-          field('path', $.string_literal),
-          optional($._json_table_on_empty_or_error)
-        ),
-        seq(
-          keyword('NESTED'),
-          optional(keyword('PATH')),
-          field('path', $.string_literal),
-          keyword('COLUMNS'),
-          '(',
-          commaSep1(scopedVis($, sp, 'json_table_column')),
-          ')'
-        )
       ),
     [k('join_constraint')]: ($) =>
       choice(
@@ -1868,7 +1822,7 @@ function buildScopedExpressionRules(sp) {
         alias($._uint64_literal, $.numeric_literal),
         $.placeholder,
         $.user_variable,
-        ...(sp ? [alias($._stable_ident_ref, $.column_reference)] : []),
+        ...(sp ? [alias($._sp_declared_ident_ref, $.column_reference)] : []),
         seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
       ),
     [k('_positive_stable_integer')]: ($) =>
@@ -1876,7 +1830,7 @@ function buildScopedExpressionRules(sp) {
         alias($._nonzero_uint64_literal, $.numeric_literal),
         $.placeholder,
         $.user_variable,
-        ...(sp ? [alias($._stable_ident_ref, $.column_reference)] : []),
+        ...(sp ? [alias($._sp_declared_ident_ref, $.column_reference)] : []),
         seq(choice($._zero_int_literal, $._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
       ),
     [k('over_clause')]: ($) =>
@@ -1922,7 +1876,7 @@ function buildConstFrameExpressionRules(sp) {
     [k('_const_expr')]: ($) =>
       choice(
         $._literal,
-        ...(sp ? [alias($._stable_ident_ref, $.column_reference)] : []),
+        ...(sp ? [alias($._sp_declared_ident_ref, $.column_reference)] : []),
         $.user_variable,
         $.system_variable,
         $.placeholder,
@@ -2241,6 +2195,14 @@ export default grammar({
     $._sqlstate_literal,
     $._signal_first_item_name,
     $._signal_next_item_name,
+    $._sp_routine_reset,
+    $._sp_scope_push,
+    $._sp_scope_pop,
+    $._sp_capture_first_ident,
+    $._sp_capture_next_ident,
+    $._sp_commit_vars,
+    $._sp_local_ident,
+    $._sp_local_quoted_ident,
     $._illegal_token,
     $._dot_context,
     $._unreachable,
@@ -2292,7 +2254,13 @@ export default grammar({
     _illegal: ($) => seq($._illegal_token, $._unreachable),
 
     _statement: ($) =>
-      choice(...commonStatements($), $.get_diagnostics_statement, $.signal_statement, $.resignal_statement),
+      choice(
+        ...commonStatements($),
+        $.begin_statement,
+        $.get_diagnostics_statement,
+        $.signal_statement,
+        $.resignal_statement
+      ),
 
     // =========================================================================
     // Queries & SELECT
@@ -2399,6 +2367,48 @@ export default grammar({
         ')'
       ),
 
+    _json_table_tail: ($) =>
+      seq(field('path', $.string_literal), keyword('COLUMNS'), '(', commaSep1($.json_table_column), ')'),
+
+    json_table_column: ($) =>
+      choice(
+        seq(field('name', $._identifier), keywords('FOR ORDINALITY')),
+        seq(
+          field('name', $._identifier),
+          $.data_type,
+          optional(keyword('EXISTS')),
+          keyword('PATH'),
+          field('path', $.string_literal),
+          optional($._json_table_on_empty_or_error)
+        ),
+        seq(keyword('NESTED'), optional(keyword('PATH')), $._json_table_tail)
+      ),
+
+    _outer_join_operator: () =>
+      seq(choice(keyword('LEFT'), keyword('RIGHT')), optional(keyword('OUTER')), keyword('JOIN')),
+
+    _natural_join_operator: () =>
+      seq(
+        keyword('NATURAL'),
+        optional(choice(keyword('INNER'), seq(choice(keyword('LEFT'), keyword('RIGHT')), optional(keyword('OUTER'))))),
+        keyword('JOIN')
+      ),
+
+    _delete_head: () =>
+      seq(keyword('DELETE'), repeat(choice(keyword('LOW_PRIORITY'), keyword('QUICK'), keyword('IGNORE')))),
+
+    _single_delete_target: ($) =>
+      seq(field('table', $.qualified_name), optional($._table_alias), optional($.partition_names_clause)),
+
+    _sysvar_assignment_lhs: ($) =>
+      seq(
+        optional(
+          choice(keyword('GLOBAL'), keyword('SESSION'), keyword('LOCAL'), keyword('PERSIST'), keyword('PERSIST_ONLY'))
+        ),
+        field('variable', choice($.system_variable, alias($._lvalue_column_reference, $.column_reference))),
+        choice('=', ':=')
+      ),
+
     _json_table_on_empty_or_error: ($) =>
       choice(
         seq($._json_table_on_empty, optional($._json_table_on_error)),
@@ -2441,7 +2451,7 @@ export default grammar({
         seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
       ),
 
-    _sp_limit_value: ($) => choice($._limit_value, $._identifier),
+    _sp_limit_value: ($) => choice($._limit_value, $._sp_declared_ident),
 
     locking_clause: ($) =>
       choice(
@@ -3212,6 +3222,7 @@ export default grammar({
         keyword('CREATE'),
         optional($.definer_clause),
         keyword('TRIGGER'),
+        $._sp_routine_reset,
         optional($.if_not_exists),
         field('name', $.qualified_name),
         choice(keyword('BEFORE'), keyword('AFTER')),
@@ -3234,6 +3245,7 @@ export default grammar({
         optional($.if_not_exists),
         field('name', $.qualified_name),
         '(',
+        $._sp_routine_reset,
         commaSep($.procedure_parameter),
         ')',
         repeat($.routine_characteristic),
@@ -3241,7 +3253,13 @@ export default grammar({
       ),
 
     procedure_parameter: ($) =>
-      seq(optional(choice(keyword('IN'), keyword('OUT'), keyword('INOUT'))), field('name', $._identifier), $.data_type),
+      seq(
+        optional(choice(keyword('IN'), keyword('OUT'), keyword('INOUT'))),
+        $._sp_capture_first_ident,
+        field('name', $._identifier),
+        $._sp_commit_vars,
+        $.data_type
+      ),
 
     create_function_statement: ($) =>
       seq(
@@ -3253,6 +3271,7 @@ export default grammar({
             optional($.if_not_exists),
             field('name', $.qualified_name),
             '(',
+            $._sp_routine_reset,
             commaSep($.function_parameter),
             ')',
             keyword('RETURNS'),
@@ -3273,7 +3292,8 @@ export default grammar({
         )
       ),
 
-    function_parameter: ($) => seq(field('name', $._identifier), $.data_type),
+    function_parameter: ($) =>
+      seq($._sp_capture_first_ident, field('name', $._identifier), $._sp_commit_vars, $.data_type),
 
     routine_characteristic: ($) =>
       choice(
@@ -3315,6 +3335,7 @@ export default grammar({
         optional($._event_status),
         optional(seq(keyword('COMMENT'), $.string_literal)),
         keyword('DO'),
+        $._sp_routine_reset,
         $._routine_statement
       ),
 
@@ -3329,7 +3350,7 @@ export default grammar({
         optional(seq(keywords('RENAME TO'), $.qualified_name)),
         optional($._event_status),
         optional(seq(keyword('COMMENT'), $.string_literal)),
-        optional(seq(keyword('DO'), $._routine_statement))
+        optional(seq(keyword('DO'), $._sp_routine_reset, $._routine_statement))
       ),
 
     event_schedule: ($) =>
@@ -3585,9 +3606,16 @@ export default grammar({
       seq(
         optional(seq(field('label', $._label_identifier), ':')),
         keyword('BEGIN'),
-        repeat(seq($.declare_statement, ';')),
+        $._sp_scope_push,
+        repeat(
+          choice(
+            seq($.declare_statement, ';'),
+            seq(alias($._declare_var_statement, $.declare_statement), ';', $._sp_commit_vars)
+          )
+        ),
         repeat(seq($._routine_statement, ';')),
         keyword('END'),
+        $._sp_scope_pop,
         optional(field('end_label', $._label_identifier))
       ),
 
@@ -3596,23 +3624,37 @@ export default grammar({
         keyword('DECLARE'),
         choice(
           seq(
-            field('condition', $._identifier),
-            keywords('CONDITION FOR'),
-            choice($._sqlstate_clause, $._sp_condition_number)
-          ),
-          seq(field('cursor', $._identifier), keywords('CURSOR FOR'), alias($._sp_select_no_into, $.select_statement)),
-          seq(
             choice(keyword('CONTINUE'), keyword('EXIT')),
             keywords('HANDLER FOR'),
             commaSep1($._handler_condition_value),
             $._routine_statement
           ),
           seq(
-            commaSep1($._identifier),
-            $.data_type,
-            optional(seq(keyword('DEFAULT'), field('value', $._sp_expression)))
+            $._sp_capture_first_ident,
+            choice(
+              seq(
+                field('condition', $._identifier),
+                keywords('CONDITION FOR'),
+                choice($._sqlstate_clause, $._sp_condition_number)
+              ),
+              seq(
+                field('cursor', $._identifier),
+                keywords('CURSOR FOR'),
+                alias($._sp_select_no_into, $.select_statement)
+              )
+            )
           )
         )
+      ),
+
+    _declare_var_statement: ($) =>
+      seq(
+        keyword('DECLARE'),
+        $._sp_capture_first_ident,
+        $._identifier,
+        repeat(seq(',', $._sp_capture_next_ident, $._identifier)),
+        $.data_type,
+        optional(seq(keyword('DEFAULT'), field('value', $._sp_expression)))
       ),
 
     _handler_condition_value: ($) =>
@@ -3698,7 +3740,7 @@ export default grammar({
         optional(seq(optional(keyword('NEXT')), keyword('FROM'))),
         field('cursor', $._identifier),
         keyword('INTO'),
-        commaSep1($._identifier)
+        commaSep1($._sp_declared_ident)
       ),
 
     close_statement: ($) => seq(keyword('CLOSE'), field('cursor', $._identifier)),
@@ -3758,11 +3800,13 @@ export default grammar({
         optional(choice(keyword('CURRENT'), keyword('STACKED'))),
         keyword('DIAGNOSTICS'),
         choice(
-          commaSep1(seq(choice($._identifier, $.user_variable), '=', choice(keyword('NUMBER'), keyword('ROW_COUNT')))),
+          commaSep1(
+            seq(choice($._sp_declared_ident, $.user_variable), '=', choice(keyword('NUMBER'), keyword('ROW_COUNT')))
+          ),
           seq(
             keyword('CONDITION'),
             $._signal_allowed_expr,
-            commaSep1(seq(choice($._identifier, $.user_variable), '=', $._diagnostics_condition_item_name))
+            commaSep1(seq(choice($._sp_declared_ident, $.user_variable), '=', $._diagnostics_condition_item_name))
           )
         )
       ),
@@ -4785,7 +4829,10 @@ export default grammar({
 
     _rows_frame_following: ($) => seq($._rows_frame_offset, keyword('FOLLOWING')),
 
-    _stable_ident_ref: ($) => field('name', $._identifier),
+    _sp_declared_ident: ($) =>
+      choice(alias($._sp_local_ident, $.identifier), alias($._sp_local_quoted_ident, $.quoted_identifier)),
+
+    _sp_declared_ident_ref: ($) => field('name', $._sp_declared_ident),
 
     _null_treatment: () => keywords('RESPECT NULLS'),
 
