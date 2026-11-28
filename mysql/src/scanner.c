@@ -473,12 +473,14 @@ typedef struct {
   uint32_t byte_len;
   uint32_t char_len;
   bool all_ascii;
+  bool has_supplementary;
 } FoldedIdent;
 
 static void folded_init(FoldedIdent *id) {
   id->byte_len = 0;
   id->char_len = 0;
   id->all_ascii = true;
+  id->has_supplementary = false;
   id->ascii_upper[0] = 0;
 }
 
@@ -489,6 +491,7 @@ static void folded_push_byte(FoldedIdent *id, uint8_t b) {
 static void folded_push_cp(FoldedIdent *id, int32_t raw_cp) {
   uint16_t cp = mysql_general_ci_weight(raw_cp);
   if (raw_cp >= 0x80) id->all_ascii = false;
+  if (raw_cp > 0xFFFF) id->has_supplementary = true;
   if (id->char_len + 1 < sizeof id->ascii_upper) {
     id->ascii_upper[id->char_len] = cp < 0x80 ? (char)cp : '?';
     id->ascii_upper[id->char_len + 1] = 0;
@@ -681,7 +684,7 @@ static bool scan_backtick_body(
   FoldedIdent folded;
   if (!read_backtick_chars(lexer, lower, sizeof lower, &folded, &has_nul)) return emit(lexer, ILLEGAL_TOKEN);
   lexer->mark_end(lexer);
-  if (has_nul || (!allow_empty && folded.char_len == 0)) {
+  if (has_nul || (!allow_empty && folded.char_len == 0) || (!is_user_var && folded.has_supplementary)) {
     lexer->result_symbol = ILLEGAL_TOKEN;
     return true;
   }
@@ -743,6 +746,15 @@ static void record_charset_char(int32_t c, char *charset, unsigned cap, unsigned
   (*len)++;
 }
 
+static bool scan_bare_ident_for_supplementary(TSLexer *lexer, int32_t first) {
+  bool has_sup = first > 0xFFFF;
+  while (is_identifier_char(lexer->lookahead)) {
+    if (lexer->lookahead > 0xFFFF) has_sup = true;
+    advance(lexer);
+  }
+  return has_sup && emit(lexer, ILLEGAL_TOKEN);
+}
+
 static bool scan_charset_or_underscore_ident(const Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
   FoldedIdent folded;
   folded_init(&folded);
@@ -756,6 +768,7 @@ static bool scan_charset_or_underscore_ident(const Scanner *scanner, TSLexer *le
     folded_push_cp(&folded, lexer->lookahead);
     advance(lexer);
   }
+  if (folded.has_supplementary) return emit(lexer, ILLEGAL_TOKEN);
   charset[length < sizeof charset ? length : sizeof charset - 1] = 0;
   if (charset_ok && length > 0 && length < sizeof charset && is_mysql_charset(charset)) {
     enum TokenType sym = strcmp(charset, "binary") == 0 ? BINARY_CHARSET_INTRODUCER : CHARSET_INTRODUCER;
@@ -768,10 +781,12 @@ static bool scan_charset_or_underscore_ident(const Scanner *scanner, TSLexer *le
 static bool scan_backtick_sysvar_segment(TSLexer *lexer) {
   advance(lexer);
   unsigned length = 0;
+  bool has_sup = false;
   while (!at_eof(lexer) && lexer->lookahead != 0) {
+    if (lexer->lookahead > 0xFFFF) has_sup = true;
     if (lexer->lookahead == '`') {
       advance(lexer);
-      if (lexer->lookahead != '`') return length > 0;
+      if (lexer->lookahead != '`') return length > 0 && !has_sup;
     }
     advance(lexer);
     length++;
@@ -782,13 +797,15 @@ static bool scan_backtick_sysvar_segment(TSLexer *lexer) {
 static bool scan_sysvar_segment(TSLexer *lexer) {
   if (lexer->lookahead == '`') return scan_backtick_sysvar_segment(lexer);
   bool has_non_digit = false;
+  bool has_sup = false;
   unsigned length = 0;
   while (is_identifier_char(lexer->lookahead)) {
     if (!is_digit(lexer->lookahead)) has_non_digit = true;
+    if (lexer->lookahead > 0xFFFF) has_sup = true;
     advance(lexer);
     length++;
   }
-  return length > 0 && has_non_digit;
+  return length > 0 && has_non_digit && !has_sup;
 }
 
 static bool reject_sysvar_tail(TSLexer *lexer) {
@@ -836,6 +853,7 @@ static bool finish_digit_ident_tail(
   const Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, FoldedIdent *folded
 ) {
   while (is_identifier_char(lexer->lookahead)) advance_folded(lexer, folded);
+  if (folded->has_supplementary) return emit(lexer, ILLEGAL_TOKEN);
   lexer->mark_end(lexer);
   if (valid_symbols[SP_LOCAL_IDENT] && scanner->sp_decl_root != 0 &&
       sp_trie_contains(scanner, scanner->sp_decl_root, folded->bytes, folded->byte_len)) {
@@ -915,22 +933,24 @@ static bool scan_digit_or_float(const Scanner *scanner, TSLexer *lexer, const bo
 }
 
 static bool scan_unquoted_word_or_sp_local(Scanner *scanner, TSLexer *lexer, int32_t first, const bool *valid_symbols) {
+  if (!valid_symbols[SP_LOCAL_IDENT] || scanner->sp_decl_root == 0) {
+    return scan_bare_ident_for_supplementary(lexer, first);
+  }
   FoldedIdent folded;
   folded_init(&folded);
   folded_push_cp(&folded, first);
   while (is_identifier_char(lexer->lookahead)) advance_folded(lexer, &folded);
+  if (folded.has_supplementary) return emit(lexer, ILLEGAL_TOKEN);
   if (folded.all_ascii && folded.char_len < sizeof folded.ascii_upper && is_mysql_reserved_word(folded.ascii_upper)) {
     return false;
   }
-  return valid_symbols[SP_LOCAL_IDENT] && scanner->sp_decl_root != 0 &&
-         emit_sp_local_if_declared(scanner, lexer, &folded);
+  return emit_sp_local_if_declared(scanner, lexer, &folded);
 }
 
 static bool scan_prefixed_literal_or_ident(Scanner *scanner, TSLexer *lexer, int32_t c, const bool *valid_symbols) {
   advance(lexer);
   if (lexer->lookahead != '\'') {
-    return !valid_symbols[UNREACHABLE] && valid_symbols[SP_LOCAL_IDENT] && scanner->sp_decl_root != 0 &&
-           scan_unquoted_word_or_sp_local(scanner, lexer, c, valid_symbols);
+    return !valid_symbols[UNREACHABLE] && scan_unquoted_word_or_sp_local(scanner, lexer, c, valid_symbols);
   }
   if (c == 'n' || c == 'N') {
     return scan_string_token(
@@ -1026,7 +1046,8 @@ static bool scan_signal_item_name(Scanner *scanner, TSLexer *lexer, bool is_firs
     advance(lexer);
   }
   word[len < sizeof word ? len : sizeof word - 1] = 0;
-  if (len == 0 || len >= sizeof word || is_identifier_char(lexer->lookahead)) return false;
+  if (is_identifier_char(lexer->lookahead)) return scan_bare_ident_for_supplementary(lexer, 0);
+  if (len == 0 || len >= sizeof word) return false;
   int idx = find_signal_item_index(word);
   if (idx < 0) return false;
   uint16_t bit = (uint16_t)(1u << idx);
@@ -1058,7 +1079,10 @@ static bool read_capture_unquoted_ident(TSLexer *lexer, bool is_first, FoldedIde
     advance_folded(lexer, folded);
   }
   charset[cs_len < sizeof charset ? cs_len : sizeof charset - 1] = 0;
-  if (!has_non_digit || (cs_ok && cs_len > 0 && cs_len < sizeof charset && is_mysql_charset(charset))) return false;
+  if (folded->has_supplementary || !has_non_digit ||
+      (cs_ok && cs_len > 0 && cs_len < sizeof charset && is_mysql_charset(charset))) {
+    return false;
+  }
   return !(is_first && folded->all_ascii && folded->char_len < sizeof folded->ascii_upper &&
            is_sp_first_branch_keyword(folded->ascii_upper));
 }
@@ -1070,7 +1094,8 @@ static bool scan_sp_capture_ident(Scanner *scanner, TSLexer *lexer, bool is_firs
     advance(lexer);
     bool has_nul = false;
     char lower[24];
-    if (!read_backtick_chars(lexer, lower, sizeof lower, &folded, &has_nul) || has_nul || folded.char_len == 0) {
+    if (!read_backtick_chars(lexer, lower, sizeof lower, &folded, &has_nul) || has_nul || folded.char_len == 0 ||
+        folded.has_supplementary) {
       return false;
     }
   } else if (is_identifier_char(lexer->lookahead)) {
@@ -1174,7 +1199,7 @@ static bool scan_default_token(Scanner *scanner, TSLexer *lexer, int32_t c, cons
     return scan_signal_item_name(scanner, lexer, valid_symbols[SIGNAL_FIRST_ITEM_NAME]);
   }
   if (is_digit(c) || c == '.') return scan_digit_or_float(scanner, lexer, valid_symbols);
-  if (valid_symbols[SP_LOCAL_IDENT] && scanner->sp_decl_root != 0 && is_identifier_char(c)) {
+  if (is_identifier_char(c)) {
     advance(lexer);
     return scan_unquoted_word_or_sp_local(scanner, lexer, c, valid_symbols);
   }
@@ -1199,8 +1224,12 @@ static bool scan_token_by_start(Scanner *scanner, TSLexer *lexer, const bool *va
     case '@':
       return scan_at_variable(scanner, lexer, valid_symbols);
     case '_':
-      return !valid_symbols[DOT_CONTEXT] && !valid_symbols[UNREACHABLE] &&
-             scan_charset_or_underscore_ident(scanner, lexer, valid_symbols);
+      if (valid_symbols[UNREACHABLE]) return false;
+      if (valid_symbols[DOT_CONTEXT]) {
+        advance(lexer);
+        return scan_bare_ident_for_supplementary(lexer, '_');
+      }
+      return scan_charset_or_underscore_ident(scanner, lexer, valid_symbols);
     default:
       return scan_default_token(scanner, lexer, c, valid_symbols);
   }

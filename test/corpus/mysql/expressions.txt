@@ -1142,3 +1142,35 @@ SELECT SUM(a) OVER (
           (qualified_name
             (identifier)))))))
 
+================================================================================
+Supplementary characters in string literals and user variables with BMP identifiers
+:language(mysql)
+================================================================================
+
+SELECT '𠀀', _utf8mb4'🚀', @𠀀 := 1, @`🚀`, 表 FROM `列`;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (string_literal))
+      (result_column
+        (string_literal
+          (charset_introducer)))
+      (result_column
+        (assignment_expression
+          (user_variable)
+          (numeric_literal)))
+      (result_column
+        (user_variable))
+      (result_column
+        (column_reference
+          (identifier)))
+      (from_clause
+        (table
+          (qualified_name
+            (quoted_identifier)))))))
+
+

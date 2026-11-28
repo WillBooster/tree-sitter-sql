@@ -67154,7 +67154,7 @@
     },
     "identifier": {
       "type": "PATTERN",
-      "value": "[A-Za-z_$\\u0080-\\uFEFE\\uFF00-\\u{10FFFF}][0-9A-Za-z_$\\u0080-\\u{10FFFF}]*",
+      "value": "[A-Za-z_$\\u0080-\\uFEFE\\uFF00-\\uFFFF][0-9A-Za-z_$\\u0080-\\uFEFE\\uFF00-\\uFFFF]*",
       "flags": "u"
     }
   },

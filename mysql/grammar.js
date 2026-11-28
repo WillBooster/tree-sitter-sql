@@ -482,9 +482,9 @@ const UNUSED_RESERVED_WORDS = [
   'TABLESAMPLE',
 ];
 
-// Unquoted identifiers in MySQL may begin with digits unless they consist solely of digits.
-const IDENTIFIER_NON_DIGIT = String.raw`A-Za-z_$\u0080-\uFEFE\uFF00-\u{10FFFF}`;
-const IDENTIFIER_CHAR = String.raw`0-9A-Za-z_$\u0080-\u{10FFFF}`;
+// Unquoted identifiers in MySQL 8.4 span ASCII and BMP code points up to U+FFFF and may begin with digits unless purely numeric.
+const IDENTIFIER_NON_DIGIT = String.raw`A-Za-z_$\u0080-\uFEFE\uFF00-\uFFFF`;
+const IDENTIFIER_CHAR = String.raw`0-9A-Za-z_$\u0080-\uFEFE\uFF00-\uFFFF`;
 
 /** @param {RuleOrLiteral} value */
 const optionalEq = (value) => seq(optional('='), value);
