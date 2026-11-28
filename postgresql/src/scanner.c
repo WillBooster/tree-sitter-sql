@@ -17,6 +17,8 @@ enum TokenType {
   PLUS,
   MINUS,
   ICONST,
+  INT64_LITERAL,
+  INT64_MIN_MAG_LITERAL,
   QUOTED_ROLE_OPTION,
   ILLEGAL_TOKEN,
   UNREACHABLE,
@@ -484,17 +486,41 @@ static bool scan_dollar(TSLexer *lexer, const bool *valid_symbols) {
   return emit_result(lexer, valid_symbols, STRING_LITERAL, scan_dollar_string(lexer, NULL, 0));
 }
 
+typedef struct {
+  bool valid;
+  bool is_int32;
+  bool is_int64;
+  bool is_int64_min_mag;
+} NumberClass;
+
+static NumberClass classify_int_value(bool ok, uint64_t val, bool overflow) {
+  bool fits = ok && !overflow;
+  return (NumberClass){
+    .valid = ok,
+    .is_int32 = fits && val <= (uint64_t)INT32_MAX,
+    .is_int64 = fits && val <= (uint64_t)INT64_MAX,
+    .is_int64_min_mag = fits && val == (uint64_t)INT64_MAX + 1ULL,
+  };
+}
+
+static void accum_digit(uint64_t *accum, bool *overflow, unsigned base, uint64_t digit) {
+  if (accum == NULL || *overflow) return;
+  if (*accum > (UINT64_MAX - digit) / base) {
+    *overflow = true;
+  } else {
+    *accum = *accum * base + digit;
+  }
+}
+
 static bool scan_digits_accum(
-    TSLexer *lexer, bool (*valid_digit)(int32_t), unsigned base, bool after_digit, uint64_t *accum) {
+    TSLexer *lexer, bool (*valid_digit)(int32_t), unsigned base, bool after_digit, uint64_t *accum, bool *overflow) {
   bool valid = true;
   while (valid_digit(lexer->lookahead) || lexer->lookahead == '_') {
     if (lexer->lookahead == '_') {
       if (!after_digit) valid = false;
       after_digit = false;
     } else {
-      if (accum != NULL && *accum <= (uint64_t)INT32_MAX) {
-        *accum = *accum * base + (uint64_t)hex_value(lexer->lookahead);
-      }
+      accum_digit(accum, overflow, base, (uint64_t)hex_value(lexer->lookahead));
       after_digit = true;
     }
     advance(lexer);
@@ -511,69 +537,62 @@ static bool finish_number(TSLexer *lexer, bool valid) {
 static bool scan_fraction_and_exponent(TSLexer *lexer) {
   bool valid = true;
   if (is_digit(lexer->lookahead) || lexer->lookahead == '_') {
-    valid = scan_digits_accum(lexer, is_digit, 10, false, NULL);
+    valid = scan_digits_accum(lexer, is_digit, 10, false, NULL, NULL);
   }
   if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
     advance(lexer);
     if (lexer->lookahead == '+' || lexer->lookahead == '-') advance(lexer);
     if (!is_digit(lexer->lookahead)) return finish_number(lexer, false);
-    valid = scan_digits_accum(lexer, is_digit, 10, false, NULL) && valid;
+    valid = scan_digits_accum(lexer, is_digit, 10, false, NULL, NULL) && valid;
   }
   return finish_number(lexer, valid);
 }
 
-static bool scan_decimal_number(TSLexer *lexer, bool after_digit, uint64_t initial, bool *out_int32) {
+static NumberClass scan_decimal_number(TSLexer *lexer, bool after_digit, uint64_t initial) {
   uint64_t val = initial;
-  bool valid = scan_digits_accum(lexer, is_digit, 10, after_digit, &val);
+  bool overflow = false;
+  bool valid = scan_digits_accum(lexer, is_digit, 10, after_digit, &val, &overflow);
   lexer->mark_end(lexer);
   if (lexer->lookahead == '.') {
     advance(lexer);
-    if (lexer->lookahead == '.') {
-      *out_int32 = valid && val <= (uint64_t)INT32_MAX;
-      return valid;
-    }
-    *out_int32 = false;
+    if (lexer->lookahead == '.') return classify_int_value(valid, val, overflow);
     bool ok = scan_fraction_and_exponent(lexer) && valid;
     lexer->mark_end(lexer);
-    return ok;
+    return (NumberClass){.valid = ok};
   }
   if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
-    *out_int32 = false;
     bool ok = scan_fraction_and_exponent(lexer) && valid;
     lexer->mark_end(lexer);
-    return ok;
+    return (NumberClass){.valid = ok};
   }
   bool ok = finish_number(lexer, valid);
   lexer->mark_end(lexer);
-  *out_int32 = ok && val <= (uint64_t)INT32_MAX;
-  return ok;
+  return classify_int_value(ok, val, overflow);
 }
 
-static bool scan_radix_number(
-    TSLexer *lexer, bool (*valid_digit)(int32_t), unsigned base, bool *out_int32) {
+static NumberClass scan_radix_number(TSLexer *lexer, bool (*valid_digit)(int32_t), unsigned base) {
   advance(lexer);
   if (lexer->lookahead == '_') advance(lexer);
   if (!valid_digit(lexer->lookahead)) {
-    *out_int32 = false;
     bool ok = finish_number(lexer, false);
     lexer->mark_end(lexer);
-    return ok;
+    return (NumberClass){.valid = ok};
   }
   uint64_t val = 0;
-  bool ok = finish_number(lexer, scan_digits_accum(lexer, valid_digit, base, false, &val));
+  bool overflow = false;
+  bool ok = finish_number(lexer, scan_digits_accum(lexer, valid_digit, base, false, &val, &overflow));
   lexer->mark_end(lexer);
-  *out_int32 = ok && val <= (uint64_t)INT32_MAX;
-  return ok;
+  return classify_int_value(ok, val, overflow);
 }
 
-static bool scan_number(TSLexer *lexer, bool *out_int32) {
-  if (lexer->lookahead != '0') return scan_decimal_number(lexer, false, 0, out_int32);
+static NumberClass scan_number(TSLexer *lexer) {
+  if (lexer->lookahead != '0') return scan_decimal_number(lexer, false, 0);
   advance(lexer);
   int32_t c = lexer->lookahead;
-  if (c == 'x' || c == 'X') return scan_radix_number(lexer, is_hex_digit, 16, out_int32);
-  if (c == 'o' || c == 'O') return scan_radix_number(lexer, is_oct_digit, 8, out_int32);
-  if (c == 'b' || c == 'B') return scan_radix_number(lexer, is_bin_digit, 2, out_int32);
-  return scan_decimal_number(lexer, true, 0, out_int32);
+  if (c == 'x' || c == 'X') return scan_radix_number(lexer, is_hex_digit, 16);
+  if (c == 'o' || c == 'O') return scan_radix_number(lexer, is_oct_digit, 8);
+  if (c == 'b' || c == 'B') return scan_radix_number(lexer, is_bin_digit, 2);
+  return scan_decimal_number(lexer, true, 0);
 }
 
 static uint32_t current_byte(TSLexer *lexer) {
@@ -707,20 +726,32 @@ static bool scan_prefixed_literal(TSLexer *lexer, const bool *valid_symbols, int
                      scan_string_segments(lexer, prefix == 'e' || prefix == 'E', NULL, 0));
 }
 
-static bool scan_number_or_iconst(TSLexer *lexer, const bool *valid_symbols, bool leading_dot) {
-  bool want_iconst = valid_symbols[ICONST] && !is_error_recovery(valid_symbols);
-  if (leading_dot) {
-    advance(lexer);
-    if (!is_digit(lexer->lookahead)) return false;
-    bool valid = scan_fraction_and_exponent(lexer);
-    if (valid && !want_iconst) return false;
-    lexer->mark_end(lexer);
-    return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
+static bool emit_int64_slot(TSLexer *lexer, const bool *valid_symbols, NumberClass num) {
+  if (num.is_int64) return emit_result(lexer, valid_symbols, INT64_LITERAL, true);
+  if (num.is_int64_min_mag && valid_symbols[INT64_MIN_MAG_LITERAL]) {
+    return emit_result(lexer, valid_symbols, INT64_MIN_MAG_LITERAL, true);
   }
-  bool is_int32 = false;
-  bool valid = scan_number(lexer, &is_int32);
-  if (want_iconst) return emit_result(lexer, valid_symbols, ICONST, is_int32);
-  if (valid) return false;
+  return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
+}
+
+static bool scan_leading_dot_number(TSLexer *lexer, const bool *valid_symbols, bool want_int_slot) {
+  advance(lexer);
+  if (!is_digit(lexer->lookahead)) return false;
+  bool valid = scan_fraction_and_exponent(lexer);
+  if (valid && !want_int_slot) return false;
+  lexer->mark_end(lexer);
+  return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
+}
+
+static bool scan_number_or_iconst(TSLexer *lexer, const bool *valid_symbols, bool leading_dot) {
+  bool non_rec = !is_error_recovery(valid_symbols);
+  bool want_iconst = non_rec && valid_symbols[ICONST];
+  bool want_int64 = non_rec && (valid_symbols[INT64_LITERAL] || valid_symbols[INT64_MIN_MAG_LITERAL]);
+  if (leading_dot) return scan_leading_dot_number(lexer, valid_symbols, want_iconst || want_int64);
+  NumberClass num = scan_number(lexer);
+  if (want_iconst) return emit_result(lexer, valid_symbols, ICONST, num.is_int32);
+  if (want_int64) return emit_int64_slot(lexer, valid_symbols, num);
+  if (num.valid) return false;
   return emit_result(lexer, valid_symbols, ILLEGAL_TOKEN, false);
 }
 

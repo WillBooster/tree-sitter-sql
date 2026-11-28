@@ -1210,3 +1210,35 @@ ALTER ROLE r1 WITH "bypassrls" "noreplication" CONNECTION LIMIT +100;
     (quoted_identifier)
     (unary_expression
       (numeric_literal))))
+
+================================================================================
+Signed 64-bit sequence and identity options including INT64_MIN and radix forms
+:language(postgresql)
+================================================================================
+
+CREATE SEQUENCE s_bounds MINVALUE -9223372036854775808 MAXVALUE +9223372036854775807 START WITH -/*c*/0x8000_0000_0000_0000 INCREMENT BY -1 CACHE 1_000;
+ALTER TABLE t ALTER COLUMN id RESTART WITH -5;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_sequence_statement
+    (qualified_name
+      (identifier))
+    (unary_expression
+      (numeric_literal))
+    (unary_expression
+      (numeric_literal))
+    (unary_expression
+      (comment)
+      (numeric_literal))
+    (unary_expression
+      (numeric_literal))
+    (numeric_literal))
+  (alter_table_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (unary_expression
+      (numeric_literal))))
+

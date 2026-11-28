@@ -23080,7 +23080,7 @@
                                       },
                                       {
                                         "type": "SYMBOL",
-                                        "name": "numeric_literal"
+                                        "name": "_signed_int64"
                                       }
                                     ]
                                   },
@@ -25189,7 +25189,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_signed_integer"
+              "name": "_signed_int64"
             }
           ]
         },
@@ -25207,7 +25207,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_signed_integer"
+              "name": "_signed_int64"
             }
           ]
         },
@@ -25248,7 +25248,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_signed_integer"
+              "name": "_signed_int64"
             }
           ]
         },
@@ -25306,7 +25306,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_signed_integer"
+              "name": "_signed_int64"
             }
           ]
         },
@@ -25324,7 +25324,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_signed_integer"
+              "name": "_signed_int64"
             }
           ]
         },
@@ -25667,7 +25667,7 @@
                               },
                               {
                                 "type": "SYMBOL",
-                                "name": "_signed_integer"
+                                "name": "_signed_int64"
                               }
                             ]
                           },
@@ -72211,6 +72211,119 @@
         }
       ]
     },
+    "_int64_literal": {
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "_int64"
+      },
+      "named": true,
+      "value": "numeric_literal"
+    },
+    "_int64_min_literal": {
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "_int64_min_mag"
+      },
+      "named": true,
+      "value": "numeric_literal"
+    },
+    "_signed_int64": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_int64_literal"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_signed_int64_literal"
+          },
+          "named": true,
+          "value": "unary_expression"
+        },
+        {
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "_illegal"
+          }
+        }
+      ]
+    },
+    "_signed_int64_literal": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "operator",
+              "content": {
+                "type": "STRING",
+                "value": "+"
+              }
+            },
+            {
+              "type": "FIELD",
+              "name": "operand",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_int64_literal"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_illegal"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "operator",
+              "content": {
+                "type": "STRING",
+                "value": "-"
+              }
+            },
+            {
+              "type": "FIELD",
+              "name": "operand",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_int64_literal"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_int64_min_literal"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_illegal"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
     "_signed_integer": {
       "type": "CHOICE",
       "members": [
@@ -72401,6 +72514,14 @@
     {
       "type": "SYMBOL",
       "name": "_iconst"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_int64"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_int64_min_mag"
     },
     {
       "type": "SYMBOL",

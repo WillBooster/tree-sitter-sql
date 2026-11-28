@@ -792,6 +792,8 @@ export default grammar({
     '+',
     '-',
     $._iconst,
+    $._int64,
+    $._int64_min_mag,
     $._quoted_role_option,
     $._illegal_token,
     $._unreachable,
@@ -2050,7 +2052,7 @@ export default grammar({
                 choice(
                   seq(keywords('SET GENERATED'), choice(keyword('ALWAYS'), keywords('BY DEFAULT'))),
                   seq(keyword('SET'), $._sequence_option),
-                  seq(keyword('RESTART'), optional(seq(optional(keyword('WITH')), $.numeric_literal)))
+                  seq(keyword('RESTART'), optional(seq(optional(keyword('WITH')), $._signed_int64)))
                 )
               )
             ),
@@ -2172,13 +2174,13 @@ export default grammar({
     _sequence_option: ($) =>
       choice(
         seq(keyword('AS'), $.type_name),
-        seq(keyword('INCREMENT'), optional(keyword('BY')), $._signed_integer),
-        seq(keyword('MINVALUE'), $._signed_integer),
+        seq(keyword('INCREMENT'), optional(keyword('BY')), $._signed_int64),
+        seq(keyword('MINVALUE'), $._signed_int64),
         keywords('NO MINVALUE'),
-        seq(keyword('MAXVALUE'), $._signed_integer),
+        seq(keyword('MAXVALUE'), $._signed_int64),
         keywords('NO MAXVALUE'),
-        seq(keyword('START'), optional(keyword('WITH')), $._signed_integer),
-        seq(keyword('CACHE'), $._signed_integer),
+        seq(keyword('START'), optional(keyword('WITH')), $._signed_int64),
+        seq(keyword('CACHE'), $._signed_int64),
         seq(optional(keyword('NO')), keyword('CYCLE')),
         seq(keywords('OWNED BY'), $.column_reference),
         seq(keywords('SEQUENCE NAME'), $.qualified_name),
@@ -2199,7 +2201,7 @@ export default grammar({
           repeat1(
             choice(
               $._sequence_option,
-              seq(keyword('RESTART'), optional(seq(optional(keyword('WITH')), $._signed_integer)))
+              seq(keyword('RESTART'), optional(seq(optional(keyword('WITH')), $._signed_int64)))
             )
           )
         )
@@ -5369,6 +5371,19 @@ export default grammar({
 
     _signed_iconst_literal: ($) =>
       seq(field('operator', choice('+', '-')), field('operand', choice($._iconst_literal, $._illegal))),
+
+    _int64_literal: ($) => alias($._int64, $.numeric_literal),
+
+    _int64_min_literal: ($) => alias($._int64_min_mag, $.numeric_literal),
+
+    _signed_int64: ($) =>
+      choice($._int64_literal, alias($._signed_int64_literal, $.unary_expression), prec(1, $._illegal)),
+
+    _signed_int64_literal: ($) =>
+      choice(
+        seq(field('operator', '+'), field('operand', choice($._int64_literal, $._illegal))),
+        seq(field('operator', '-'), field('operand', choice($._int64_literal, $._int64_min_literal, $._illegal)))
+      ),
 
     _signed_integer: ($) =>
       choice($.numeric_literal, alias($._signed_numeric_literal, $.unary_expression), prec(1, $._illegal)),
