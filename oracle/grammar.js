@@ -946,7 +946,13 @@ function buildJsonExpressionRules(k, ref, pub, def, baseIdentifier) {
       k('_json_object_body'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>
         choice(
-          seq(choice('*', commaSep1(pub($, 'json_object_entry'))), repeat($._json_agg_option)),
+          seq(
+            choice(
+              ...(isPlsql ? [] : [alias('*', $.all_columns)]),
+              commaSep1(choice(pub($, 'json_object_entry'), ...(isPlsql ? [] : [$.qualified_wildcard])))
+            ),
+            repeat($._json_agg_option)
+          ),
           repeat1($._json_agg_option)
         ),
     ],
@@ -989,12 +995,11 @@ function buildJsonExpressionRules(k, ref, pub, def, baseIdentifier) {
       seq(
         keyword('JSON'),
         choice(
-          seq('{', optional(ref($, '_json_ctor_obj_body')), '}'),
+          seq('{', optional(ref($, '_json_object_body')), '}'),
           seq('[', optional(ref($, '_json_ctor_arr_body')), ']')
         )
       )
     ),
-    [k('_json_ctor_obj_body'), /** @param {GrammarSymbols<string>} $ */ ($) => commaSep1(pub($, 'json_object_entry'))],
     [
       k('_json_ctor_arr_body'),
       /** @param {GrammarSymbols<string>} $ */ ($) =>

@@ -1170,3 +1170,50 @@ FROM dual;
         (table_reference
           (object_name
             (identifier)))))))
+
+
+================================================================================
+JSON_OBJECT and JSON constructor wildcards and mixed entries
+:language(oracle)
+================================================================================
+
+SELECT JSON_OBJECT(*), JSON_OBJECT(t.*), JSON_OBJECT('label' VALUE c.name, hr.addresses.*), JSON { t.* ABSENT ON NULL }
+FROM customers t, customers c;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (json_function_expression
+            (all_columns)))
+        (select_item
+          (json_function_expression
+            (qualified_wildcard
+              (identifier))))
+        (select_item
+          (json_function_expression
+            (json_object_entry
+              (string_literal)
+              (member_expression
+                (identifier)
+                (identifier)))
+            (qualified_wildcard
+              (member_expression
+                (identifier)
+                (identifier)))))
+        (select_item
+          (json_constructor_expression
+            (qualified_wildcard
+              (identifier)))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))))))

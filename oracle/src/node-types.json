@@ -21985,6 +21985,10 @@
       "required": false,
       "types": [
         {
+          "type": "all_columns",
+          "named": true
+        },
+        {
           "type": "at_time_zone_expression",
           "named": true
         },
@@ -22145,6 +22149,10 @@
           "named": true
         },
         {
+          "type": "qualified_wildcard",
+          "named": true
+        },
+        {
           "type": "quantified_comparison_expression",
           "named": true
         },
@@ -22181,6 +22189,10 @@
           "named": true
         },
         {
+          "type": "type_name",
+          "named": true
+        },
+        {
           "type": "unary_expression",
           "named": true
         },
@@ -22203,6 +22215,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "all_columns",
+          "named": true
+        },
         {
           "type": "at_time_zone_expression",
           "named": true
@@ -22373,6 +22389,10 @@
         },
         {
           "type": "pseudocolumn",
+          "named": true
+        },
+        {
+          "type": "qualified_wildcard",
           "named": true
         },
         {

@@ -64181,15 +64181,29 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "STRING",
-                  "value": "*"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "STRING",
+                    "value": "*"
+                  },
+                  "named": true,
+                  "value": "all_columns"
                 },
                 {
                   "type": "SEQ",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "json_object_entry"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "json_object_entry"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "qualified_wildcard"
+                        }
+                      ]
                     },
                     {
                       "type": "REPEAT",
@@ -64201,8 +64215,17 @@
                             "value": ","
                           },
                           {
-                            "type": "SYMBOL",
-                            "name": "json_object_entry"
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "json_object_entry"
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "qualified_wildcard"
+                              }
+                            ]
                           }
                         ]
                       }
@@ -64584,7 +64607,7 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "_json_ctor_obj_body"
+                      "name": "_json_object_body"
                     },
                     {
                       "type": "BLANK"
@@ -64623,31 +64646,6 @@
               ]
             }
           ]
-        }
-      ]
-    },
-    "_json_ctor_obj_body": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "json_object_entry"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": ","
-              },
-              {
-                "type": "SYMBOL",
-                "name": "json_object_entry"
-              }
-            ]
-          }
         }
       ]
     },
@@ -70513,20 +70511,21 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "STRING",
-                  "value": "*"
-                },
-                {
                   "type": "SEQ",
                   "members": [
                     {
-                      "type": "ALIAS",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "_plsql_json_object_entry"
-                      },
-                      "named": true,
-                      "value": "json_object_entry"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_plsql_json_object_entry"
+                          },
+                          "named": true,
+                          "value": "json_object_entry"
+                        }
+                      ]
                     },
                     {
                       "type": "REPEAT",
@@ -70538,13 +70537,18 @@
                             "value": ","
                           },
                           {
-                            "type": "ALIAS",
-                            "content": {
-                              "type": "SYMBOL",
-                              "name": "_plsql_json_object_entry"
-                            },
-                            "named": true,
-                            "value": "json_object_entry"
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "ALIAS",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "_plsql_json_object_entry"
+                                },
+                                "named": true,
+                                "value": "json_object_entry"
+                              }
+                            ]
                           }
                         ]
                       }
@@ -70926,7 +70930,7 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "_plsql_json_ctor_obj_body"
+                      "name": "_plsql_json_object_body"
                     },
                     {
                       "type": "BLANK"
@@ -70965,41 +70969,6 @@
               ]
             }
           ]
-        }
-      ]
-    },
-    "_plsql_json_ctor_obj_body": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_plsql_json_object_entry"
-          },
-          "named": true,
-          "value": "json_object_entry"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": ","
-              },
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_plsql_json_object_entry"
-                },
-                "named": true,
-                "value": "json_object_entry"
-              }
-            ]
-          }
         }
       ]
     },
