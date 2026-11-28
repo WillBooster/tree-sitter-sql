@@ -984,3 +984,95 @@ ALTER INSTANCE ROTATE INNODB MASTER KEY;
   (drop_resource_group_statement
     (identifier))
   (alter_instance_statement))
+
+
+================================================================================
+Stage10 MySQL routine labels, handler scope barriers, function-only RETURN, and executable comments after SP LIMIT
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p_labels(IN n INT)
+BEGIN
+  `lbl_Ä`: LOOP
+    blk: BEGIN
+      LEAVE blk;
+    END blk;
+    BEGIN
+      DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+        inner_blk: BEGIN
+          LEAVE inner_blk;
+        END inner_blk;
+      SELECT 1 LIMIT n/*!80000 , 1 */;
+      SELECT 1 LIMIT n/*!80000 */;
+      LEAVE `lbl_ä`;
+    END;
+  END LOOP `lbl_ä`;
+END;
+CREATE FUNCTION fn_ret(x INT) RETURNS INT DETERMINISTIC
+BEGIN
+  IF x > 0 THEN
+    RETURN x;
+  END IF;
+  RETURN 0;
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_procedure_statement
+    (qualified_name
+      (identifier))
+    (procedure_parameter
+      (identifier)
+      (data_type))
+    (compound_statement
+      (loop_statement
+        (quoted_identifier)
+        (compound_statement
+          (identifier)
+          (leave_statement
+            (identifier))
+          (identifier))
+        (compound_statement
+          (declare_statement
+            (compound_statement
+              (identifier)
+              (leave_statement
+                (identifier))
+              (identifier)))
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal)))
+            (limit_clause
+              (identifier)
+              (numeric_literal)))
+          (select_statement
+            (select_core
+              (result_column
+                (numeric_literal)))
+            (limit_clause
+              (identifier)))
+          (comment)
+          (leave_statement
+            (quoted_identifier)))
+        (quoted_identifier))))
+  (create_function_statement
+    (qualified_name
+      (identifier))
+    (function_parameter
+      (identifier)
+      (data_type))
+    (data_type)
+    (routine_characteristic)
+    (compound_statement
+      (if_statement
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))
+        (return_statement
+          (column_reference
+            (identifier))))
+      (return_statement
+        (numeric_literal)))))

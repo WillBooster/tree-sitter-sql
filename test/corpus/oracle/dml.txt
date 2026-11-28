@@ -609,3 +609,99 @@ END;
       (returning_into_clause
         (identifier)
         (identifier)))))
+
+
+================================================================================
+Stage10 Oracle static DML RETURNING nested OLD/NEW operands and writable INTO targets
+:language(oracle)
+================================================================================
+
+MERGE INTO items t
+USING src s
+ON (t.id = s.id)
+WHEN MATCHED THEN UPDATE SET t.price = s.price
+RETURNING SUM(NEW price), AVG(OLD price) INTO :s, :a;
+
+UPDATE items SET price = price + 10 RETURNING NEW price - OLD price INTO :out_val INDICATOR :out_ind;
+
+BEGIN
+  UPDATE items SET price = 20 WHERE id = 1 RETURNING price, id INTO l_rec.price, l_arr(1);
+END;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (merge_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (table_reference
+      (object_name
+        (identifier))
+      (identifier))
+    (binary_expression
+      (member_expression
+        (identifier)
+        (identifier))
+      (member_expression
+        (identifier)
+        (identifier)))
+    (merge_update_clause
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier)
+            (identifier))
+          (member_expression
+            (identifier)
+            (identifier)))))
+    (returning_into_clause
+      (function_call
+        (identifier)
+        (function_argument
+          (identifier)))
+      (function_call
+        (identifier)
+        (function_argument
+          (identifier)))
+      (bind_variable)
+      (bind_variable)))
+  (update_statement
+    (object_name
+      (identifier))
+    (set_clause
+      (update_assignment
+        (object_name
+          (identifier))
+        (binary_expression
+          (identifier)
+          (numeric_literal))))
+    (returning_into_clause
+      (binary_expression
+        (identifier)
+        (identifier))
+      (bind_variable)
+      (bind_variable)))
+  (anonymous_block
+    (update_statement
+      (object_name
+        (identifier))
+      (set_clause
+        (update_assignment
+          (object_name
+            (identifier))
+          (numeric_literal)))
+      (where_clause
+        (binary_expression
+          (identifier)
+          (numeric_literal)))
+      (returning_into_clause
+        (identifier)
+        (identifier)
+        (member_expression
+          (identifier)
+          (identifier))
+        (function_call
+          (identifier)
+          (function_argument
+            (numeric_literal)))))))

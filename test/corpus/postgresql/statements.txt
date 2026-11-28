@@ -141,6 +141,8 @@ LOCK TABLE ONLY accounts, events * IN SHARE UPDATE EXCLUSIVE MODE NOWAIT; TRUNCA
       (identifier)))
   (vacuum_statement
     (identifier)
+    (identifier)
+    (identifier)
     (qualified_name
       (identifier))
     (column_list
@@ -156,6 +158,7 @@ LOCK TABLE ONLY accounts, events * IN SHARE UPDATE EXCLUSIVE MODE NOWAIT; TRUNCA
       (identifier))
     (identifier))
   (reindex_statement
+    (identifier)
     (identifier)
     (qualified_name
       (identifier))))
@@ -174,8 +177,7 @@ EXPLAIN (ANALYZE, BUFFERS true, FORMAT JSON) SELECT * FROM accounts WHERE id = $
     (identifier)
     (boolean_literal)
     (identifier)
-    (column_reference
-      (identifier))
+    (identifier)
     (select_statement
       (select_core
         (all_columns)
@@ -214,8 +216,7 @@ COPY accounts (id, code) FROM STDIN WITH (FORMAT csv, HEADER true, DELIMITER ','
       (identifier)
       (identifier))
     (identifier)
-    (column_reference
-      (identifier))
+    (identifier)
     (identifier)
     (boolean_literal)
     (identifier)
@@ -445,6 +446,7 @@ EXPLAIN CREATE TEMP TABLE IF NOT EXISTS q_exp AS EXECUTE p; EXPLAIN CREATE MATER
       (identifier)
       (identifier)))
   (reindex_statement
+    (identifier)
     (qualified_name
       (identifier))))
 
@@ -506,3 +508,49 @@ COPY (SELECT 'a' AS item, 'b' AS detail) TO STDOUT CSV FORCE QUOTE item, detail;
     (qualified_name
       (identifier))
     (identifier)))
+
+
+================================================================================
+Stage10 PostgreSQL EXPLAIN, VACUUM, and modern COPY option domains
+:language(postgresql)
+================================================================================
+
+EXPLAIN (ANALYZE, COSTS OFF, TIMING FALSE, FORMAT JSON) SELECT 1;
+VACUUM (PARALLEL 4, BUFFER_USAGE_LIMIT '256MB') accounts;
+COPY accounts (id, code) FROM STDIN WITH (FORMAT csv, FORCE_NULL (id, code), FORCE_NOT_NULL *, DEFAULT 'N/A');
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (explain_statement
+    (identifier)
+    (identifier)
+    (identifier)
+    (boolean_literal)
+    (identifier)
+    (identifier)
+    (select_statement
+      (select_core
+        (result_column
+          (numeric_literal)))))
+  (vacuum_statement
+    (identifier)
+    (numeric_literal)
+    (identifier)
+    (string_literal)
+    (qualified_name
+      (identifier)))
+  (copy_statement
+    (qualified_name
+      (identifier))
+    (column_list
+      (identifier)
+      (identifier))
+    (identifier)
+    (identifier)
+    (identifier)
+    (identifier)
+    (identifier)
+    (identifier)
+    (identifier)
+    (string_literal)))

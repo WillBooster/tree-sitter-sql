@@ -1180,3 +1180,62 @@ CREATE TABLE child_accented (
         (column_list
           (identifier)
           (identifier))))))
+
+
+================================================================================
+Stage10 Oracle CREATE JSON COLLECTION TABLE and PL/SQL LANGUAGE C / EXTERNAL call specifications
+:language(oracle)
+================================================================================
+
+CREATE JSON COLLECTION TABLE purchaseorders;
+CREATE OR REPLACE JSON COLLECTION TABLE purchaseorders WITH ETAG TABLESPACE users AS SELECT JSON {'id': 1} FROM dual;
+CREATE FUNCTION c_fn(x BINARY_INTEGER) RETURN BINARY_INTEGER AS LANGUAGE C NAME "demo" LIBRARY demonstrator PARAMETERS (x INT, RETURN INT);
+CREATE FUNCTION c_ctx(x BINARY_INTEGER) RETURN VARCHAR2 AS EXTERNAL NAME "demo_ctx" LIBRARY demonstrator AGENT IN (x) WITH CONTEXT PARAMETERS (CONTEXT, x INT, RETURN INDICATOR SHORT, RETURN BY REFERENCE STRING);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (create_table_statement
+    (object_name
+      (identifier)))
+  (create_table_statement
+    (object_name
+      (identifier))
+    (identifier)
+    (select_statement
+      (select_core
+        (select_list
+          (select_item
+            (json_constructor_expression
+              (json_object_entry
+                (string_literal)
+                (numeric_literal)))))
+        (from_clause
+          (table_reference
+            (object_name
+              (identifier)))))))
+  (create_function_statement
+    (object_name
+      (identifier))
+    (plsql_parameter_list
+      (plsql_parameter
+        (identifier)
+        (type_name)))
+    (type_name)
+    (quoted_identifier)
+    (object_name
+      (identifier))
+    (identifier))
+  (create_function_statement
+    (object_name
+      (identifier))
+    (plsql_parameter_list
+      (plsql_parameter
+        (identifier)
+        (type_name)))
+    (type_name)
+    (quoted_identifier)
+    (object_name
+      (identifier))
+    (identifier)
+    (identifier)))

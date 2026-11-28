@@ -709,7 +709,7 @@ const copyOptions = ($) => [
   optional(keyword('WITH')),
   optional(
     choice(
-      parens(commaSep1($._utility_option)),
+      parens(commaSep1($._copy_generic_option)),
       repeat1(
         choice(
           keyword('BINARY'),
@@ -795,6 +795,7 @@ export default grammar({
     $._iconst,
     $._int64,
     $._int64_min_mag,
+    $._bit_typmod,
     $._quoted_role_option,
     $._illegal_token,
     $._unreachable,
@@ -990,19 +991,16 @@ export default grammar({
       ),
 
     _utility_option: ($) =>
-      seq(
-        choice($._col_label, keyword('ANALYZE'), keyword('ANALYSE'), keyword('VERBOSE'), keyword('FREEZE')),
-        optional(
-          choice(
-            $._expression,
-            ...[...TYPE_FUNC_NAME_KEYWORDS].map((word) => prec(-1, alias(keyword(word), $.identifier))),
-            keyword('ON'),
-            keyword('OFF'),
-            keyword('ALL'),
-            '*'
-          )
-        )
-      ),
+      seq(choice($._non_reserved_word, keyword('ANALYZE'), keyword('ANALYSE')), optional($._utility_option_arg)),
+
+    _utility_option_arg: ($) => choice($._boolean_or_string, $._signed_integer),
+
+    _copy_generic_option: ($) => seq($._col_label, optional($._copy_generic_opt_arg)),
+
+    _copy_generic_opt_arg: ($) =>
+      choice($._boolean_or_string, $._signed_integer, '*', keyword('DEFAULT'), parens(commaSep1($._boolean_or_string))),
+
+    _boolean_or_string: ($) => choice($.boolean_literal, keyword('ON'), $._non_reserved_word, $.string_literal),
 
     // =========================================================================
     // Queries (`SELECT`, `VALUES`, `TABLE`, `WITH`, Set Operations)
@@ -2546,9 +2544,15 @@ export default grammar({
 
     _routine_option: ($) =>
       choice(
+        $._common_routine_option,
         seq(keyword('LANGUAGE'), choice($._identifier, $.string_literal)),
         seq(keywords('TRANSFORM'), commaSep1(seq(keywords('FOR TYPE'), $.type_name))),
         keyword('WINDOW'),
+        seq(keyword('AS'), $.string_literal, optional(seq(',', $.string_literal)))
+      ),
+
+    _common_routine_option: ($) =>
+      choice(
         keyword('IMMUTABLE'),
         keyword('STABLE'),
         keyword('VOLATILE'),
@@ -2558,12 +2562,11 @@ export default grammar({
         keyword('STRICT'),
         seq(optional(keyword('EXTERNAL')), keyword('SECURITY'), choice(keyword('INVOKER'), keyword('DEFINER'))),
         seq(keyword('PARALLEL'), choice(keyword('UNSAFE'), keyword('RESTRICTED'), keyword('SAFE'))),
-        seq(keyword('COST'), $.numeric_literal),
-        seq(keyword('ROWS'), $.numeric_literal),
+        seq(keyword('COST'), $._signed_integer),
+        seq(keyword('ROWS'), $._signed_integer),
         seq(keyword('SUPPORT'), $.qualified_name),
         $.set_statement,
-        seq(keyword('RESET'), $._reset_target),
-        seq(keyword('AS'), $.string_literal, optional(seq(',', $.string_literal)))
+        seq(keyword('RESET'), $._reset_target)
       ),
 
     sql_function_body: ($) =>
@@ -2589,7 +2592,7 @@ export default grammar({
           seq(keywords('OWNER TO'), $._role_spec),
           seq(keywords('SET SCHEMA'), $._identifier),
           seq(optional(keyword('NO')), keywords('DEPENDS ON EXTENSION'), $._identifier),
-          seq(repeat1($._routine_option), optional(keyword('RESTRICT')))
+          seq(repeat1($._common_routine_option), optional(keyword('RESTRICT')))
         )
       ),
 
@@ -3037,7 +3040,7 @@ export default grammar({
         optional($.if_not_exists),
         field('name', $._identifier),
         optional(seq(keyword('TYPE'), $.string_literal)),
-        optional(seq(keyword('VERSION'), $.string_literal)),
+        optional(seq(keyword('VERSION'), choice($.string_literal, $.null))),
         keywords('FOREIGN DATA WRAPPER'),
         $._identifier,
         optional($._create_generic_options)
@@ -3050,7 +3053,7 @@ export default grammar({
         choice(
           seq(keywords('OWNER TO'), $._role_spec),
           seq(keywords('RENAME TO'), $._identifier),
-          seq(keyword('VERSION'), $.string_literal, optional($._alter_generic_options)),
+          seq(keyword('VERSION'), choice($.string_literal, $.null), optional($._alter_generic_options)),
           $._alter_generic_options
         )
       ),
@@ -4212,7 +4215,10 @@ export default grammar({
           ),
           optional(parens($._iconst_literal))
         ),
-        seq(choice(keywords('BIT VARYING'), keyword('BIT')), optional(parens($.numeric_literal))),
+        seq(
+          choice(keywords('BIT VARYING'), keyword('BIT')),
+          optional(parens(choice(alias($._bit_typmod, $.numeric_literal), prec(1, $._illegal))))
+        ),
         seq(
           choice(keyword('TIMESTAMP'), keyword('TIME')),
           optional(parens($._iconst_literal)),
@@ -4225,24 +4231,27 @@ export default grammar({
     _type_modifiers: ($) => parens(commaSep1($._expression)),
 
     _interval_qualifier: ($) =>
-      choice(seq($._interval_fields, optional(parens($._iconst_literal))), parens($._iconst_literal)),
+      choice(
+        $._interval_non_second_fields,
+        seq($._interval_second_fields, optional(parens($._iconst_literal))),
+        parens($._iconst_literal)
+      ),
 
-    _interval_fields: () =>
+    _interval_non_second_fields: () =>
       choice(
         keyword('YEAR'),
         keyword('MONTH'),
         keyword('DAY'),
         keyword('HOUR'),
         keyword('MINUTE'),
-        keyword('SECOND'),
         keywords('YEAR TO MONTH'),
         keywords('DAY TO HOUR'),
         keywords('DAY TO MINUTE'),
-        keywords('DAY TO SECOND'),
-        keywords('HOUR TO MINUTE'),
-        keywords('HOUR TO SECOND'),
-        keywords('MINUTE TO SECOND')
+        keywords('HOUR TO MINUTE')
       ),
+
+    _interval_second_fields: () =>
+      choice(keyword('SECOND'), keywords('DAY TO SECOND'), keywords('HOUR TO SECOND'), keywords('MINUTE TO SECOND')),
 
     // =========================================================================
     // Expressions

@@ -10,7 +10,7 @@ RELEASE SAVEPOINT sp1;
 COMMIT WORK AND NO CHAIN NO RELEASE;
 BEGIN WORK;
 ROLLBACK AND CHAIN;
-LOCK TABLES orders AS o READ LOCAL, logs LOW_PRIORITY WRITE;
+LOCK TABLES orders AS o READ LOCAL, logs WRITE;
 UNLOCK TABLES;
 
 --------------------------------------------------------------------------------
@@ -739,3 +739,86 @@ EXPLAIN FOR DATABASE 'analytics_db' DELETE FROM orders WHERE id = 1;
           (column_reference
             (identifier))
           (numeric_literal))))))
+
+
+================================================================================
+Stage10 MySQL spaced system variables, histogram options, SET LOCAL TRANSACTION, FLUSH, and quoted EXPLAIN FORMAT
+:language(mysql)
+================================================================================
+
+SELECT @@global /* scope */ . max_connections, @@SESSION . `sql_mode`, @@local.time_zone;
+SET @@SESSION . sql_mode = DEFAULT, @@persist . max_connections = 200, @@persist_only . comp . x = 1;
+ANALYZE TABLE metrics UPDATE HISTOGRAM ON n, m WITH 16 BUCKETS AUTO UPDATE;
+ANALYZE TABLE metrics UPDATE HISTOGRAM ON n MANUAL UPDATE;
+ANALYZE LOCAL TABLE metrics UPDATE HISTOGRAM ON n USING DATA '{"buckets":[]}';
+SET LOCAL TRANSACTION ISOLATION LEVEL READ COMMITTED, READ ONLY;
+FLUSH LOCAL STATUS, PRIVILEGES;
+EXPLAIN FORMAT = 'JSON' INTO @plan SELECT * FROM orders;
+EXPLAIN FORMAT = `JSON` INTO @plan FOR SCHEMA analytics_db SELECT * FROM orders;
+EXPLAIN FORMAT = "tree" SELECT * FROM orders;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (result_column
+        (system_variable
+          (comment)))
+      (result_column
+        (system_variable))
+      (result_column
+        (system_variable))))
+  (set_statement
+    (variable_assignment
+      (system_variable))
+    (variable_assignment
+      (system_variable)
+      (numeric_literal))
+    (variable_assignment
+      (system_variable)
+      (numeric_literal)))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (identifier)
+    (numeric_literal))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier))
+    (identifier))
+  (table_maintenance_statement
+    (qualified_name
+      (identifier))
+    (identifier)
+    (string_literal))
+  (set_statement)
+  (flush_statement)
+  (explain_statement
+    (user_variable)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (explain_statement
+    (user_variable)
+    (identifier)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (explain_statement
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier))))))))

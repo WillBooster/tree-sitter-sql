@@ -1206,3 +1206,112 @@ MATCH_RECOGNIZE (
                   (identifier)
                   (identifier))))
             (numeric_literal)))))))
+
+
+================================================================================
+Stage10 Oracle FROM NESTED clauses, NESTED table alias, and JSON_TABLE unquoted NESTED paths
+:language(oracle)
+================================================================================
+
+SELECT requestor FROM purchase_orders NESTED data.items[*] COLUMNS (requestor VARCHAR2(40), qty NUMBER PATH '$.qty');
+SELECT j.sku FROM purchase_orders po, NESTED PATH po.data.items[*] COLUMNS (sku VARCHAR2(20)) j;
+SELECT nested.id FROM orders nested WHERE nested.id = 1;
+SELECT * FROM JSON_TABLE(po.data, '$' COLUMNS (NESTED order_details.items[*] COLUMNS (sku VARCHAR2(20)), NESTED address COLUMNS (city VARCHAR2(40))));
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (identifier)))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)))
+        (nested_table_clause
+          (json_column_path
+            (identifier)
+            (identifier)
+            (all_columns))
+          (json_table_columns_clause
+            (json_table_column
+              (identifier)
+              (type_name
+                (numeric_literal)))
+            (json_table_column
+              (identifier)
+              (type_name)
+              (string_literal)))))))
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (member_expression
+            (identifier)
+            (identifier))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))
+        (nested_table_clause
+          (json_column_path
+            (identifier)
+            (identifier)
+            (identifier)
+            (all_columns))
+          (json_table_columns_clause
+            (json_table_column
+              (identifier)
+              (type_name
+                (numeric_literal)))))
+        (identifier))))
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (member_expression
+            (identifier)
+            (identifier))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier)))
+      (where_clause
+        (binary_expression
+          (member_expression
+            (identifier)
+            (identifier))
+          (numeric_literal)))))
+  (select_statement
+    (select_core
+      (select_list
+        (all_columns))
+      (from_clause
+        (json_table_expression
+          (member_expression
+            (identifier)
+            (identifier))
+          (string_literal)
+          (json_table_columns_clause
+            (json_table_column
+              (json_relative_path
+                (identifier)
+                (identifier)
+                (all_columns))
+              (json_table_columns_clause
+                (json_table_column
+                  (identifier)
+                  (type_name
+                    (numeric_literal)))))
+            (json_table_column
+              (json_relative_path
+                (identifier))
+              (json_table_columns_clause
+                (json_table_column
+                  (identifier)
+                  (type_name
+                    (numeric_literal)))))))))))

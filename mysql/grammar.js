@@ -1106,7 +1106,7 @@ function buildScopedDmlRules(sp) {
                 seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1(scopedVis($, sp, 'insert_values_row'))),
                 optional($._insert_row_alias)
               ),
-              alias(scopedHid($, sp, '_insert_query'), $.select_statement)
+              alias(scopedHid($, sp, '_select_no_into'), $.select_statement)
             )
           ),
           seq(scopedVis($, sp, 'set_clause'), optional($._insert_row_alias))
@@ -1121,33 +1121,10 @@ function buildScopedDmlRules(sp) {
             optional($._insert_column_list),
             choice(
               seq(choice(keyword('VALUES'), keyword('VALUE')), commaSep1(scopedVis($, sp, 'insert_values_row'))),
-              alias(scopedHid($, sp, '_insert_query'), $.select_statement)
+              alias(scopedHid($, sp, '_select_no_into'), $.select_statement)
             )
           ),
           scopedVis($, sp, 'set_clause')
-        )
-      ),
-    [k('_insert_query')]: ($) =>
-      choice(
-        seq(
-          scopedVis($, sp, 'with_clause'),
-          scopedHid($, sp, '_query_body_no_into'),
-          optional(scopedVis($, sp, 'order_by_clause')),
-          optional(scopedVis($, sp, 'limit_clause')),
-          optional($._locking_clauses)
-        ),
-        seq(
-          choice(
-            scopedVis($, sp, 'select_core'),
-            scopedVis($, sp, 'values_statement'),
-            $.table_value_statement,
-            scopedVis($, sp, 'parenthesized_query'),
-            scopedVis($, sp, 'compound_query'),
-            alias(scopedHid($, sp, '_intersect_query_no_into'), $.compound_query)
-          ),
-          optional(scopedVis($, sp, 'order_by_clause')),
-          optional(scopedVis($, sp, 'limit_clause')),
-          optional($._locking_clauses)
         )
       ),
     [k('update_statement')]: ($) =>
@@ -1248,14 +1225,12 @@ function buildScopedUtilityRules(sp) {
       seq(
         $._explain_cmd,
         choice(
-          seq($._explain_query_only_option, optional($._explain_for_schema), scopedHid($, sp, '_explainable_dml')),
           seq(
-            optional($._explain_format),
-            choice(
-              seq(optional($._explain_for_schema), scopedHid($, sp, '_explainable_dml')),
-              ...(sp ? [] : [$._explain_for_connection])
-            )
-          )
+            optional(choice($._explain_query_only_option, $._explain_format)),
+            optional($._explain_for_schema),
+            scopedHid($, sp, '_explainable_dml')
+          ),
+          ...(sp ? [] : [seq(optional($._explain_format), $._explain_for_connection)])
         )
       ),
     [k('_explainable_dml')]: ($) =>
@@ -2200,6 +2175,82 @@ function buildTlsOptionRules() {
   return out;
 }
 
+/**
+ * @param {boolean} allowReturn
+ * @returns {Record<string, ($: GrammarSymbols<string>) => RuleOrLiteral>}
+ */
+function buildRoutineBodyRules(allowReturn) {
+  const p = allowReturn ? '_fn' : '';
+  const k = (/** @type {string} */ n) => (allowReturn ? (n.startsWith('_') ? `_fn${n}` : `_fn_${n}`) : n);
+  const vis = (/** @type {GrammarSymbols<string>} */ $, /** @type {string} */ n) =>
+    allowReturn ? alias($[`_fn_${n}`], $[n]) : $[n];
+  const hid = (/** @type {GrammarSymbols<string>} */ $, /** @type {string} */ n) => $[`${p}${n}`];
+  return {
+    [k('_routine_statement')]: ($) =>
+      choice(
+        vis($, 'compound_statement'),
+        vis($, 'if_statement'),
+        vis($, 'case_statement'),
+        vis($, 'while_statement'),
+        vis($, 'repeat_statement'),
+        vis($, 'loop_statement'),
+        ...(allowReturn ? [$.return_statement] : []),
+        $._sp_leaf_statement
+      ),
+    [k('compound_statement')]: ($) =>
+      seq(
+        $._compound_head,
+        optional(hid($, '_sp_decl_phase1')),
+        optional(hid($, '_routine_statement_list')),
+        $._compound_tail
+      ),
+    [k('_sp_decl_phase1')]: ($) =>
+      choice(
+        seq($._sp_var_or_cond_decl, optional(hid($, '_sp_decl_phase1'))),
+        seq($._sp_cursor_decl, optional(hid($, '_sp_decl_phase2'))),
+        hid($, '_sp_decl_phase3')
+      ),
+    [k('_sp_decl_phase2')]: ($) =>
+      choice(seq($._sp_cursor_decl, optional(hid($, '_sp_decl_phase2'))), hid($, '_sp_decl_phase3')),
+    [k('_sp_decl_phase3')]: ($) => repeat1(hid($, '_sp_handler_decl')),
+    [k('_sp_handler_decl')]: ($) =>
+      seq(alias(hid($, '_declare_handler_statement'), $.declare_statement), ';', $._sp_handler_barrier_pop),
+    [k('_declare_handler_statement')]: ($) => seq($._declare_handler_head, hid($, '_routine_statement')),
+    [k('_routine_statement_list')]: ($) => repeat1(seq(hid($, '_routine_statement'), ';')),
+    [k('if_statement')]: ($) =>
+      seq(
+        $._if_head,
+        hid($, '_routine_statement_list'),
+        repeat(seq($._elseif_head, hid($, '_routine_statement_list'))),
+        optional(seq(keyword('ELSE'), hid($, '_routine_statement_list'))),
+        keywords('END IF')
+      ),
+    [k('case_statement')]: ($) =>
+      seq(
+        $._case_head,
+        repeat1(seq($._case_when_head, hid($, '_routine_statement_list'))),
+        optional(seq(keyword('ELSE'), hid($, '_routine_statement_list'))),
+        keywords('END CASE')
+      ),
+    [k('while_statement')]: ($) => seq($._while_head, hid($, '_routine_statement_list'), $._while_tail),
+    [k('repeat_statement')]: ($) => seq($._repeat_head, hid($, '_routine_statement_list'), $._repeat_tail),
+    [k('loop_statement')]: ($) => seq($._loop_head, hid($, '_routine_statement_list'), $._loop_tail),
+  };
+}
+
+/** @param {GrammarSymbols<string>} $ */
+function lblHead($) {
+  return seq($._sp_capture_label, field('label', $._label_identifier), ':');
+}
+
+/** @param {GrammarSymbols<string>} $ */
+function endLbl($) {
+  return choice(
+    seq($._sp_match_end_label, field('end_label', $._label_identifier), $._sp_label_pop),
+    $._sp_label_pop_no_end
+  );
+}
+
 export default grammar({
   name: 'mysql',
 
@@ -2218,7 +2269,15 @@ export default grammar({
     $._nonzero_quoted_hex_literal,
     $._quoted_bit_literal,
     $.user_variable,
-    $.system_variable,
+    $._sys_var_read_scope,
+    $._sys_var_persist_scope,
+    $._sys_var_rvalue_head,
+    $._sys_var_lvalue_head,
+    $._sys_var_prefix_segment,
+    $._sys_var_rvalue_segment,
+    $._sys_var_lvalue_segment,
+    $._explain_format_json,
+    $._explain_format_other,
     $.quoted_identifier,
     $._const_quoted_identifier,
     $._digit_identifier,
@@ -2234,6 +2293,16 @@ export default grammar({
     $._sp_capture_first_ident,
     $._sp_capture_next_ident,
     $._sp_commit_vars,
+    $._sp_capture_label,
+    $._sp_activate_block_label,
+    $._sp_activate_loop_label,
+    $._sp_match_end_label,
+    $._sp_label_pop,
+    $._sp_label_pop_no_end,
+    $._sp_handler_barrier_push,
+    $._sp_handler_barrier_pop,
+    $._sp_check_leave_label,
+    $._sp_check_iterate_label,
     $._sp_local_ident,
     $._sp_local_quoted_ident,
     $._illegal_token,
@@ -2452,11 +2521,43 @@ export default grammar({
 
     _sysvar_assignment_lhs: ($) =>
       seq(
-        optional(
-          choice(keyword('GLOBAL'), keyword('SESSION'), keyword('LOCAL'), keyword('PERSIST'), keyword('PERSIST_ONLY'))
+        choice(
+          seq(
+            optional(
+              choice(
+                keyword('GLOBAL'),
+                keyword('SESSION'),
+                keyword('LOCAL'),
+                keyword('PERSIST'),
+                keyword('PERSIST_ONLY')
+              )
+            ),
+            field('variable', alias($._lvalue_sysvar_name, $.column_reference))
+          ),
+          field('variable', alias($._set_system_variable, $.system_variable))
         ),
-        field('variable', choice($.system_variable, alias($._lvalue_column_reference, $.column_reference))),
         choice('=', ':=')
+      ),
+
+    system_variable: ($) =>
+      choice(
+        seq(
+          $._sys_var_read_scope,
+          '.',
+          choice($._sys_var_rvalue_segment, seq($._sys_var_prefix_segment, '.', $._sys_var_rvalue_segment))
+        ),
+        seq($._sys_var_persist_scope, '.', $._sys_var_rvalue_segment),
+        seq($._sys_var_rvalue_head, optional(seq('.', $._sys_var_rvalue_segment)))
+      ),
+
+    _set_system_variable: ($) =>
+      choice(
+        seq(
+          choice($._sys_var_read_scope, $._sys_var_persist_scope),
+          '.',
+          choice($._sys_var_lvalue_segment, seq($._sys_var_prefix_segment, '.', $._sys_var_lvalue_segment))
+        ),
+        seq($._sys_var_lvalue_head, optional(seq('.', $._sys_var_lvalue_segment)))
       ),
 
     _json_table_on_empty_or_error: ($) =>
@@ -3327,7 +3428,7 @@ export default grammar({
             keyword('RETURNS'),
             $.data_type,
             repeat($.routine_characteristic),
-            $._routine_statement
+            $._fn_routine_statement
           ),
           seq(
             optional(keyword('AGGREGATE')),
@@ -3632,17 +3733,53 @@ export default grammar({
         )
       ),
 
-    _routine_statement: ($) =>
+    ...buildRoutineBodyRules(false),
+    ...buildRoutineBodyRules(true),
+
+    _compound_head: ($) => seq(optional(lblHead($)), keyword('BEGIN'), $._sp_activate_block_label, $._sp_scope_push),
+
+    _compound_tail: ($) => seq(keyword('END'), $._sp_scope_pop, endLbl($)),
+
+    _declare_handler_head: ($) =>
+      seq(
+        keyword('DECLARE'),
+        choice(keyword('CONTINUE'), keyword('EXIT')),
+        keywords('HANDLER FOR'),
+        commaSep1($._handler_condition_value),
+        $._sp_handler_barrier_push
+      ),
+
+    _if_head: ($) => seq(keyword('IF'), field('condition', $._sp_expression), keyword('THEN')),
+
+    _elseif_head: ($) => seq(keyword('ELSEIF'), $._sp_expression, keyword('THEN')),
+
+    _case_head: ($) => seq(keyword('CASE'), optional(field('operand', $._sp_expression))),
+
+    _case_when_head: ($) => seq(keyword('WHEN'), $._sp_expression, keyword('THEN')),
+
+    _while_head: ($) =>
+      seq(
+        optional(lblHead($)),
+        keyword('WHILE'),
+        $._sp_activate_loop_label,
+        field('condition', $._sp_expression),
+        keyword('DO')
+      ),
+
+    _while_tail: ($) => seq(keywords('END WHILE'), endLbl($)),
+
+    _repeat_head: ($) => seq(optional(lblHead($)), keyword('REPEAT'), $._sp_activate_loop_label),
+
+    _repeat_tail: ($) => seq(keyword('UNTIL'), field('condition', $._sp_expression), keywords('END REPEAT'), endLbl($)),
+
+    _loop_head: ($) => seq(optional(lblHead($)), keyword('LOOP'), $._sp_activate_loop_label),
+
+    _loop_tail: ($) => seq(keywords('END LOOP'), endLbl($)),
+
+    _sp_leaf_statement: ($) =>
       choice(
-        $.compound_statement,
-        $.if_statement,
-        $.case_statement,
-        $.while_statement,
-        $.repeat_statement,
-        $.loop_statement,
         $.leave_statement,
         $.iterate_statement,
-        $.return_statement,
         $.open_statement,
         $.fetch_statement,
         $.close_statement,
@@ -3652,30 +3789,6 @@ export default grammar({
         ...commonStatements($, true)
       ),
 
-    compound_statement: ($) =>
-      seq(
-        optional(seq(field('label', $._label_identifier), ':')),
-        keyword('BEGIN'),
-        $._sp_scope_push,
-        optional($._sp_decl_phase1),
-        repeat(seq($._routine_statement, ';')),
-        keyword('END'),
-        $._sp_scope_pop,
-        optional(field('end_label', $._label_identifier))
-      ),
-
-    _sp_decl_phase1: ($) =>
-      choice(
-        seq($._sp_var_or_cond_decl, optional($._sp_decl_phase1)),
-        seq($._sp_cursor_decl, optional($._sp_decl_phase2)),
-        seq($._sp_handler_decl, optional($._sp_decl_phase3))
-      ),
-
-    _sp_decl_phase2: ($) =>
-      choice(seq($._sp_cursor_decl, optional($._sp_decl_phase2)), seq($._sp_handler_decl, optional($._sp_decl_phase3))),
-
-    _sp_decl_phase3: ($) => repeat1($._sp_handler_decl),
-
     _sp_var_or_cond_decl: ($) =>
       choice(
         seq(alias($._declare_var_statement, $.declare_statement), ';', $._sp_commit_vars),
@@ -3683,17 +3796,6 @@ export default grammar({
       ),
 
     _sp_cursor_decl: ($) => seq(alias($._declare_cursor_statement, $.declare_statement), ';'),
-
-    _sp_handler_decl: ($) => seq(alias($._declare_handler_statement, $.declare_statement), ';'),
-
-    _declare_handler_statement: ($) =>
-      seq(
-        keyword('DECLARE'),
-        choice(keyword('CONTINUE'), keyword('EXIT')),
-        keywords('HANDLER FOR'),
-        commaSep1($._handler_condition_value),
-        $._routine_statement
-      ),
 
     _declare_condition_statement: ($) =>
       seq(
@@ -3739,62 +3841,9 @@ export default grammar({
         seq(choice($._zero_int_literal, $._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
       ),
 
-    _routine_statement_list: ($) => repeat1(seq($._routine_statement, ';')),
+    leave_statement: ($) => seq(keyword('LEAVE'), $._sp_check_leave_label, field('label', $._label_identifier)),
 
-    if_statement: ($) =>
-      seq(
-        keyword('IF'),
-        field('condition', $._sp_expression),
-        keyword('THEN'),
-        $._routine_statement_list,
-        repeat(seq(keyword('ELSEIF'), $._sp_expression, keyword('THEN'), $._routine_statement_list)),
-        optional(seq(keyword('ELSE'), $._routine_statement_list)),
-        keywords('END IF')
-      ),
-
-    case_statement: ($) =>
-      seq(
-        keyword('CASE'),
-        optional(field('operand', $._sp_expression)),
-        repeat1(seq(keyword('WHEN'), $._sp_expression, keyword('THEN'), $._routine_statement_list)),
-        optional(seq(keyword('ELSE'), $._routine_statement_list)),
-        keywords('END CASE')
-      ),
-
-    while_statement: ($) =>
-      seq(
-        optional(seq(field('label', $._label_identifier), ':')),
-        keyword('WHILE'),
-        field('condition', $._sp_expression),
-        keyword('DO'),
-        $._routine_statement_list,
-        keywords('END WHILE'),
-        optional(field('end_label', $._label_identifier))
-      ),
-
-    repeat_statement: ($) =>
-      seq(
-        optional(seq(field('label', $._label_identifier), ':')),
-        keyword('REPEAT'),
-        $._routine_statement_list,
-        keyword('UNTIL'),
-        field('condition', $._sp_expression),
-        keywords('END REPEAT'),
-        optional(field('end_label', $._label_identifier))
-      ),
-
-    loop_statement: ($) =>
-      seq(
-        optional(seq(field('label', $._label_identifier), ':')),
-        keyword('LOOP'),
-        $._routine_statement_list,
-        keywords('END LOOP'),
-        optional(field('end_label', $._label_identifier))
-      ),
-
-    leave_statement: ($) => seq(keyword('LEAVE'), field('label', $._label_identifier)),
-
-    iterate_statement: ($) => seq(keyword('ITERATE'), field('label', $._label_identifier)),
+    iterate_statement: ($) => seq(keyword('ITERATE'), $._sp_check_iterate_label, field('label', $._label_identifier)),
 
     return_statement: ($) => seq(keyword('RETURN'), field('value', $._sp_expression)),
 
@@ -3933,10 +3982,7 @@ export default grammar({
           seq(
             $.qualified_name,
             optional($._table_alias),
-            choice(
-              seq(keyword('READ'), optional(keyword('LOCAL'))),
-              seq(optional(keyword('LOW_PRIORITY')), keyword('WRITE'))
-            )
+            choice(seq(keyword('READ'), optional(keyword('LOCAL'))), keyword('WRITE'))
           )
         )
       ),
@@ -4173,11 +4219,17 @@ export default grammar({
     _explain_query_only_option: ($) =>
       choice(
         seq(keyword('ANALYZE'), optional($._explain_format)),
-        seq(keyword('FORMAT'), '=', keyword('JSON'), keyword('INTO'), field('into', $.user_variable))
+        seq(
+          keyword('FORMAT'),
+          '=',
+          choice($._explain_format_json, prec(1, $._illegal)),
+          keyword('INTO'),
+          field('into', $.user_variable)
+        )
       ),
 
-    _explain_format: () =>
-      seq(keyword('FORMAT'), '=', choice(keyword('TRADITIONAL'), keyword('JSON'), keyword('TREE'))),
+    _explain_format: ($) =>
+      seq(keyword('FORMAT'), '=', choice($._explain_format_json, $._explain_format_other, prec(1, $._illegal))),
 
     _explain_for_schema: ($) =>
       seq(
@@ -4548,8 +4600,14 @@ export default grammar({
             choice(
               seq(
                 keywords('UPDATE HISTOGRAM ON'),
-                commaSep1($._identifier),
-                optional(seq(keyword('WITH'), $.numeric_literal, keyword('BUCKETS')))
+                choice(
+                  seq(
+                    commaSep1($._identifier),
+                    optional(seq(keyword('WITH'), $._histogram_buckets_literal, keyword('BUCKETS'))),
+                    optional(seq(choice(keyword('MANUAL'), keyword('AUTO')), keyword('UPDATE')))
+                  ),
+                  seq($._identifier, keywords('USING DATA'), alias($._string_segment, $.string_literal))
+                )
               ),
               seq(keywords('DROP HISTOGRAM ON'), commaSep1($._identifier))
             )
@@ -4617,7 +4675,6 @@ export default grammar({
                 keyword('LOGS'),
                 optional(seq(keywords('FOR CHANNEL'), $.string_literal))
               ),
-              keyword('HOSTS'),
               keyword('OPTIMIZER_COSTS'),
               keyword('PRIVILEGES'),
               keyword('STATUS'),
@@ -4679,7 +4736,7 @@ export default grammar({
     _timestamp_unit: () =>
       choice(
         ...NON_RESERVED_INTERVAL_UNITS.map(keyword),
-        ...NON_RESERVED_INTERVAL_UNITS.map((unit) => keyword(`SQL_TSI_${unit}`))
+        token(choice(...NON_RESERVED_INTERVAL_UNITS.map((unit) => keywordPattern(`SQL_TSI_${unit}`))))
       ),
 
     _date_time_type: () => choice(keyword('DATE'), keyword('TIME'), keyword('TIMESTAMP'), keyword('DATETIME')),
@@ -4741,7 +4798,7 @@ export default grammar({
 
     _set_transaction_body: ($) =>
       seq(
-        optional(choice(keyword('GLOBAL'), keyword('SESSION'))),
+        optional(choice(keyword('GLOBAL'), keyword('SESSION'), keyword('LOCAL'))),
         keyword('TRANSACTION'),
         commaSep1($._transaction_characteristic)
       ),
@@ -4820,38 +4877,55 @@ export default grammar({
         choice(
           seq(
             keyword('DATA'),
-            optional(choice(keyword('LOW_PRIORITY'), keyword('CONCURRENT'))),
-            optional(keyword('LOCAL')),
-            keyword('INFILE'),
-            field('file', $.string_literal),
-            optional(choice(keyword('REPLACE'), keyword('IGNORE'))),
-            keywords('INTO TABLE'),
-            field('table', $.qualified_name),
-            optional($.partition_names_clause),
-            optional($._charset_clause),
+            $._load_common_infile_head,
             optional($._load_field_or_line_options),
-            optional($._load_ignore_lines),
-            optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')'))
+            optional($._load_common_tail)
           ),
           seq(
             keyword('XML'),
-            optional(choice(keyword('LOW_PRIORITY'), keyword('CONCURRENT'))),
-            optional(keyword('LOCAL')),
-            keyword('INFILE'),
-            field('file', $.string_literal),
-            optional(choice(keyword('REPLACE'), keyword('IGNORE'))),
-            keywords('INTO TABLE'),
-            field('table', $.qualified_name),
-            optional($.partition_names_clause),
-            optional($._charset_clause),
+            $._load_common_infile_head,
             optional(seq(keywords('ROWS IDENTIFIED BY'), $.string_literal)),
-            optional($._load_ignore_lines),
-            optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')'))
+            optional($._load_common_tail)
           )
         )
       ),
 
+    _load_common_infile_head: ($) =>
+      seq(
+        optional(choice(keyword('LOW_PRIORITY'), keyword('CONCURRENT'))),
+        optional(keyword('LOCAL')),
+        keyword('INFILE'),
+        field('file', $.string_literal),
+        optional(choice(keyword('REPLACE'), keyword('IGNORE'))),
+        keywords('INTO TABLE'),
+        field('table', $.qualified_name),
+        optional($.partition_names_clause),
+        optional($._charset_clause)
+      ),
+
+    _load_common_tail: ($) =>
+      choice(
+        seq($._load_ignore_lines, optional(seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')'))),
+        seq('(', commaSep1(choice($.column_reference, $.user_variable)), ')')
+      ),
+
     _load_ignore_lines: ($) => seq(keyword('IGNORE'), $._mysql_num_literal, choice(keyword('LINES'), keyword('ROWS'))),
+
+    _histogram_buckets_literal: ($) =>
+      choice(
+        alias($._histogram_buckets_int_literal, $.numeric_literal),
+        seq(
+          choice(
+            $._zero_int_literal,
+            $._above_1024_int32_literal,
+            $._above_int32_uint64_literal,
+            $._overflow_int_literal,
+            $._decimal_literal,
+            $._float_literal
+          ),
+          $._unreachable
+        )
+      ),
 
     _mysql_num_literal: ($) =>
       choice(
@@ -5010,17 +5084,11 @@ export default grammar({
         )
       ),
 
-    _lvalue_column_reference: ($) =>
+    _lvalue_sysvar_name: ($) =>
       choice(
         field('name', $._lvalue_identifier),
         seq(field('table', $._lvalue_identifier), '.', field('name', $._dot_identifier)),
-        seq(
-          field('schema', $._lvalue_identifier),
-          '.',
-          field('table', $._dot_identifier),
-          '.',
-          field('name', $._dot_identifier)
-        )
+        seq(field('table', alias(keyword('DEFAULT'), $.identifier)), '.', field('name', $._dot_identifier))
       ),
 
     _identifier: ($) =>
@@ -5092,11 +5160,15 @@ export default grammar({
 
     _nonzero_uint64_literal: ($) => choice($._nonzero_int32_literal, $._above_int32_uint64_literal),
 
-    _nonzero_int32_literal: () =>
+    _nonzero_int32_literal: ($) => choice($._histogram_buckets_int_literal, $._above_1024_int32_literal),
+
+    _histogram_buckets_int_literal: () => token(prec(1, /0*(?:[1-9][0-9]{0,2}|10(?:[01][0-9]|2[0-4]))/)),
+
+    _above_1024_int32_literal: () =>
       token(
         prec(
           1,
-          /0*(?:[1-9][0-9]{0,8}|1[0-9]{9}|2(?:0[0-9]{8}|1(?:[0-3][0-9]{7}|4(?:[0-6][0-9]{6}|7(?:[0-3][0-9]{5}|4(?:[0-7][0-9]{4}|8(?:[0-2][0-9]{3}|3(?:[0-5][0-9]{2}|6(?:[0-3][0-9]|4[0-7])))))))))/
+          /0*(?:10(?:2[5-9]|[3-9][0-9])|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,8}|1[0-9]{9}|2(?:0[0-9]{8}|1(?:[0-3][0-9]{7}|4(?:[0-6][0-9]{6}|7(?:[0-3][0-9]{5}|4(?:[0-7][0-9]{4}|8(?:[0-2][0-9]{3}|3(?:[0-5][0-9]{2}|6(?:[0-3][0-9]|4[0-7])))))))))/
         )
       ),
 

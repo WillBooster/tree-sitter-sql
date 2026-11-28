@@ -807,3 +807,103 @@ FINAL evaluation modifier in MATCH_RECOGNIZE DEFINE clause is invalid
 SELECT * FROM ticker MATCH_RECOGNIZE (ORDER BY tstamp PATTERN (a+) DEFINE a AS FINAL LAST(a.price) > 0);
 
 --------------------------------------------------------------------------------
+
+================================================================================
+Relational column list on Oracle CREATE JSON COLLECTION TABLE is invalid
+:error
+:language(oracle)
+================================================================================
+
+CREATE JSON COLLECTION TABLE purchaseorders (id NUMBER);
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Incomplete Oracle PL/SQL LANGUAGE C call specification without LIBRARY is invalid
+:error
+:language(oracle)
+================================================================================
+
+CREATE FUNCTION c_bad RETURN NUMBER AS LANGUAGE C;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+String path without column root in Oracle FROM NESTED clause is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT * FROM purchase_orders NESTED '$.items[*]' COLUMNS (sku VARCHAR2(20));
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Missing path in Oracle JSON_TABLE NESTED clause is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT * FROM JSON_TABLE(po.data, '$' COLUMNS (NESTED COLUMNS (sku VARCHAR2(20))));
+
+--------------------------------------------------------------------------------
+
+================================================================================
+RETURNING clause inside Oracle JSON brace object constructor is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT JSON { 'id': 1 RETURNING CLOB } FROM dual;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Computed expression or 3-part prefix before wildcard in Oracle JSON_OBJECT is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT JSON_OBJECT((t.id + 1).*) FROM t;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Three-part prefix before wildcard in Oracle JSON brace constructor is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT JSON { a.b.c.* } FROM dual;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Un-dotted OLD column modifier outside DML RETURNING in Oracle SELECT is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT (OLD price) FROM items;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Non-lvalue expression or zero-arg call in Oracle RETURNING INTO is invalid
+:error
+:language(oracle)
+================================================================================
+
+MERGE INTO items t USING src s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.price = s.price RETURNING t.price INTO :out + 1;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Zero-argument function call in Oracle RETURNING BULK COLLECT INTO is invalid
+:error
+:language(oracle)
+================================================================================
+
+BEGIN DELETE FROM items RETURNING price BULK COLLECT INTO my_function(); END;
+
+--------------------------------------------------------------------------------

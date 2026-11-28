@@ -1285,3 +1285,40 @@ FROM customers t;
           (object_name
             (identifier))
           (identifier))))))
+
+
+================================================================================
+Stage10 Oracle JSON brace constructor options vs JSON_OBJECT RETURNING and relation wildcards
+:language(oracle)
+================================================================================
+
+SELECT JSON { 'id': 1 ABSENT ON NULL WITH UNIQUE KEYS }, JSON_OBJECT('id': 1 RETURNING CLOB), JSON_OBJECT(hr.emp.*) FROM hr.emp;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (json_constructor_expression
+            (json_object_entry
+              (string_literal)
+              (numeric_literal))))
+        (select_item
+          (json_function_expression
+            (json_object_entry
+              (string_literal)
+              (numeric_literal))
+            (type_name)))
+        (select_item
+          (json_function_expression
+            (qualified_wildcard
+              (member_expression
+                (identifier)
+                (identifier))))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier)
+            (identifier)))))))

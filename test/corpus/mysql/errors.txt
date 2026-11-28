@@ -1171,3 +1171,113 @@ CREATE PROCEDURE p() BEGIN DECLARE c CURSOR FOR SELECT 1; DECLARE v INT; END;
 
 --------------------------------------------------------------------------------
 
+
+================================================================================
+Closing label on unlabeled MySQL stored-program loop is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() BEGIN LOOP SET @x = 1; END LOOP missing; END;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Mismatched closing label on MySQL stored-program loop is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() BEGIN lbl_a: LOOP SET @x = 1; END LOOP lbl_b; END;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+ITERATE targeting BEGIN block label or undeclared label in MySQL is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() BEGIN blk: BEGIN ITERATE blk; END blk; END;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+LEAVE crossing MySQL DECLARE HANDLER scope barrier is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() outer_lbl: BEGIN DECLARE CONTINUE HANDLER FOR SQLEXCEPTION LEAVE outer_lbl; SET @x = 1; END outer_lbl;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+RETURN statement inside MySQL CREATE PROCEDURE or CREATE TRIGGER is invalid
+:error
+:language(mysql)
+================================================================================
+
+CREATE PROCEDURE p() BEGIN RETURN 1; END;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Double scope or SET GLOBAL before @@ system variable in MySQL is invalid
+:error
+:language(mysql)
+================================================================================
+
+SELECT @@global.global.max_connections;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Histogram bucket count above 1024 or multi-column USING DATA in MySQL is invalid
+:error
+:language(mysql)
+================================================================================
+
+ANALYZE TABLE metrics UPDATE HISTOGRAM ON n WITH 1025 BUCKETS;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Removed LOW_PRIORITY WRITE in MySQL 8.4 LOCK TABLES is invalid
+:error
+:language(mysql)
+================================================================================
+
+LOCK TABLES orders AS o READ LOCAL, logs LOW_PRIORITY WRITE;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+PERSIST scope in MySQL SET TRANSACTION is invalid
+:error
+:language(mysql)
+================================================================================
+
+SET PERSIST TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Removed FLUSH HOSTS in MySQL 8.4 is invalid
+:error
+:language(mysql)
+================================================================================
+
+FLUSH HOSTS;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+Non-JSON quoted EXPLAIN FORMAT with INTO variable in MySQL is invalid
+:error
+:language(mysql)
+================================================================================
+
+EXPLAIN FORMAT = 'TREE' INTO @plan SELECT 1;
+
+--------------------------------------------------------------------------------

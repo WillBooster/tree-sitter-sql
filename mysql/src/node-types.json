@@ -853,10 +853,6 @@
           "named": true
         },
         {
-          "type": "return_statement",
-          "named": true
-        },
-        {
           "type": "revoke_statement",
           "named": true
         },
@@ -5784,10 +5780,6 @@
           "named": true
         },
         {
-          "type": "return_statement",
-          "named": true
-        },
-        {
           "type": "revoke_statement",
           "named": true
         },
@@ -6860,10 +6852,6 @@
           "named": true
         },
         {
-          "type": "return_statement",
-          "named": true
-        },
-        {
           "type": "revoke_statement",
           "named": true
         },
@@ -7586,10 +7574,6 @@
         },
         {
           "type": "restart_statement",
-          "named": true
-        },
-        {
-          "type": "return_statement",
           "named": true
         },
         {
@@ -18836,6 +18820,11 @@
     }
   },
   {
+    "type": "system_variable",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "table",
     "named": true,
     "fields": {
@@ -19003,6 +18992,10 @@
         },
         {
           "type": "quoted_identifier",
+          "named": true
+        },
+        {
+          "type": "string_literal",
           "named": true
         }
       ]
@@ -21142,6 +21135,10 @@
     "named": false
   },
   {
+    "type": "AUTO",
+    "named": false
+  },
+  {
     "type": "AUTOEXTEND_SIZE",
     "named": false
   },
@@ -21930,10 +21927,6 @@
     "named": false
   },
   {
-    "type": "HOSTS",
-    "named": false
-  },
-  {
     "type": "HOUR",
     "named": false
   },
@@ -22267,6 +22260,10 @@
   },
   {
     "type": "LOW_PRIORITY",
+    "named": false
+  },
+  {
+    "type": "MANUAL",
     "named": false
   },
   {
@@ -23194,42 +23191,6 @@
     "named": false
   },
   {
-    "type": "SQL_TSI_DAY",
-    "named": false
-  },
-  {
-    "type": "SQL_TSI_HOUR",
-    "named": false
-  },
-  {
-    "type": "SQL_TSI_MICROSECOND",
-    "named": false
-  },
-  {
-    "type": "SQL_TSI_MINUTE",
-    "named": false
-  },
-  {
-    "type": "SQL_TSI_MONTH",
-    "named": false
-  },
-  {
-    "type": "SQL_TSI_QUARTER",
-    "named": false
-  },
-  {
-    "type": "SQL_TSI_SECOND",
-    "named": false
-  },
-  {
-    "type": "SQL_TSI_WEEK",
-    "named": false
-  },
-  {
-    "type": "SQL_TSI_YEAR",
-    "named": false
-  },
-  {
     "type": "SRID",
     "named": false
   },
@@ -23394,19 +23355,11 @@
     "named": false
   },
   {
-    "type": "TRADITIONAL",
-    "named": false
-  },
-  {
     "type": "TRAILING",
     "named": false
   },
   {
     "type": "TRANSACTION",
-    "named": false
-  },
-  {
-    "type": "TREE",
     "named": false
   },
   {
@@ -23684,10 +23637,6 @@
   },
   {
     "type": "quoted_identifier",
-    "named": true
-  },
-  {
-    "type": "system_variable",
     "named": true
   },
   {
