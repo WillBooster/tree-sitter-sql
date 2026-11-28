@@ -697,3 +697,45 @@ END;
         (signal_information_item
           (identifier)
           (string_literal))))))
+
+================================================================================
+EXPLAIN FORMAT=JSON INTO user variable and FOR SCHEMA / FOR DATABASE clauses
+:language(mysql)
+================================================================================
+
+EXPLAIN FORMAT = JSON INTO @plan SELECT * FROM orders;
+EXPLAIN FORMAT = JSON INTO @plan FOR SCHEMA analytics_db SELECT * FROM orders;
+EXPLAIN FOR DATABASE 'analytics_db' DELETE FROM orders WHERE id = 1;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (explain_statement
+    (user_variable)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (explain_statement
+    (user_variable)
+    (identifier)
+    (select_statement
+      (select_core
+        (all_columns)
+        (from_clause
+          (table
+            (qualified_name
+              (identifier)))))))
+  (explain_statement
+    (string_literal)
+    (delete_statement
+      (qualified_name
+        (identifier))
+      (where_clause
+        (binary_expression
+          (column_reference
+            (identifier))
+          (numeric_literal))))))

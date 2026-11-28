@@ -9692,13 +9692,46 @@
   {
     "type": "explain_statement",
     "named": true,
-    "fields": {},
+    "fields": {
+      "into": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "user_variable",
+            "named": true
+          }
+        ]
+      },
+      "schema": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "quoted_identifier",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "delete_statement",
+          "named": true
+        },
+        {
+          "type": "hex_literal",
           "named": true
         },
         {

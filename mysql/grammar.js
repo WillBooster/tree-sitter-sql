@@ -1246,16 +1246,25 @@ function buildScopedUtilityRules(sp) {
       ),
     [k('explain_statement')]: ($) =>
       seq(
-        choice(keyword('EXPLAIN'), keyword('DESCRIBE'), keyword('DESC')),
-        optional($._explain_option),
+        $._explain_cmd,
         choice(
-          scopedVis($, sp, 'select_statement'),
-          scopedVis($, sp, 'insert_statement'),
-          scopedVis($, sp, 'replace_statement'),
-          scopedVis($, sp, 'update_statement'),
-          scopedVis($, sp, 'delete_statement'),
-          seq(keywords('FOR CONNECTION'), $.numeric_literal)
+          seq($._explain_query_only_option, optional($._explain_for_schema), scopedHid($, sp, '_explainable_dml')),
+          seq(
+            optional($._explain_format),
+            choice(
+              seq(optional($._explain_for_schema), scopedHid($, sp, '_explainable_dml')),
+              ...(sp ? [] : [$._explain_for_connection])
+            )
+          )
         )
+      ),
+    [k('_explainable_dml')]: ($) =>
+      choice(
+        scopedVis($, sp, 'select_statement'),
+        scopedVis($, sp, 'insert_statement'),
+        scopedVis($, sp, 'replace_statement'),
+        scopedVis($, sp, 'update_statement'),
+        scopedVis($, sp, 'delete_statement')
       ),
     [k('handler_statement')]: ($) =>
       seq(
@@ -4141,22 +4150,35 @@ export default grammar({
       ),
 
     describe_statement: ($) =>
-      seq(
-        choice(keyword('EXPLAIN'), keyword('DESCRIBE'), keyword('DESC')),
-        field('table', $.qualified_name),
-        optional(choice($._identifier, $.string_literal))
-      ),
+      seq($._explain_cmd, field('table', $.qualified_name), optional(choice($._identifier, $.string_literal))),
 
-    _explain_option: ($) =>
+    _explain_cmd: () => choice(keyword('EXPLAIN'), keyword('DESCRIBE'), keyword('DESC')),
+
+    _explain_query_only_option: ($) =>
       choice(
         seq(keyword('ANALYZE'), optional($._explain_format)),
-        keyword('EXTENDED'),
-        keyword('PARTITIONS'),
-        $._explain_format
+        seq(keyword('FORMAT'), '=', keyword('JSON'), keyword('INTO'), field('into', $.user_variable))
       ),
 
     _explain_format: () =>
       seq(keyword('FORMAT'), '=', choice(keyword('TRADITIONAL'), keyword('JSON'), keyword('TREE'))),
+
+    _explain_for_schema: ($) =>
+      seq(
+        keyword('FOR'),
+        choice(keyword('SCHEMA'), keyword('DATABASE')),
+        field('schema', choice($._identifier, alias($._string_segment, $.string_literal)))
+      ),
+
+    _explain_for_connection: ($) =>
+      seq(
+        keywords('FOR CONNECTION'),
+        choice(
+          alias($._uint64_literal, $.numeric_literal),
+          $.hex_literal,
+          seq(choice($._overflow_int_literal, $._decimal_literal, $._float_literal), $._unreachable)
+        )
+      ),
 
     // =========================================================================
     // Users, Roles, Privileges
