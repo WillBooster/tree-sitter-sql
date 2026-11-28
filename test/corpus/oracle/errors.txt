@@ -787,3 +787,13 @@ SELECT SUM(x) OVER (ORDER BY x ROWS BETWEEN CURRENT ROW AND 2 PRECEDING) FROM t;
 
 
 
+
+================================================================================
+JSON array wildcard step on non-dotted identifier is invalid
+:error
+:language(oracle)
+================================================================================
+
+SELECT sales[*] FROM t;
+
+--------------------------------------------------------------------------------

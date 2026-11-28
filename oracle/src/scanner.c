@@ -524,9 +524,7 @@ static bool is_exponent_start(int32_t unit, int32_t next) {
 }
 
 static enum TokenType numeric_token_type(const bool *valid_symbols, bool is_integer) {
-  return is_integer && valid_symbols[WHOLE_NUMBER_LITERAL] && !valid_symbols[NUMERIC_LITERAL]
-           ? WHOLE_NUMBER_LITERAL
-           : NUMERIC_LITERAL;
+  return is_integer && valid_symbols[WHOLE_NUMBER_LITERAL] ? WHOLE_NUMBER_LITERAL : NUMERIC_LITERAL;
 }
 
 static bool finish_size_or_exponent(TSLexer *lexer, const bool *valid_symbols, bool *out_done, bool *out_result) {

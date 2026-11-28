@@ -546,6 +546,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -922,6 +926,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -1149,6 +1157,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -1512,6 +1524,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -1799,6 +1815,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -2445,6 +2465,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -3393,6 +3417,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -3568,6 +3596,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -3782,6 +3814,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -3960,6 +3996,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -4135,6 +4175,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -4335,6 +4379,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -4622,6 +4670,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -4784,6 +4836,10 @@
           },
           {
             "type": "inquiry_directive",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -4970,6 +5026,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -5180,6 +5240,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -5409,6 +5473,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -5629,6 +5697,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -5840,6 +5912,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -6044,6 +6120,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -6260,6 +6340,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -6594,6 +6678,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -8401,6 +8489,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -8802,6 +8894,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -9499,6 +9595,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -9786,6 +9886,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -10613,6 +10717,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -10836,6 +10944,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -11509,6 +11621,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -11939,6 +12055,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -12167,6 +12287,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -12670,6 +12794,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -12830,6 +12958,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -13550,6 +13682,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -14713,6 +14849,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -14974,6 +15114,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -15182,6 +15326,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -15382,6 +15530,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -15948,6 +16100,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -16139,6 +16295,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -16327,6 +16487,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -16899,6 +17063,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -17316,6 +17484,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -17606,6 +17778,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -18035,6 +18211,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -18243,6 +18423,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -18703,6 +18887,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -18964,6 +19152,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -19187,6 +19379,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -19398,6 +19594,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -19606,6 +19806,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -19805,6 +20009,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -20387,6 +20595,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -20579,6 +20791,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -20790,6 +21006,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -21068,6 +21288,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -21583,6 +21807,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -21799,6 +22027,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -21977,6 +22209,70 @@
     }
   },
   {
+    "type": "json_array_access",
+    "named": true,
+    "fields": {
+      "object": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
+            "type": "member_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "all_columns",
+          "named": true
+        },
+        {
+          "type": "json_array_range",
+          "named": true
+        },
+        {
+          "type": "numeric_literal",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "json_array_range",
+    "named": true,
+    "fields": {
+      "end": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "numeric_literal",
+            "named": true
+          }
+        ]
+      },
+      "start": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "numeric_literal",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "json_constructor_expression",
     "named": true,
     "fields": {},
@@ -22082,6 +22378,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -22313,6 +22613,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -22559,6 +22863,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -22766,6 +23074,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -22999,6 +23311,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -23242,6 +23558,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -23442,6 +23762,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -23663,6 +23987,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -23863,6 +24191,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -24038,6 +24370,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -24238,6 +24574,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -24448,6 +24788,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -24959,6 +25303,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -25148,6 +25496,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -25305,6 +25657,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -25483,6 +25839,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -25712,6 +26072,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -26113,6 +26477,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -26358,6 +26726,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -26562,6 +26934,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -26773,6 +27149,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -26994,6 +27374,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -27187,6 +27571,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -27415,6 +27803,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -27601,6 +27993,11 @@
     "fields": {}
   },
   {
+    "type": "numeric_literal",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "object_name",
     "named": true,
     "fields": {
@@ -27752,6 +28149,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -28323,6 +28724,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -28685,6 +29090,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -28889,6 +29298,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -29178,6 +29591,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -29382,6 +29799,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -29830,6 +30251,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -33079,6 +33504,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -33244,6 +33673,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -33436,6 +33869,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -33683,6 +34120,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -34546,6 +34987,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -34810,6 +35255,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -35036,6 +35485,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -35235,6 +35688,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -35561,6 +36018,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -35858,6 +36319,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -36194,6 +36659,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -36369,6 +36838,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -36726,6 +37199,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -37007,6 +37484,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -37300,6 +37781,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -37508,6 +37993,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -37736,6 +38225,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -37952,6 +38445,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -38159,6 +38656,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -38436,6 +38937,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -38671,6 +39176,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -38920,6 +39429,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -39313,6 +39826,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -39521,6 +40038,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -39743,6 +40264,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -40194,6 +40719,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -40423,6 +40952,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -40623,6 +41156,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -40814,6 +41351,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -41011,6 +41552,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -41189,6 +41734,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -41364,6 +41913,10 @@
           },
           {
             "type": "interval_literal",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -41603,6 +42156,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -41815,6 +42372,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -42023,6 +42584,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -42238,6 +42803,10 @@
           },
           {
             "type": "is_expression",
+            "named": true
+          },
+          {
+            "type": "json_array_access",
             "named": true
           },
           {
@@ -42935,6 +43504,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -43160,6 +43733,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -43368,6 +43945,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -43620,6 +44201,10 @@
           "named": true
         },
         {
+          "type": "json_array_access",
+          "named": true
+        },
+        {
           "type": "json_constructor_expression",
           "named": true
         },
@@ -43831,6 +44416,10 @@
             "named": true
           },
           {
+            "type": "json_array_access",
+            "named": true
+          },
+          {
             "type": "json_constructor_expression",
             "named": true
           },
@@ -44031,6 +44620,10 @@
         },
         {
           "type": "is_expression",
+          "named": true
+        },
+        {
+          "type": "json_array_access",
           "named": true
         },
         {
@@ -47905,10 +48498,6 @@
   },
   {
     "type": "inquiry_directive",
-    "named": true
-  },
-  {
-    "type": "numeric_literal",
     "named": true
   },
   {

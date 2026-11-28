@@ -1217,3 +1217,71 @@ FROM customers t, customers c;
           (object_name
             (identifier))
           (identifier))))))
+
+
+================================================================================
+Oracle JSON dot-notation array steps with wildcards, ranges, and chaining
+:language(oracle)
+================================================================================
+
+SELECT t.document.addresses[*].zip, t.document.addresses[0 TO 2].city, t.document.addresses[0, 2 TO 4].street, t.document.matrix[0][1].val
+FROM customers t;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (select_statement
+    (select_core
+      (select_list
+        (select_item
+          (member_expression
+            (json_array_access
+              (member_expression
+                (member_expression
+                  (identifier)
+                  (identifier))
+                (identifier))
+              (all_columns))
+            (identifier)))
+        (select_item
+          (member_expression
+            (json_array_access
+              (member_expression
+                (member_expression
+                  (identifier)
+                  (identifier))
+                (identifier))
+              (json_array_range
+                (numeric_literal)
+                (numeric_literal)))
+            (identifier)))
+        (select_item
+          (member_expression
+            (json_array_access
+              (member_expression
+                (member_expression
+                  (identifier)
+                  (identifier))
+                (identifier))
+              (numeric_literal)
+              (json_array_range
+                (numeric_literal)
+                (numeric_literal)))
+            (identifier)))
+        (select_item
+          (member_expression
+            (json_array_access
+              (json_array_access
+                (member_expression
+                  (member_expression
+                    (identifier)
+                    (identifier))
+                  (identifier))
+                (numeric_literal))
+              (numeric_literal))
+            (identifier))))
+      (from_clause
+        (table_reference
+          (object_name
+            (identifier))
+          (identifier))))))

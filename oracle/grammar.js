@@ -486,7 +486,12 @@ const buildExpressionFamily = (prefix) => {
           pub($, 'dblink_expression'),
           ...(isPlsql
             ? [$.cursor_attribute, alias($._expr_cc_directive, $.conditional_compilation_directive)]
-            : [$.outer_join_expression, $.model_cell_reference, alias($._ordered_aggregate_call, $.function_call)]),
+            : [
+                $.outer_join_expression,
+                $.model_cell_reference,
+                $.json_array_access,
+                alias($._ordered_aggregate_call, $.function_call),
+              ]),
           pub($, 'function_call'),
           alias(ref($, '_conversion_function_call'), $.function_call),
           pub($, 'new_expression'),
@@ -1392,7 +1397,7 @@ export default grammar({
     $.comment,
     $.string_literal,
     $.quoted_identifier,
-    $.numeric_literal,
+    $._numeric_literal,
     $._whole_number_literal,
     $.size_literal,
     $.bind_variable,
@@ -1442,6 +1447,7 @@ export default grammar({
     [$.error_logging_clause],
     [$._error_logging_tail],
     [$._object_privilege, $._system_privilege_or_role],
+    [$.numeric_literal, $._json_step_index],
   ],
 
   rules: {
@@ -2284,7 +2290,53 @@ export default grammar({
       ),
 
     model_cell_reference: ($) =>
-      prec.left(PREC.POSTFIX, seq(field('measure', $._callable_expression), '[', $._model_subscript_list, ']')),
+      prec.left(
+        PREC.POSTFIX,
+        seq(
+          field('measure', choice($._identifier, $.member_expression, $.dblink_expression, $.function_call)),
+          '[',
+          $._model_subscript_list,
+          ']'
+        )
+      ),
+
+    json_array_access: ($) =>
+      prec.left(
+        PREC.POSTFIX,
+        choice(
+          seq(
+            field('object', $.member_expression),
+            '[',
+            choice(alias('*', $.all_columns), $._json_range_step_list),
+            ']'
+          ),
+          seq(
+            field('object', choice($.json_array_access, alias($._dotted_whole_subscript, $.json_array_access))),
+            '[',
+            choice(alias('*', $.all_columns), $._json_any_step_list),
+            ']'
+          )
+        )
+      ),
+
+    _dotted_whole_subscript: ($) =>
+      prec.left(PREC.POSTFIX, seq(field('object', $.member_expression), '[', $._json_index_prefix, ']')),
+
+    _json_index_prefix: ($) => choice($._json_step_index, seq($._json_index_prefix, ',', $._json_step_index)),
+
+    _json_any_step_list: ($) => commaSep1(choice($._json_step_index, $.json_array_range)),
+
+    _json_range_step_list: ($) =>
+      seq(optional(seq($._json_index_prefix, ',')), $.json_array_range, optional(seq(',', $._json_any_step_list))),
+
+    _json_step_index: ($) => alias($._whole_number_literal, $.numeric_literal),
+
+    json_array_range: ($) =>
+      seq(
+        field('start', alias($._whole_number_literal, $.numeric_literal)),
+        keyword('TO'),
+        field('end', alias($._whole_number_literal, $.numeric_literal))
+      ),
 
     _model_subscript_list: ($) => commaSep1($._model_dimension_subscript),
 
@@ -7188,6 +7240,8 @@ export default grammar({
     _plsql_identifier: ($) => choice(reserved('plsql', $.identifier), $.quoted_identifier),
 
     _identifier: ($) => choice($.identifier, $.quoted_identifier),
+
+    numeric_literal: ($) => choice($._numeric_literal, $._whole_number_literal),
 
     identifier: () => new RegExp(`[${IDENTIFIER_START}][${IDENTIFIER_PART}]*`, 'u'),
   },
