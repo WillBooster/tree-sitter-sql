@@ -145,7 +145,7 @@ cargo test
 - Every corpus case in `test/corpus/<dialect>/*.txt` must include `:language(<dialect>)` in its header, and each dialect
   must keep raw NUL byte cases in `test/corpus/<dialect>/null-characters.txt` for the fuzzer seed check in
   `.github/workflows/robustness.yml`.
-- `script/parse-examples [--check] [dialect...]` clones pinned real-world SQL repositories into `examples/` and compares
+- `script/parse-examples [--check]` clones pinned real-world SQL repositories into `examples/` and compares
   the files that fail to parse against `script/known-failures/<dialect>.txt`. Run it without `--check` after a grammar
   change or a moved commit pin alters a list, and confirm every listed file is also rejected by that dialect's SQL
   parser.
