@@ -809,7 +809,7 @@ Function calls with named args, VARIADIC, WITHIN GROUP, FILTER, and OVER
 :language(postgresql)
 ================================================================================
 
-SELECT f(a := 1, b => 2, VARIADIC arr), count(DISTINCT a ORDER BY a DESC) FILTER (WHERE a > 0), percentile_cont(0.5) WITHIN GROUP (ORDER BY a) OVER w, sum(a) OVER (PARTITION BY b ORDER BY c ROWS BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE TIES) FROM t WINDOW w AS (PARTITION BY b);
+SELECT f(a := 1, b => 2, VARIADIC c => arr), count(DISTINCT a ORDER BY a DESC) FILTER (WHERE a > 0), percentile_cont(0.5) WITHIN GROUP (ORDER BY a) OVER w, sum(a) OVER (PARTITION BY b ORDER BY c ROWS BETWEEN 1 PRECEDING AND CURRENT ROW EXCLUDE TIES) FROM t WINDOW w AS (PARTITION BY b);
 
 --------------------------------------------------------------------------------
 
@@ -826,6 +826,7 @@ SELECT f(a := 1, b => 2, VARIADIC arr), count(DISTINCT a ORDER BY a DESC) FILTER
             (identifier)
             (numeric_literal))
           (function_argument
+            (identifier)
             (column_reference
               (identifier)))))
       (result_column

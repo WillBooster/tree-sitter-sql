@@ -810,7 +810,7 @@ export default grammar({
 
   conflicts: ($) => [
     [$.select_statement, $._parenthesized_select],
-    [$._type_modifiers, $.function_argument],
+    [$._type_modifiers, $._positional_function_argument],
     [$._percent_type, $._func_name],
     [$._percent_type, $._func_name, $._any_operator],
     [$._column_identifier, $._func_identifier],
@@ -4464,9 +4464,10 @@ export default grammar({
           optional(
             choice(
               alias('*', $.all_columns),
+              seq($._ordinary_function_args, optional($.order_by_clause)),
               seq(
-                optional(choice(keyword('DISTINCT'), keyword('ALL'))),
-                commaSep1($.function_argument),
+                choice(keyword('DISTINCT'), keyword('ALL')),
+                $._ordered_non_variadic_args,
                 optional($.order_by_clause)
               )
             )
@@ -4505,12 +4506,35 @@ export default grammar({
     _col_name_function_keyword: () =>
       choice(keyword('COALESCE'), keyword('GREATEST'), keyword('LEAST'), keyword('GROUPING')),
 
-    function_argument: ($) =>
-      seq(
-        optional(keyword('VARIADIC')),
-        optional(seq(field('name', $._col_label), choice(':=', '=>'))),
-        field('value', $._expression)
-      ),
+    _positional_function_argument: ($) => field('value', $._expression),
+
+    _named_function_argument: ($) =>
+      seq(field('name', $._func_identifier), choice(':=', '=>'), field('value', $._expression)),
+
+    _variadic_positional_argument: ($) => seq(keyword('VARIADIC'), field('value', $._expression)),
+
+    _variadic_named_argument: ($) =>
+      seq(keyword('VARIADIC'), field('name', $._func_identifier), choice(':=', '=>'), field('value', $._expression)),
+
+    _ordered_non_variadic_args: ($) => {
+      const posArg = alias($._positional_function_argument, $.function_argument);
+      const namedArg = alias($._named_function_argument, $.function_argument);
+      return choice(seq(commaSep1(posArg), optional(seq(',', commaSep1(namedArg)))), commaSep1(namedArg));
+    },
+
+    _ordinary_function_args: ($) => {
+      const posArg = alias($._positional_function_argument, $.function_argument);
+      const namedArg = alias($._named_function_argument, $.function_argument);
+      const varPosArg = alias($._variadic_positional_argument, $.function_argument);
+      const varNamedArg = alias($._variadic_named_argument, $.function_argument);
+      const namedPhase = seq(commaSep1(namedArg), optional(seq(',', varNamedArg)));
+      return choice(
+        varPosArg,
+        varNamedArg,
+        seq(commaSep1(posArg), optional(seq(',', choice(varPosArg, varNamedArg, namedPhase)))),
+        namedPhase
+      );
+    },
 
     within_group_clause: ($) => seq(keywords('WITHIN GROUP'), parens($.order_by_clause)),
 
@@ -4581,7 +4605,7 @@ export default grammar({
                 field('escape', $._expression)
               )
             ),
-            commaSep1($.function_argument)
+            optional($._ordered_non_variadic_args)
           )
         )
       ),
@@ -4613,7 +4637,7 @@ export default grammar({
               field('from', $._expression),
               optional(seq(keyword('FOR'), field('for', $._expression)))
             ),
-            commaSep1($.function_argument)
+            optional($._ordered_non_variadic_args)
           )
         )
       ),
@@ -4686,7 +4710,7 @@ export default grammar({
                 optional($._json_unique_keys),
                 optional($._json_returning)
               ),
-              commaSep1($.function_argument)
+              $._ordered_non_variadic_args
             )
           )
         ),
