@@ -52,7 +52,8 @@ clone anki https://github.com/ankitects/anki 641aae52f59b9d9579817cfe80d3020059b
 clone northwind https://github.com/jpwhite3/northwind-SQLite3 4f56e7f5906dfd23b25244c5bfe8fb5da6402efd
 clone synapse https://github.com/element-hq/synapse 4a8532b2597ce1e41d69b550559bd6f53be835f9
 clone mysql-test-db https://github.com/datacharmer/test_db e324b56193ca506ab7cc1ab143a9153d8c4535d7
-clone oracle-samples https://github.com/oracle-samples/db-sample-schemas 6660bad68c07bd143430ace58565b3f727e17263
+clone camunda https://github.com/camunda/camunda-bpm-platform ee4826e5e76c2348a1510ef46a2f4ccd3b080e48
+clone flowable https://github.com/flowable/flowable-engine 18735ec8a720886aa6b3ff0e576bf1fd5e6ad24d
 
 output=$(mktemp)
 failures=$(mktemp)
@@ -108,8 +109,8 @@ parse() {
 }
 
 # Synapse keeps the migrations that run on both SQLite and PostgreSQL in .sql files, those for SQLite alone in
-# .sql.sqlite files, and those for PostgreSQL alone in .sql.postgres files. Chinook, Quartz, and Spring Batch ship
-# scripts per database system.
+# .sql.sqlite files, and those for PostgreSQL alone in .sql.postgres files. Camunda, Chinook, Flowable, Quartz, and
+# Spring Batch ship scripts per database system.
 parse sqlite examples/anki examples/northwind examples/synapse examples/chinook examples/spring-batch \
   \( -name '*.sql' -o -name '*.sql.sqlite' \) \
   \( ! -path 'examples/chinook/*' -o -name 'Chinook_Sqlite*.sql' \) \
@@ -129,8 +130,5 @@ parse mysql examples/mysql-test-db examples/chinook examples/quartz examples/spr
   \( ! -path 'examples/quartz/*' -o -name '*mysql*.sql' \) \
   \( ! -path 'examples/spring-batch/*' -o -name '*mysql*.sql' \)
 
-parse oracle examples/oracle-samples examples/chinook examples/quartz examples/spring-batch \
-  -name '*.sql' \
-  \( ! -path 'examples/chinook/*' -o -name 'Chinook_Oracle*.sql' \) \
-  \( ! -path 'examples/quartz/*' -o -name '*oracle*.sql' \) \
-  \( ! -path 'examples/spring-batch/*' -o -name '*oracle*.sql' \)
+parse oracle examples/camunda examples/flowable examples/quartz examples/spring-batch \
+  -name '*oracle*.sql'
